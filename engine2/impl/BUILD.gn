@@ -1,0 +1,20 @@
+source_set("impl") {
+  sources = [
+    "basic_graphics2d.cc",
+    "basic_graphics2d.h",
+    "engine2_impl.cc",
+    "engine2_impl.h",
+    "event_handlers_impl.cc",
+    "event_handlers_impl.h",
+    "event_handlers.cc",
+    "event_handlers.h",
+    "rect_search_tree.h",
+  ]
+}
+
+source_set("test") {
+  sources = [
+    "rect_search_tree_test.cc",
+    "rect_search_tree_test.h",
+  ]
+}

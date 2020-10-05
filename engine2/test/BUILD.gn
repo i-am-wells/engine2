@@ -1,0 +1,8 @@
+source_set("test") {
+  sources = [
+    "assert_macros.h",
+    "test_group.cc",
+    "test_group.h",
+  ]
+  testonly=true
+}

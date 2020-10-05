@@ -1,0 +1,17 @@
+import("//build/sdl2.gni")
+
+executable("piratedemo") {
+  sources = ["piratedemo/main.cc"]
+  deps = ["//engine2:engine2"]
+  cflags = sdl2_cflags
+  ldflags = sdl2_ldflags
+}
+
+executable("test") {
+  sources = ["engine2/test/run_all_tests.cc"]
+  deps = ["//engine2:tests"]
+  cflags = sdl2_cflags
+  ldflags = sdl2_ldflags
+  testonly = true
+}
+

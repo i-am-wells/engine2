@@ -1,0 +1,58 @@
+source_set("engine2") {
+  sources = [
+    "arena2d.h",
+    "base/build_string.h",
+    "base/list.h",
+    "basic_window.cc",
+    "basic_window.h",
+    "camera2d.cc",
+    "camera2d.h",
+    "engine2.cc",
+    "engine2.h",
+    "graphics2d.h",
+    "memory/weak_pointer.h",
+    "offset_graphics2d.cc",
+    "offset_graphics2d.h",
+    "point.cc",
+    "point.h",
+    "rect.cc",
+    "rect.h",
+    "texture.cc",
+    "texture.h",
+    "threads/threads_owner.cc",
+    "threads/threads_owner.h",
+    "threads/draw_thread.h",
+    "threads/draw_thread.cc",
+    "threads/thread.h",
+    "threads/thread.cc",
+    "threads/io_thread.h",
+    "timing.h",
+    "timing.cc",
+    "types.h",
+    "window.h",
+    "window.cc",
+    # TODO io_thread.cc
+  ]
+  deps = [
+    "//engine2/impl:impl"
+  ]
+}
+
+source_set("tests") {
+  sources = [
+    "arena2d_test.cc",
+    "arena2d_test.h",
+    "base/list_test.cc",
+    "base/list_test.h",
+    "memory/weak_pointer_test.cc",
+    "memory/weak_pointer_test.h",
+    "rect_test.cc",
+    "rect_test.h",
+  ] 
+  deps = [ 
+    ":engine2",
+    "//engine2/test:test",
+    "//engine2/impl:test",
+  ]
+  testonly = true
+}
