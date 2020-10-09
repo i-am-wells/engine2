@@ -5,6 +5,7 @@
 #include "engine2/impl/rect_search_tree_test.h"
 #include "engine2/memory/weak_pointer_test.h"
 #include "engine2/rect_test.h"
+#include "engine2/texture_cache_test.h"
 
 namespace engine2 {
 namespace test {
@@ -16,7 +17,8 @@ void RunAllTests() {
                              ListTest().RunTests() +
                              RectTest().RunTests() +
                              RectSearchTreeTest().RunTests() +
-                             Arena2DTest().RunTests();
+                             Arena2DTest().RunTests() +
+                             TextureCacheTest().RunTests();
   /* clang-format on */
   std::cerr << "\nTOTAL: " << result.passed << " passed, " << result.failed
             << " failed\n";

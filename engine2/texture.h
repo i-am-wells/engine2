@@ -35,7 +35,7 @@ class Texture {
 
  private:
   friend class BasicGraphics2D;
-  SDL_Texture* texture_;
+  SDL_Texture* texture_ = nullptr;
 };
 
 }  // namespace engine2

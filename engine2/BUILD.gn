@@ -19,6 +19,8 @@ source_set("engine2") {
     "rect.h",
     "texture.cc",
     "texture.h",
+    "texture_cache.cc",
+    "texture_cache.h",
     "threads/threads_owner.cc",
     "threads/threads_owner.h",
     "threads/draw_thread.h",
@@ -38,6 +40,16 @@ source_set("engine2") {
   ]
 }
 
+source_set("test_support") {
+  sources = [
+    "test_graphics2d.cc",
+    "test_graphics2d.h",
+  ]
+  deps = [
+    ":engine2",
+  ]
+}
+
 source_set("tests") {
   sources = [
     "arena2d_test.cc",
@@ -48,9 +60,12 @@ source_set("tests") {
     "memory/weak_pointer_test.h",
     "rect_test.cc",
     "rect_test.h",
+    "texture_cache_test.cc",
+    "texture_cache_test.h",
   ] 
   deps = [ 
     ":engine2",
+    ":test_support",
     "//engine2/test:test",
     "//engine2/impl:test",
   ]
