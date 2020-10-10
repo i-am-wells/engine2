@@ -53,7 +53,7 @@ template <typename Active, typename Reactive>
 void Arena2D<Active, Reactive>::ReactAll() {
   for (auto* list_node = reactives_.Head(); list_node;
        list_node = list_node->Next()) {
-    React(&list_node->payload);
+    React(list_node->payload);
   }
 }
 
