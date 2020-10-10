@@ -9,6 +9,7 @@
 #include "engine2/rect_object.h"
 #include "engine2/rgba_color.h"
 #include "engine2/texture.h"
+#include "engine2/texture_cache.h"
 #include "engine2/window.h"
 
 using engine2::Arena2D;
@@ -18,10 +19,13 @@ using engine2::Graphics2D;
 using engine2::Point;
 using engine2::Rect;
 using engine2::Texture;
+using engine2::TextureCache;
 using engine2::Window;
 
 class Pirate : public Camera2D::Visible {
  public:
+  static constexpr char kTexturePath[] = "piratedemo/pirate0.png";
+
   Pirate(Point position) : position_(position) {}
   ~Pirate() = default;
 
@@ -41,35 +45,35 @@ class Pirate : public Camera2D::Visible {
     camera->InWorldCoords()->DrawTexture(*texture_, GetRect());
   }
 
-  static void LoadTexture(const Graphics2D& graphics) {
-    texture_ = Texture::LoadFromImage(graphics, "piratedemo/pirate0.png");
-    if (!texture_)
+  static void SetTexture(Texture* texture) {
+    if (!texture)
       throw "failed to load texture";
+    texture_ = texture;
   }
 
  private:
   int walk_speed_ = 2;
   Point position_;
   Point velocity_{0, 0};
-  // TODO implement resource cache!
-  static std::unique_ptr<Texture> texture_;
+  static Texture* texture_;
 };
 
-std::unique_ptr<Texture> Pirate::texture_;
+Texture* Pirate::texture_ = nullptr;
 
 class DrawDelegate : public BasicWindow::Delegate {
  public:
   DrawDelegate(Arena2D<Camera2D::Visible, Camera2D>* arena, Camera2D* camera)
-      : arena_(arena), camera_(camera) {}
+      : texture_cache_(nullptr), arena_(arena), camera_(camera) {}
 
   bool SetUp(Graphics2D* graphics, Window* window) override {
     graphics_ = graphics;
     camera_->SetGraphics(graphics);
+    texture_cache_.SetGraphics(graphics);
 
     graphics_->SetScale(4, 4);
 
     // Load sprites
-    Pirate::LoadTexture(*graphics);
+    Pirate::SetTexture(texture_cache_.Get(Pirate::kTexturePath));
     return true;
   }
 
@@ -87,6 +91,7 @@ class DrawDelegate : public BasicWindow::Delegate {
 
  private:
   Graphics2D* graphics_;
+  TextureCache texture_cache_;
   Arena2D<Camera2D::Visible, Camera2D>* arena_;
   Camera2D* camera_;
 };
