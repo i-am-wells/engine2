@@ -8,14 +8,14 @@ namespace {
 
 class SomeActive {
  public:
-  SomeActive(Rect rect) : rect(rect) {}
-  Rect GetRect() const { return rect; }
-  Rect rect;
+  SomeActive(Rect<> rect) : rect(rect) {}
+  Rect<> GetRect() const { return rect; }
+  Rect<> rect;
 };
 
 class SomeReactive : public SomeActive {
  public:
-  SomeReactive(Rect rect) : SomeActive(rect) {}
+  SomeReactive(Rect<> rect) : SomeActive(rect) {}
 
   void OnOverlap(SomeActive* other) {
     ++overlap_count;

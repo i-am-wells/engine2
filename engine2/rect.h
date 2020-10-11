@@ -7,19 +7,20 @@
 
 namespace engine2 {
 
+template <typename T = int64_t>
 struct Rect {
  public:
   union {
     struct {
-      Point pos, size;
+      Point<T> pos, size;
     };
     struct {
-      int64_t x, y, w, h;
+      T x, y, w, h;
     };
   };
   bool Touches(const Rect& other) const;
   bool Overlaps(const Rect& other) const;
-  bool Contains(const Point& point) const;
+  bool Contains(const Point<T>& point) const;
   bool Contains(const Rect& other) const;
 
   // If *this doesn't overlap with other, the returned width and/or height will
@@ -30,9 +31,11 @@ struct Rect {
   // 0----1
   // |    |
   // 2----3
-  Point Corner(int i) const;
+  Point<T> Corner(int i) const;
 };
 
 }  // namespace engine2
+
+#include "engine2/rect.cc"
 
 #endif  // ENGINE2_RECT_H_

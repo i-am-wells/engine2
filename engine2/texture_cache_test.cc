@@ -16,7 +16,7 @@ void TextureCacheTest::TestGet() {
   Texture* texture = cache.Get(kImageThatExists);
   ASSERT_NOT_NULL(texture);
 
-  Rect size = texture->GetSize();
+  Rect<> size = texture->GetSize();
   EXPECT_EQ(16, size.w);
   EXPECT_EQ(32, size.h);
 

@@ -5,25 +5,31 @@
 
 namespace engine2 {
 
+template <typename T = int64_t>
 struct Point {
   union {
-    int64_t p[2];
+    T p[2];
     struct {
-      int64_t x, y;
+      T x, y;
     };
   };
 
-  int64_t& operator[](int i);
-  const int64_t& operator[](int i) const;
+  T& operator[](int i);
+  const T& operator[](int i) const;
 
   bool operator==(const Point& other) const;
   Point& operator+=(const Point& other);
   Point& operator-=(const Point& other);
 };
 
-Point operator+(const Point& a, const Point& b);
-Point operator-(const Point& a, const Point& b);
+template <typename T>
+Point<T> operator+(const Point<T>& a, const Point<T>& b);
+
+template <typename T>
+Point<T> operator-(const Point<T>& a, const Point<T>& b);
 
 }  // namespace engine2
+
+#include "engine2/point.cc"
 
 #endif  // ENGINE2_POINT_H_

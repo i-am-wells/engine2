@@ -1,37 +1,44 @@
-#include "point.h"
+//#include "point.h"
 
 namespace engine2 {
 
-int64_t& Point::operator[](int i) {
+template <typename T>
+T& Point<T>::operator[](int i) {
   return p[i];
 }
 
-const int64_t& Point::operator[](int i) const {
+template <typename T>
+const T& Point<T>::operator[](int i) const {
   return p[i];
 }
 
-bool Point::operator==(const Point& other) const {
+template <typename T>
+bool Point<T>::operator==(const Point<T>& other) const {
   return x == other.x && y == other.y;
 }
 
-Point& Point::operator+=(const Point& other) {
+template <typename T>
+Point<T>& Point<T>::operator+=(const Point<T>& other) {
   x += other.x;
   y += other.y;
   return *this;
 }
 
-Point operator+(const Point& a, const Point& b) {
-  return Point(a) += b;
+template <typename T>
+Point<T> operator+(const Point<T>& a, const Point<T>& b) {
+  return Point<T>(a) += b;
 }
 
-Point& Point::operator-=(const Point& other) {
+template <typename T>
+Point<T>& Point<T>::operator-=(const Point<T>& other) {
   x -= other.x;
   y -= other.y;
   return *this;
 }
 
-Point operator-(const Point& a, const Point& b) {
-  return Point(a) -= b;
+template <typename T>
+Point<T> operator-(const Point<T>& a, const Point<T>& b) {
+  return Point<T>(a) -= b;
 }
 
 }  // namespace engine2

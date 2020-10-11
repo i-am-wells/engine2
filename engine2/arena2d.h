@@ -15,7 +15,7 @@ template <typename Active, typename Reactive>
 class Arena2D {
   // TODO static asserts about active and reactive?
  public:
-  Arena2D(Rect rect, int tree_depth);
+  Arena2D(Rect<> rect, int tree_depth);
 
   void AddActive(Active* obj);
   void AddReactive(Reactive* obj);
@@ -44,7 +44,7 @@ class Arena2D {
 
     operator Reactive*() { return reactive_; }
 
-    Rect GetRect() override { return reactive_->GetRect(); }
+    Rect<> GetRect() override { return reactive_->GetRect(); }
     void OnOverlap(Active* active) override { reactive_->OnOverlap(active); }
     void OnTouch(Active* active) override { reactive_->OnTouch(active); }
 

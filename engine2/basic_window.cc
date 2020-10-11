@@ -3,7 +3,7 @@
 
 namespace engine2 {
 
-BasicWindow::BasicWindow(const Rect& rect,
+BasicWindow::BasicWindow(const Rect<>& rect,
                          std::unique_ptr<Delegate> delegate,
                          const std::string& name,
                          int sdl_window_flags,

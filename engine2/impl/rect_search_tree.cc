@@ -5,14 +5,14 @@ namespace engine2 {
 // static
 template <typename Rep>
 std::unique_ptr<RectSearchTree<Rep>> RectSearchTree<Rep>::Create(
-    Rect rect,
+    Rect<> rect,
     int tree_depth) {
   if (tree_depth == 0)
     return nullptr;
 
   auto tree =
       std::unique_ptr<RectSearchTree<Rep>>(new RectSearchTree<Rep>(rect));
-  Rect child_rect_1, child_rect_2;
+  Rect<> child_rect_1, child_rect_2;
   if (rect.w < rect.h) {
     // Horizontal split:
     // +----+----+
@@ -53,7 +53,7 @@ RectSearchTree<Rep>* RectSearchTree<Rep>::InsertTrimmed(Rep* obj) {
 
 template <typename Rep>
 RectSearchTree<Rep>* RectSearchTree<Rep>::InsertForRect(Rep* obj,
-                                                        const Rect& rect) {
+                                                        const Rect<>& rect) {
   auto* subtree = Find(rect);
   if (!subtree)
     subtree = this;
@@ -64,7 +64,7 @@ RectSearchTree<Rep>* RectSearchTree<Rep>::InsertForRect(Rep* obj,
 template <typename Rep>
 template <typename CallbackObject>
 void RectSearchTree<Rep>::RunCallbacksOn(CallbackObject* obj) {
-  Rect sender_rect = obj->GetRect();
+  Rect<> sender_rect = obj->GetRect();
   if (!rect_.Overlaps(sender_rect) && !rect_.Touches(sender_rect))
     return;
 
@@ -73,7 +73,7 @@ void RectSearchTree<Rep>::RunCallbacksOn(CallbackObject* obj) {
     if ((void*)(node->payload) == (void*)(obj))
       continue;
 
-    Rect found_rect = node->payload->GetRect();
+    Rect<> found_rect = node->payload->GetRect();
     if (sender_rect.Overlaps(found_rect))
       obj->OnOverlap(node->payload);
 
@@ -109,8 +109,8 @@ std::unique_ptr<typename List<Rep*>::Node> RectSearchTree<Rep>::RemoveFromSelf(
 }
 
 template <typename Rep>
-RectSearchTree<Rep>* RectSearchTree<Rep>::Find(const Rect& rect) {
-  Rect rect_copy = rect;
+RectSearchTree<Rep>* RectSearchTree<Rep>::Find(const Rect<>& rect) {
+  Rect<> rect_copy = rect;
 
   // Add one to each dimension so the rect is stored in the next node up if it
   // is near a boundary. This allows OnTouch() to work across node boundaries.
@@ -124,7 +124,7 @@ RectSearchTree<Rep>* RectSearchTree<Rep>::Find(const Rect& rect) {
 }
 
 template <typename Rep>
-RectSearchTree<Rep>* RectSearchTree<Rep>::FindInternal(const Rect& rect) {
+RectSearchTree<Rep>* RectSearchTree<Rep>::FindInternal(const Rect<>& rect) {
   if (!rect_.Contains(rect))
     return nullptr;
 
@@ -141,6 +141,6 @@ RectSearchTree<Rep>* RectSearchTree<Rep>::FindInternal(const Rect& rect) {
 }
 
 template <typename Rep>
-RectSearchTree<Rep>::RectSearchTree(Rect rect) : rect_(std::move(rect)) {}
+RectSearchTree<Rep>::RectSearchTree(Rect<> rect) : rect_(std::move(rect)) {}
 
 }  // namespace engine2

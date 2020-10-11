@@ -5,7 +5,7 @@
 namespace engine2 {
 
 template <typename Active, typename Reactive>
-Arena2D<Active, Reactive>::Arena2D(Rect rect, int tree_depth)
+Arena2D<Active, Reactive>::Arena2D(Rect<> rect, int tree_depth)
     : tree_(RectSearchTree<Active>::Create(rect, tree_depth)) {}
 
 template <typename Active, typename Reactive>
@@ -25,7 +25,7 @@ void Arena2D<Active, Reactive>::Update(Active* obj) {
   if (!current_node)
     return;
 
-  Rect rect = obj->GetRect().GetOverlap(tree_->GetRect());
+  Rect<> rect = obj->GetRect().GetOverlap(tree_->GetRect());
 
   // First search down from the current node.
   RectSearchTree<Active>* proper_home = current_node->Find(rect);

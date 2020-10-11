@@ -14,7 +14,7 @@ template <typename Rep>
 class RectSearchTree {
  public:
   // Create a new tree of depth |tree_depth| spanning |rect|.
-  static std::unique_ptr<RectSearchTree> Create(Rect rect, int tree_depth);
+  static std::unique_ptr<RectSearchTree> Create(Rect<> rect, int tree_depth);
 
   // Add an object to the search tree. Returns a pointer to the subtree the
   // object was added to. Note: if you insert the same object twice, its
@@ -33,7 +33,7 @@ class RectSearchTree {
 
   class RectObject {
    public:
-    virtual Rect GetRect() = 0;
+    virtual Rect<> GetRect() = 0;
     virtual void OnOverlap(Rep* obj) = 0;
     virtual void OnTouch(Rep* obj) = 0;
     virtual ~RectObject() = default;
@@ -44,16 +44,16 @@ class RectSearchTree {
   template <typename CallbackObject>
   void RunCallbacksOn(CallbackObject* obj);
 
-  RectSearchTree* Find(const Rect& rect);
+  RectSearchTree* Find(const Rect<>& rect);
 
-  const Rect& GetRect() const { return rect_; }
+  const Rect<>& GetRect() const { return rect_; }
 
  private:
-  RectSearchTree(Rect rect);
-  RectSearchTree* InsertForRect(Rep* obj, const Rect& rect);
-  RectSearchTree* FindInternal(const Rect& rect);
+  RectSearchTree(Rect<> rect);
+  RectSearchTree* InsertForRect(Rep* obj, const Rect<>& rect);
+  RectSearchTree* FindInternal(const Rect<>& rect);
 
-  Rect rect_;
+  Rect<> rect_;
   std::unique_ptr<RectSearchTree> child_a_;
   std::unique_ptr<RectSearchTree> child_b_;
   List<Rep*> reps_;

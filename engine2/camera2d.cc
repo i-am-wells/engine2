@@ -8,7 +8,7 @@ bool Camera2D::Visible::operator<(Visible& other) {
   return GetRect().y < other.GetRect().y;
 }
 
-Camera2D::Camera2D(Rect world_rect, Rect screen_rect, Graphics2D* graphics)
+Camera2D::Camera2D(Rect<> world_rect, Rect<> screen_rect, Graphics2D* graphics)
     : world_rect_(std::move(world_rect)),
       screen_rect_(std::move(screen_rect)),
       view_graphics_(graphics, &screen_rect_.pos),

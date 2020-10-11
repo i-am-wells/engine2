@@ -11,18 +11,18 @@ class TestGraphics2D : public Graphics2D {
   ~TestGraphics2D() override = default;
   Graphics2D* SetScale(float x_scale, float y_scale) override;
   Graphics2D* SetLogicalSize(int width, int height) override;
-  Rect GetLogicalSize() override;
-  Rect GetSize() override;
-  Graphics2D* DrawPoint(const Point& p) override;
-  Graphics2D* DrawLine(const Point& p0, const Point& p1) override;
-  Graphics2D* DrawRect(const Rect& rect) override;
-  Graphics2D* FillRect(const Rect& rect) override;
+  Rect<> GetLogicalSize() override;
+  Rect<> GetSize() override;
+  Graphics2D* DrawPoint(const Point<>& p) override;
+  Graphics2D* DrawLine(const Point<>& p0, const Point<>& p1) override;
+  Graphics2D* DrawRect(const Rect<>& rect) override;
+  Graphics2D* FillRect(const Rect<>& rect) override;
 
   Graphics2D* DrawTexture(const Texture& texture) override;
-  Graphics2D* DrawTexture(const Texture& texture, const Rect& dest) override;
+  Graphics2D* DrawTexture(const Texture& texture, const Rect<>& dest) override;
   Graphics2D* DrawTexture(const Texture& texture,
-                          const Rect& src,
-                          const Rect& dest) override;
+                          const Rect<>& src,
+                          const Rect<>& dest) override;
   Graphics2D* Clear() override;
   Graphics2D* Present() override;
 

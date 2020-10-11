@@ -21,7 +21,7 @@ class BasicWindow : public DrawThread::Delegate {
     virtual ~Delegate() = default;
   };
 
-  BasicWindow(const Rect& rect,
+  BasicWindow(const Rect<>& rect,
               std::unique_ptr<Delegate> delegate,
               const std::string& name = "engine2",
               int sdl_window_flags = 0,
@@ -43,7 +43,7 @@ class BasicWindow : public DrawThread::Delegate {
 
  private:
   std::string name_;
-  Rect rect_;
+  Rect<> rect_;
   int window_flags_;
   int renderer_flags_;
   std::unique_ptr<Delegate> delegate_;

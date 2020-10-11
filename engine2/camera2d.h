@@ -17,12 +17,14 @@ class Camera2D {
   // |screen_rect|={0, 0, 800, 600} would cause the camera to draw to the entire
   // screen and passing |screen_rect|={400, 300, 400, 300} would cause the
   // camera to draw to the bottom right corner of the screen.
-  Camera2D(Rect world_rect, Rect screen_rect, Graphics2D* graphics = nullptr);
+  Camera2D(Rect<> world_rect,
+           Rect<> screen_rect,
+           Graphics2D* graphics = nullptr);
   void SetGraphics(Graphics2D* graphics);
 
   class Visible {
    public:
-    virtual Rect GetRect() = 0;
+    virtual Rect<> GetRect() = 0;
     virtual void OnCameraDraw(Camera2D* camera) = 0;
 
     virtual bool operator<(Visible& other);
@@ -38,13 +40,13 @@ class Camera2D {
   void Draw();
 
   // Needed for RectSearchTree.
-  Rect GetRect() { return world_rect_; }
+  Rect<> GetRect() { return world_rect_; }
   void OnOverlap(Visible* object);
   void OnTouch(Visible* object);
 
  private:
-  Rect world_rect_;
-  Rect screen_rect_;
+  Rect<> world_rect_;
+  Rect<> screen_rect_;
   OffsetGraphics2D view_graphics_;
   OffsetGraphics2D world_graphics_;
   std::vector<Visible*> objects_;

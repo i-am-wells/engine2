@@ -50,7 +50,7 @@ bool Texture::SetAlphaMod(uint8_t alpha) {
   return SDL_SetTextureAlphaMod(texture_, alpha) >= 0;
 }
 
-Rect Texture::GetSize() {
+Rect<> Texture::GetSize() {
   int w, h;
   if (SDL_QueryTexture(texture_, /*format=*/nullptr, /*access=*/nullptr, &w,
                        &h) < 0) {

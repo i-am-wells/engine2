@@ -4,7 +4,7 @@ namespace engine2 {
 
 // static
 std::unique_ptr<Window> Window::Create(const std::string& title,
-                                       const Rect& rect,
+                                       const Rect<>& rect,
                                        const SDLWindowFlags& flags) {
   SDL_Window* sdl_window = SDL_CreateWindow(title.c_str(), rect.x, rect.y,
                                             rect.w, rect.h, flags.to_ulong());

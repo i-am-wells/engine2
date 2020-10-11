@@ -8,17 +8,17 @@ namespace {
 
 class SomeObject : public RectSearchTree<SomeObject>::RectObject {
  public:
-  SomeObject(Rect rect, std::string name) : rect(rect), name(name) {}
+  SomeObject(Rect<> rect, std::string name) : rect(rect), name(name) {}
   ~SomeObject() = default;
 
   const SomeObject* on_touch_rep = nullptr;
   const SomeObject* on_overlap_rep = nullptr;
   int on_touch_count = 0;
   int on_overlap_count = 0;
-  Rect rect;
+  Rect<> rect;
   std::string name;
 
-  Rect GetRect() override { return rect; }
+  Rect<> GetRect() override { return rect; }
   void OnTouch(SomeObject* other) override {
     on_touch_rep = other;
     ++on_touch_count;
@@ -29,7 +29,7 @@ class SomeObject : public RectSearchTree<SomeObject>::RectObject {
   }
 };
 
-std::string RectToString(const Rect& rect) {
+std::string RectToString(const Rect<>& rect) {
   return BuildString("{", rect.x, ", ", rect.y, ", ", rect.w, ", ", rect.h,
                      "}");
 }
@@ -39,7 +39,7 @@ std::string RectToString(const Rect& rect) {
 #define ASSERT_RECT_EQ(a, b) ASSERT_EQ(RectToString(a), RectToString(b))
 
 void RectSearchTreeTest::TestCreate() {
-  Rect rect{0, 0, 10, 20};
+  Rect<> rect{0, 0, 10, 20};
   auto tree = RectSearchTree<SomeObject>::Create(rect, 0);
   EXPECT_NULL(tree.get());
 
