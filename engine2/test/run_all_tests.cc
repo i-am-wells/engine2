@@ -4,6 +4,7 @@
 #include "engine2/base/list_test.h"
 #include "engine2/impl/rect_search_tree_test.h"
 #include "engine2/memory/weak_pointer_test.h"
+#include "engine2/physics_object_test.h"
 #include "engine2/rect_test.h"
 #include "engine2/texture_cache_test.h"
 
@@ -18,7 +19,8 @@ void RunAllTests() {
                              RectTest().RunTests() +
                              RectSearchTreeTest().RunTests() +
                              Arena2DTest().RunTests() +
-                             TextureCacheTest().RunTests();
+                             TextureCacheTest().RunTests() +
+                             PhysicsObjectTest().RunTests();
   /* clang-format on */
   std::cerr << "\nTOTAL: " << result.passed << " passed, " << result.failed
             << " failed\n";

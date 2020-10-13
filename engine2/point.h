@@ -28,6 +28,18 @@ Point<T> operator+(const Point<T>& a, const Point<T>& b);
 template <typename T>
 Point<T> operator-(const Point<T>& a, const Point<T>& b);
 
+template <typename T>
+Point<T> operator*(const Point<T>& a, const Point<T>& b);
+
+template <typename T>
+Point<T> operator*(const Point<T>& p, const T& scalar);
+
+template <typename T>
+Point<T> operator/(const Point<T>& a, const Point<T>& b);
+
+template <typename T>
+Point<T> operator/(const Point<T>& p, const T& scalar);
+
 }  // namespace engine2
 
 #include "engine2/point.cc"

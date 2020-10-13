@@ -41,4 +41,24 @@ Point<T> operator-(const Point<T>& a, const Point<T>& b) {
   return Point<T>(a) -= b;
 }
 
+template <typename T>
+Point<T> operator*(const Point<T>& a, const Point<T>& b) {
+  return {a.x * b.x, a.y * b.y};
+}
+
+template <typename T>
+Point<T> operator*(const Point<T>& p, const T& scalar) {
+  return p * Point<T>{scalar, scalar};
+}
+
+template <typename T>
+Point<T> operator/(const Point<T>& a, const Point<T>& b) {
+  return {a.x / b.x, a.y / b.y};
+}
+
+template <typename T>
+Point<T> operator/(const Point<T>& p, const T& scalar) {
+  return p / Point<T>{scalar, scalar};
+}
+
 }  // namespace engine2
