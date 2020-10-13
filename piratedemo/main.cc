@@ -6,7 +6,7 @@
 #include "engine2/camera2d.h"
 #include "engine2/engine2.h"
 #include "engine2/graphics2d.h"
-#include "engine2/rect_object.h"
+#include "engine2/physics_object.h"
 #include "engine2/rgba_color.h"
 #include "engine2/texture.h"
 #include "engine2/texture_cache.h"
@@ -16,34 +16,43 @@ using engine2::Arena2D;
 using engine2::BasicWindow;
 using engine2::Camera2D;
 using engine2::Graphics2D;
+using engine2::PhysicsObject;
 using engine2::Point;
 using engine2::Rect;
 using engine2::Texture;
 using engine2::TextureCache;
 using engine2::Window;
 
-class Pirate : public Camera2D::Visible {
+// class Object {
+//  public:
+//   Object(const std::string& texture_path, const Point<>& position, double
+//   mass_kg);
+// };
+
+class Pirate {
  public:
   static constexpr char kTexturePath[] = "piratedemo/pirate0.png";
 
-  Pirate(Point position) : position_(position) {}
+  Pirate(Point<> position)
+      : visible_(this), physics_({position, {16, 32}}, /*mass_kg=*/75) {}
   ~Pirate() = default;
 
-  void Move(const Point& d) {
-    velocity_ += {walk_speed_ * d.x, walk_speed_ * d.y};
-  }
+  void Move(const Point<double>& d) { physics_.velocity += d * walk_speed_; }
 
-  void UpdatePosition() { position_ += velocity_; }
+  void PhysicsUpdate() { physics_.Update(); }
 
-  // Camera2D::Visible implementation
-  Rect GetRect() override {
-    if (!texture_)
-      return {position_, {0, 0}};
-    return {position_, texture_->GetSize().size};
-  }
-  void OnCameraDraw(Camera2D* camera) override {
-    camera->InWorldCoords()->DrawTexture(*texture_, GetRect());
-  }
+  class Visible : public Camera2D::Visible {
+   public:
+    Rect<> GetRect() override { return pirate_->physics_.GetRect(); }
+    void OnCameraDraw(Camera2D* camera) override {
+      camera->InWorldCoords()->DrawTexture(*Pirate::texture_, GetRect());
+    }
+    Visible(Pirate* pirate) : pirate_(pirate) {}
+    ~Visible() = default;
+
+   private:
+    Pirate* pirate_;
+  };
 
   static void SetTexture(Texture* texture) {
     if (!texture)
@@ -51,15 +60,25 @@ class Pirate : public Camera2D::Visible {
     texture_ = texture;
   }
 
+  Visible* GetVisible() { return &visible_; }
+
  private:
-  int walk_speed_ = 2;
-  Point position_;
-  Point velocity_{0, 0};
+  friend class Visible;
+  Visible visible_;
+  double walk_speed_ = 64;  // pixels per second
+  PhysicsObject physics_;
   static Texture* texture_;
 };
 
 Texture* Pirate::texture_ = nullptr;
 
+/*
+class Cannonball : public Camera2D::Visible {
+ public:
+  static constexpr kTexturePath = "piratedemo/cannonball.png";
+};
+Texture* Cannonball::texture_ = nullptr;
+*/
 class DrawDelegate : public BasicWindow::Delegate {
  public:
   DrawDelegate(Arena2D<Camera2D::Visible, Camera2D>* arena, Camera2D* camera)
@@ -97,15 +116,15 @@ class DrawDelegate : public BasicWindow::Delegate {
 };
 
 int main(int argc, char** argv) {
-  Rect world_rect{0, 0, 1000, 1000};
-  Rect screen_rect{0, 0, 800, 600};
+  Rect<> world_rect{0, 0, 1000, 1000};
+  Rect<> screen_rect{0, 0, 800, 600};
 
   Camera2D camera(world_rect, screen_rect);
   Pirate pirate({10, 10});
 
   // TODO should arena have a position?
   Arena2D<Camera2D::Visible, Camera2D> arena(world_rect, 1);
-  arena.AddActive(&pirate);
+  arena.AddActive(pirate.GetVisible());
   arena.AddReactive(&camera);
 
   auto context = engine2::Engine2::Create(std::make_unique<BasicWindow>(
@@ -113,8 +132,8 @@ int main(int argc, char** argv) {
       "Pirate Demo"));
 
   context->EveryFrame()->Run([&]() {
-    pirate.UpdatePosition();
-    arena.Update(&pirate);
+    pirate.PhysicsUpdate();
+    arena.Update(pirate.GetVisible());
   });
 
   context->EnableKeyRepeat(false);
