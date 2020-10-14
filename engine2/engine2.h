@@ -6,7 +6,7 @@
 #include <SDL2/SDL_keycode.h>
 
 #include "engine2/memory/weak_pointer.h"
-#include "engine2/threads/threads_owner.h"
+#include "engine2/state_mutex.h"
 #include "engine2/timing.h"
 #include "engine2/types.h"
 
@@ -14,9 +14,9 @@ namespace engine2 {
 
 class Engine2 {
  public:
-  static std::unique_ptr<Engine2> Create(
-      std::unique_ptr<DrawThread::Delegate> draw_delegate);
-  virtual void Run() = 0;
+  // TODO move to exceptions
+  static std::unique_ptr<Engine2> Create();
+  virtual void Run(StateMutex* state_mutex) = 0;
   virtual void Stop() = 0;
 
   class Cancelable {

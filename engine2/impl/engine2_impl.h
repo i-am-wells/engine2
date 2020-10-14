@@ -14,11 +14,10 @@ namespace engine2 {
 
 class Engine2Impl : public Engine2 {
  public:
-  explicit Engine2Impl(
-      std::unique_ptr<DrawThread::Delegate> draw_thread_delegate = nullptr);
-  ~Engine2Impl();
+  Engine2Impl();
+  ~Engine2Impl() override;
 
-  void Run() override;
+  void Run(StateMutex* state_mutex) override;
   void Stop() override;
   std::unique_ptr<RunClause> EveryFrame() override;
 
@@ -34,8 +33,6 @@ class Engine2Impl : public Engine2 {
   void SetKeyUpHandler(SDL_Keycode key_code, KeyboardCallback callback);
 
  private:
-  DrawThread* draw_thread() { return threads_owner_.draw_thread(); }
-
   void RunEveryFrameCallbacks();
   void HandleSDLEvents();
 
@@ -44,7 +41,6 @@ class Engine2Impl : public Engine2 {
   EventHandlersImpl event_handlers_;
   // TODO make configurable
   Timing::FramerateRegulator framerate_regulator_{60};
-  ThreadsOwner threads_owner_;
   bool running_ = false;
   WeakPointer<Engine2Impl>::Factory weak_factory_{this};
 };

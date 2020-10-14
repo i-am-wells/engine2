@@ -9,8 +9,7 @@
 namespace engine2 {
 
 // static
-std::unique_ptr<Engine2> Engine2::Create(
-    std::unique_ptr<DrawThread::Delegate> draw_delegate) {
+std::unique_ptr<Engine2> Engine2::Create() {
   if (SDL_Init(SDL_INIT_AUDIO) < 0) {
     return nullptr;
   }
@@ -25,7 +24,7 @@ std::unique_ptr<Engine2> Engine2::Create(
     return nullptr;
   }
 
-  return std::make_unique<Engine2Impl>(std::move(draw_delegate));
+  return std::make_unique<Engine2Impl>();
 }
 
 }  // namespace engine2

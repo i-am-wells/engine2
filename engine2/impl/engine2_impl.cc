@@ -16,7 +16,7 @@ void StripKeyboardEvent(Callback callback, const SDL_KeyboardEvent& event) {
 class EveryFrameCancelable : public Engine2::Cancelable {
  public:
   EveryFrameCancelable(WeakPointer<Engine2Impl> context, Callback callback)
-      : context_(context), callback_(callback) {}
+      : context_(std::move(context)), callback_(callback) {}
   void Cancel() override {
     if (!context_)
       return;
@@ -59,7 +59,7 @@ class KeyboardEventClauseImpl : public Engine2::KeyboardEventClause {
  public:
   explicit KeyboardEventClauseImpl(WeakPointer<Engine2Impl> context,
                                    SDL_Keycode key_code)
-      : context_(context), key_code_(key_code) {}
+      : context_(std::move(context)), key_code_(key_code) {}
 
   WeakPointer<KeyboardEventClause> Pressed(KeyboardCallback callback) override {
     if (context_)
@@ -103,30 +103,22 @@ class KeyboardEventClauseImpl : public Engine2::KeyboardEventClause {
 
 }  // namespace
 
-Engine2Impl::Engine2Impl(
-    std::unique_ptr<DrawThread::Delegate> draw_thread_delegate)
-    : threads_owner_(std::move(draw_thread_delegate)) {}
-
-Engine2Impl::~Engine2Impl() {
-  threads_owner_.WakeAndJoinAll();
-  Mix_Quit();
-  IMG_Quit();
-  SDL_Quit();
+Engine2Impl::Engine2Impl() {
+  // TODO SDL inits here
 }
 
-void Engine2Impl::Run() {
+Engine2Impl::~Engine2Impl() {
+  // TODO SDL quits here
+}
+
+void Engine2Impl::Run(StateMutex* state_mutex) {
   if (running_)
     return;
 
   running_ = true;
   while (running_) {
     {
-      auto draw_lock = std::move(draw_thread()->Lock());
-      if (!draw_thread()->Okay()) {
-        // TODO log error
-        // Log("Draw thread stopped unexpectedly: ",
-        // draw_thread()->ErrorMessage());
-      }
+      auto draw_lock = std::move(state_mutex->Lock());
 
       // TODO:
       // update
@@ -135,8 +127,10 @@ void Engine2Impl::Run() {
       RunEveryFrameCallbacks();
 
       HandleSDLEvents();
+
+      // TODO: instead, broadcast on cv
+      state_mutex->SendSignal(std::move(draw_lock), StateMutex::Signal::kGo);
     }
-    draw_thread()->SendSignal(Thread::Signal::kGo);
 
     framerate_regulator_.Wait();
   }

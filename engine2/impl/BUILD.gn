@@ -9,6 +9,8 @@ source_set("impl") {
     "event_handlers.cc",
     "event_handlers.h",
     "rect_search_tree.h",
+    "video_context_impl.cc",
+    "video_context_impl.h",
   ]
 }
 

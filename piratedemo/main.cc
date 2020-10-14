@@ -1,43 +1,40 @@
 #include <iostream>
 #include <memory>
+#include <thread>
 
 #include "engine2/arena2d.h"
-#include "engine2/basic_window.h"
 #include "engine2/camera2d.h"
 #include "engine2/engine2.h"
 #include "engine2/graphics2d.h"
+#include "engine2/impl/basic_graphics2d.h"
 #include "engine2/physics_object.h"
 #include "engine2/rgba_color.h"
+#include "engine2/state_mutex.h"
 #include "engine2/texture.h"
 #include "engine2/texture_cache.h"
+#include "engine2/video_context.h"
 #include "engine2/window.h"
 
 using engine2::Arena2D;
-using engine2::BasicWindow;
+using engine2::BasicGraphics2D;
 using engine2::Camera2D;
 using engine2::Graphics2D;
 using engine2::PhysicsObject;
 using engine2::Point;
 using engine2::Rect;
+using engine2::StateMutex;
 using engine2::Texture;
 using engine2::TextureCache;
+using engine2::VideoContext;
 using engine2::Window;
-
-// class Object {
-//  public:
-//   Object(const std::string& texture_path, const Point<>& position, double
-//   mass_kg);
-// };
 
 class Pirate {
  public:
-  static constexpr char kTexturePath[] = "piratedemo/pirate0.png";
-
   Pirate(Point<> position)
       : visible_(this), physics_({position, {16, 32}}, /*mass_kg=*/75) {}
   ~Pirate() = default;
 
-  void Move(const Point<double>& d) { physics_.velocity += d * walk_speed_; }
+  void Move(const Point<double>& d) { physics_.velocity += d * 64.; }
 
   void PhysicsUpdate() { physics_.Update(); }
 
@@ -65,57 +62,15 @@ class Pirate {
  private:
   friend class Visible;
   Visible visible_;
-  double walk_speed_ = 64;  // pixels per second
   PhysicsObject physics_;
   static Texture* texture_;
 };
 
 Texture* Pirate::texture_ = nullptr;
 
-/*
-class Cannonball : public Camera2D::Visible {
- public:
-  static constexpr kTexturePath = "piratedemo/cannonball.png";
-};
-Texture* Cannonball::texture_ = nullptr;
-*/
-class DrawDelegate : public BasicWindow::Delegate {
- public:
-  DrawDelegate(Arena2D<Camera2D::Visible, Camera2D>* arena, Camera2D* camera)
-      : texture_cache_(nullptr), arena_(arena), camera_(camera) {}
-
-  bool SetUp(Graphics2D* graphics, Window* window) override {
-    graphics_ = graphics;
-    camera_->SetGraphics(graphics);
-    texture_cache_.SetGraphics(graphics);
-
-    graphics_->SetScale(4, 4);
-
-    // Load sprites
-    Pirate::SetTexture(texture_cache_.Get(Pirate::kTexturePath));
-    return true;
-  }
-
-  bool ReadState() override {
-    arena_->React(camera_);
-    return true;
-  }
-
-  bool Draw() override {
-    graphics_->SetDrawColor({255, 255, 255, engine2::kOpaque})->Clear();
-    camera_->Draw();
-    return true;
-  }
-  void TearDown() override {}
-
- private:
-  Graphics2D* graphics_;
-  TextureCache texture_cache_;
-  Arena2D<Camera2D::Visible, Camera2D>* arena_;
-  Camera2D* camera_;
-};
-
 int main(int argc, char** argv) {
+  // TODO SDL_Init
+
   Rect<> world_rect{0, 0, 1000, 1000};
   Rect<> screen_rect{0, 0, 800, 600};
 
@@ -127,11 +82,41 @@ int main(int argc, char** argv) {
   arena.AddActive(pirate.GetVisible());
   arena.AddReactive(&camera);
 
-  auto context = engine2::Engine2::Create(std::make_unique<BasicWindow>(
-      screen_rect, std::make_unique<DrawDelegate>(&arena, &camera),
-      "Pirate Demo"));
+  StateMutex state_mutex;
 
-  context->EveryFrame()->Run([&]() {
+  std::thread video_thread([&] {
+    auto video_context = VideoContext::Create();
+    // TODO exceptions
+    auto window =
+        Window::Create("Pirate Demo", screen_rect, /*sdl_window_flags=*/0);
+    auto graphics = BasicGraphics2D::Create(*window, /*sdl_renderer_flags=*/0);
+    graphics->SetScale(4, 4);
+
+    TextureCache texture_cache(graphics.get());
+    camera.SetGraphics(graphics.get());
+
+    // Load sprites
+    Pirate::SetTexture(texture_cache.Get("piratedemo/pirate0.png"));
+
+    /* clang-format off */
+    video_context->EveryFrame()
+      ->OnReadState([&] {
+        arena.React(&camera);
+      })
+      ->OnDraw([&] {
+        graphics->SetDrawColor({255, 255, 255, engine2::kOpaque})->Clear();
+        camera.Draw();
+        graphics->Present();
+      });
+    /* clang-format on */
+
+    video_context->Run(&state_mutex);
+  });
+
+  // TODO: rename "LogicContext"
+  auto context = engine2::Engine2::Create();
+
+  context->EveryFrame()->Run([&] {
     pirate.PhysicsUpdate();
     arena.Update(pirate.GetVisible());
   });
@@ -145,7 +130,7 @@ int main(int argc, char** argv) {
   context->OnKey("w")
     ->Pressed([&] { pirate.Move({0, -1}); })
     ->Released([&] { pirate.Move({0, 1}); });
-
+  
   context->OnKey("a")
     ->Pressed([&] { pirate.Move({-1, 0}); })
     ->Released([&] { pirate.Move({1, 0}); });
@@ -159,6 +144,8 @@ int main(int argc, char** argv) {
     ->Released([&] { pirate.Move({-1, 0}); });
   /* clang-format on */
 
-  context->Run();
+  context->Run(&state_mutex);
+
+  // TODO SDL_Quit
   return 0;
 }
