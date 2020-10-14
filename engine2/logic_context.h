@@ -1,5 +1,5 @@
-#ifndef ENGINE2_ENGINE2_H_
-#define ENGINE2_ENGINE2_H_
+#ifndef ENGINE2_LOGIC_CONTEXT_H_
+#define ENGINE2_LOGIC_CONTEXT_H_
 
 #include <memory>
 
@@ -12,10 +12,10 @@
 
 namespace engine2 {
 
-class Engine2 {
+class LogicContext {
  public:
   // TODO move to exceptions
-  static std::unique_ptr<Engine2> Create();
+  static std::unique_ptr<LogicContext> Create();
   virtual void Run(StateMutex* state_mutex) = 0;
   virtual void Stop() = 0;
 
@@ -60,9 +60,9 @@ class Engine2 {
   virtual std::unique_ptr<KeyboardEventClause> OnKey(
       const std::string& name) = 0;
 
-  virtual ~Engine2() = default;
+  virtual ~LogicContext() = default;
 };
 
 }  // namespace engine2
 
-#endif  // ENGINE2_ENGINE2_H_
+#endif  // ENGINE2_LOGIC_CONTEXT_H_

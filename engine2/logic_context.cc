@@ -1,15 +1,15 @@
-#include "engine2/engine2.h"
+#include "engine2/logic_context.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
 
-#include "engine2/impl/engine2_impl.h"
+#include "engine2/impl/logic_context_impl.h"
 
 namespace engine2 {
 
 // static
-std::unique_ptr<Engine2> Engine2::Create() {
+std::unique_ptr<LogicContext> LogicContext::Create() {
   if (SDL_Init(SDL_INIT_AUDIO) < 0) {
     return nullptr;
   }
@@ -24,7 +24,7 @@ std::unique_ptr<Engine2> Engine2::Create() {
     return nullptr;
   }
 
-  return std::make_unique<Engine2Impl>();
+  return std::make_unique<LogicContextImpl>();
 }
 
 }  // namespace engine2

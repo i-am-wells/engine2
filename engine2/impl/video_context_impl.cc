@@ -41,7 +41,7 @@ std::unique_ptr<VideoContext::EveryFrameClause> VideoContextImpl::EveryFrame() {
 }
 
 void VideoContextImpl::Run(StateMutex* state_mutex) {
-  // TODO: should this loop work more like the one in Engine2Impl::Run?
+  // TODO: should this loop work more like the one in LogicContextImpl::Run?
   while (true) {
     {
       StateMutex::WaitAndLockResult lock =

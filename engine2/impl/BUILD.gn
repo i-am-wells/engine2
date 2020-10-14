@@ -2,8 +2,8 @@ source_set("impl") {
   sources = [
     "basic_graphics2d.cc",
     "basic_graphics2d.h",
-    "engine2_impl.cc",
-    "engine2_impl.h",
+    "logic_context_impl.cc",
+    "logic_context_impl.h",
     "event_handlers_impl.cc",
     "event_handlers_impl.h",
     "event_handlers.cc",

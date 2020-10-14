@@ -9,7 +9,7 @@
 
 namespace engine2 {
 
-class Engine2Impl;
+class LogicContextImpl;
 
 class EventHandlersImpl : public EventHandlers {
  public:
@@ -19,7 +19,7 @@ class EventHandlersImpl : public EventHandlers {
   void OnKeyUp(const SDL_KeyboardEvent& event) override;
 
  private:
-  friend class Engine2Impl;
+  friend class LogicContextImpl;
 
   QuitCallback quit_callback_;
 

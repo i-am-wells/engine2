@@ -4,9 +4,9 @@
 
 #include "engine2/arena2d.h"
 #include "engine2/camera2d.h"
-#include "engine2/engine2.h"
 #include "engine2/graphics2d.h"
 #include "engine2/impl/basic_graphics2d.h"
+#include "engine2/logic_context.h"
 #include "engine2/physics_object.h"
 #include "engine2/rgba_color.h"
 #include "engine2/state_mutex.h"
@@ -113,8 +113,7 @@ int main(int argc, char** argv) {
     video_context->Run(&state_mutex);
   });
 
-  // TODO: rename "LogicContext"
-  auto context = engine2::Engine2::Create();
+  auto context = engine2::LogicContext::Create();
 
   context->EveryFrame()->Run([&] {
     pirate.PhysicsUpdate();

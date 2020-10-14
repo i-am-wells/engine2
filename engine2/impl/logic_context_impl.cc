@@ -1,4 +1,4 @@
-#include "engine2/impl/engine2_impl.h"
+#include "engine2/impl/logic_context_impl.h"
 
 #include <functional>
 
@@ -13,9 +13,9 @@ void StripKeyboardEvent(Callback callback, const SDL_KeyboardEvent& event) {
   callback();
 }
 
-class EveryFrameCancelable : public Engine2::Cancelable {
+class EveryFrameCancelable : public LogicContext::Cancelable {
  public:
-  EveryFrameCancelable(WeakPointer<Engine2Impl> context, Callback callback)
+  EveryFrameCancelable(WeakPointer<LogicContextImpl> context, Callback callback)
       : context_(std::move(context)), callback_(callback) {}
   void Cancel() override {
     if (!context_)
@@ -34,15 +34,15 @@ class EveryFrameCancelable : public Engine2::Cancelable {
   ~EveryFrameCancelable() override = default;
 
  private:
-  WeakPointer<Engine2Impl> context_;
+  WeakPointer<LogicContextImpl> context_;
   Callback callback_;
 };
 
-class EveryFrameRunClause : public Engine2::RunClause {
+class EveryFrameRunClause : public LogicContext::RunClause {
  public:
-  explicit EveryFrameRunClause(WeakPointer<Engine2Impl> context)
+  explicit EveryFrameRunClause(WeakPointer<LogicContextImpl> context)
       : context_(context) {}
-  std::unique_ptr<Engine2::Cancelable> Run(Callback callback) override {
+  std::unique_ptr<LogicContext::Cancelable> Run(Callback callback) override {
     // TODO: log warning if context_ is null
     if (context_)
       context_->every_frame_callbacks_.push_back(callback);
@@ -52,12 +52,12 @@ class EveryFrameRunClause : public Engine2::RunClause {
   ~EveryFrameRunClause() override = default;
 
  private:
-  WeakPointer<Engine2Impl> context_;
+  WeakPointer<LogicContextImpl> context_;
 };
 
-class KeyboardEventClauseImpl : public Engine2::KeyboardEventClause {
+class KeyboardEventClauseImpl : public LogicContext::KeyboardEventClause {
  public:
-  explicit KeyboardEventClauseImpl(WeakPointer<Engine2Impl> context,
+  explicit KeyboardEventClauseImpl(WeakPointer<LogicContextImpl> context,
                                    SDL_Keycode key_code)
       : context_(std::move(context)), key_code_(key_code) {}
 
@@ -96,22 +96,22 @@ class KeyboardEventClauseImpl : public Engine2::KeyboardEventClause {
     return weak;
   }
 
-  WeakPointer<Engine2Impl> context_;
+  WeakPointer<LogicContextImpl> context_;
   SDL_Keycode key_code_;
   WeakPointer<KeyboardEventClause>::Factory weak_factory_{this};
 };
 
 }  // namespace
 
-Engine2Impl::Engine2Impl() {
+LogicContextImpl::LogicContextImpl() {
   // TODO SDL inits here
 }
 
-Engine2Impl::~Engine2Impl() {
+LogicContextImpl::~LogicContextImpl() {
   // TODO SDL quits here
 }
 
-void Engine2Impl::Run(StateMutex* state_mutex) {
+void LogicContextImpl::Run(StateMutex* state_mutex) {
   if (running_)
     return;
 
@@ -138,16 +138,16 @@ void Engine2Impl::Run(StateMutex* state_mutex) {
   running_ = false;
 }
 
-void Engine2Impl::Stop() {
+void LogicContextImpl::Stop() {
   running_ = false;
 }
 
-void Engine2Impl::RunEveryFrameCallbacks() {
+void LogicContextImpl::RunEveryFrameCallbacks() {
   for (auto& callback : every_frame_callbacks_)
     callback();
 }
 
-void Engine2Impl::HandleSDLEvents() {
+void LogicContextImpl::HandleSDLEvents() {
   static constexpr int kEventBufferSize = 256;
   SDL_Event event_buffer[kEventBufferSize];
 
@@ -167,33 +167,33 @@ void Engine2Impl::HandleSDLEvents() {
   }
 }
 
-WeakPointer<Engine2Impl> Engine2Impl::GetWeakPointer() {
-  WeakPointer<Engine2Impl> weak;
+WeakPointer<LogicContextImpl> LogicContextImpl::GetWeakPointer() {
+  WeakPointer<LogicContextImpl> weak;
   weak_factory_.GetWeakPointer(&weak);
   return weak;
 }
 
-std::unique_ptr<Engine2::RunClause> Engine2Impl::EveryFrame() {
+std::unique_ptr<LogicContext::RunClause> LogicContextImpl::EveryFrame() {
   return std::make_unique<EveryFrameRunClause>(GetWeakPointer());
 }
 
-std::unique_ptr<Engine2::KeyboardEventClause> Engine2Impl::OnKey(
+std::unique_ptr<LogicContext::KeyboardEventClause> LogicContextImpl::OnKey(
     SDL_Keycode key_code) {
   return std::make_unique<KeyboardEventClauseImpl>(GetWeakPointer(), key_code);
 }
 
-std::unique_ptr<Engine2::KeyboardEventClause> Engine2Impl::OnKey(
+std::unique_ptr<LogicContext::KeyboardEventClause> LogicContextImpl::OnKey(
     const std::string& name) {
   return OnKey(SDL_GetKeyFromName(name.c_str()));
 }
 
-void Engine2Impl::SetKeyDownHandler(SDL_Keycode key_code,
-                                    KeyboardCallback callback) {
+void LogicContextImpl::SetKeyDownHandler(SDL_Keycode key_code,
+                                         KeyboardCallback callback) {
   event_handlers_.key_down_.insert_or_assign(key_code, callback);
 }
 
-void Engine2Impl::SetKeyUpHandler(SDL_Keycode key_code,
-                                  KeyboardCallback callback) {
+void LogicContextImpl::SetKeyUpHandler(SDL_Keycode key_code,
+                                       KeyboardCallback callback) {
   event_handlers_.key_up_.insert_or_assign(key_code, callback);
 }
 
