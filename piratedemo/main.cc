@@ -28,45 +28,38 @@ using engine2::TextureCache;
 using engine2::VideoContext;
 using engine2::Window;
 
-class Pirate {
- public:
-  Pirate(Point<> position)
-      : visible_(this), physics_({position, {16, 32}}, /*mass_kg=*/75) {}
-  ~Pirate() = default;
+static constexpr char kPirateTexturePath[] = "piratedemo/pirate0.png";
+static constexpr char kBackgroundTexturePath[] =
+    "piratedemo/ship_horizontal.png";
 
-  void Move(const Point<double>& d) { physics_.velocity += d * 64.; }
+class PhysicsSprite : public Camera2D::Visible {
+ public:
+  PhysicsSprite(Rect<> rect, double mass_kg) : physics_(rect, mass_kg) {}
+
+  void SetTexture(Texture* texture) { texture_ = texture; }
 
   void PhysicsUpdate() { physics_.Update(); }
 
-  class Visible : public Camera2D::Visible {
-   public:
-    Rect<> GetRect() override { return pirate_->physics_.GetRect(); }
-    void OnCameraDraw(Camera2D* camera) override {
-      camera->InWorldCoords()->DrawTexture(*Pirate::texture_, GetRect());
-    }
-    Visible(Pirate* pirate) : pirate_(pirate) {}
-    ~Visible() = default;
-
-   private:
-    Pirate* pirate_;
-  };
-
-  static void SetTexture(Texture* texture) {
-    if (!texture)
-      throw "failed to load texture";
-    texture_ = texture;
+  // implementation for Camera2D::Visible
+  Rect<> GetRect() override { return physics_.GetRect(); }
+  void OnCameraDraw(Camera2D* camera) override {
+    camera->InWorldCoords()->DrawTexture(*texture_, GetRect());
   }
 
-  Visible* GetVisible() { return &visible_; }
-
- private:
-  friend class Visible;
-  Visible visible_;
+ protected:
   PhysicsObject physics_;
-  static Texture* texture_;
+  Texture* texture_ = nullptr;
 };
 
-Texture* Pirate::texture_ = nullptr;
+class Pirate : public PhysicsSprite {
+ public:
+  Pirate(Point<> position)
+      : PhysicsSprite({position, {16, 32}}, /*mass_kg=*/75) {}
+
+  void Move(const Point<double>& d) { physics_.velocity += d * 64.; }
+};
+
+Texture* background = nullptr;
 
 int main(int argc, char** argv) {
   // TODO SDL_Init
@@ -76,17 +69,19 @@ int main(int argc, char** argv) {
 
   Camera2D camera(world_rect, screen_rect);
   Pirate pirate({10, 10});
+  PhysicsSprite background(/*rect=*/{0, 0, 400, 200}, /*mass_kg=*/1);
 
   // TODO should arena have a position?
   Arena2D<Camera2D::Visible, Camera2D> arena(world_rect, 1);
-  arena.AddActive(pirate.GetVisible());
+  arena.AddActive(&pirate);
+  arena.AddActive(&background);
   arena.AddReactive(&camera);
 
   StateMutex state_mutex;
 
   std::thread video_thread([&] {
     auto video_context = VideoContext::Create();
-    // TODO exceptions
+    // TODO handle exceptions?
     auto window =
         Window::Create("Pirate Demo", screen_rect, /*sdl_window_flags=*/0);
     auto graphics = BasicGraphics2D::Create(*window, /*sdl_renderer_flags=*/0);
@@ -96,7 +91,8 @@ int main(int argc, char** argv) {
     camera.SetGraphics(graphics.get());
 
     // Load sprites
-    Pirate::SetTexture(texture_cache.Get("piratedemo/pirate0.png"));
+    pirate.SetTexture(texture_cache.Get(kPirateTexturePath));
+    background.SetTexture(texture_cache.Get(kBackgroundTexturePath));
 
     /* clang-format off */
     video_context->EveryFrame()
@@ -117,7 +113,7 @@ int main(int argc, char** argv) {
 
   context->EveryFrame()->Run([&] {
     pirate.PhysicsUpdate();
-    arena.Update(pirate.GetVisible());
+    arena.Update(&pirate);
   });
 
   context->EnableKeyRepeat(false);
