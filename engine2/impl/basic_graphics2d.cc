@@ -38,6 +38,11 @@ BasicGraphics2D::~BasicGraphics2D() {
     SDL_DestroyRenderer(renderer_);
 }
 
+Graphics2D* BasicGraphics2D::SetScale(float scale) {
+  SetScale(scale, scale);
+  return this;
+}
+
 Graphics2D* BasicGraphics2D::SetScale(float x_scale, float y_scale) {
   SDL_RenderSetScale(renderer_, x_scale, y_scale);
   return this;

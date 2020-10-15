@@ -5,6 +5,11 @@ namespace engine2 {
 OffsetGraphics2D::OffsetGraphics2D(Graphics2D* graphics, Point<>* offset)
     : graphics_(graphics), offset_(offset) {}
 
+Graphics2D* OffsetGraphics2D::SetScale(float scale) {
+  graphics_->SetScale(scale);
+  return this;
+}
+
 Graphics2D* OffsetGraphics2D::SetScale(float x_scale, float y_scale) {
   graphics_->SetScale(x_scale, y_scale);
   return this;

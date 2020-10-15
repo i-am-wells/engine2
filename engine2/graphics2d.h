@@ -15,6 +15,7 @@ class Graphics2D {
   virtual ~Graphics2D() = default;
 
   // Methods related to canvas size and drawing scale
+  virtual Graphics2D* SetScale(float scale) = 0;
   virtual Graphics2D* SetScale(float x_scale, float y_scale) = 0;
   virtual Graphics2D* SetLogicalSize(int width, int height) = 0;
   virtual Rect<> GetLogicalSize() = 0;

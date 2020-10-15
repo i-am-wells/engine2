@@ -31,6 +31,7 @@ class BasicGraphics2D : public Graphics2D {
   // Most methods return *this so calls can be chained.
 
   // Methods related to canvas size and drawing scale
+  Graphics2D* SetScale(float scale) override;
   Graphics2D* SetScale(float x_scale, float y_scale) override;
   Graphics2D* SetLogicalSize(int width, int height) override;
   Rect<> GetLogicalSize() override;

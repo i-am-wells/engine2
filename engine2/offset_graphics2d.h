@@ -11,6 +11,7 @@ class OffsetGraphics2D : public Graphics2D {
   ~OffsetGraphics2D() override = default;
   void SetUnderlyingGraphics2D(Graphics2D* graphics) { graphics_ = graphics; }
 
+  Graphics2D* SetScale(float scale) override;
   Graphics2D* SetScale(float x_scale, float y_scale) override;
   Graphics2D* SetLogicalSize(int width, int height) override;
   Rect<> GetLogicalSize() override;
