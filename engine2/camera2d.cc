@@ -18,6 +18,10 @@ void Camera2D::SetGraphics(Graphics2D* graphics) {
   view_graphics_.SetUnderlyingGraphics2D(graphics);
 }
 
+void Camera2D::Follow(Visible* object) {
+  follow_object_ = object;
+}
+
 void Camera2D::Draw() {
   std::sort(objects_.begin(), objects_.end(),
             [](Visible* a, Visible* b) { return *a < *b; });
@@ -25,6 +29,15 @@ void Camera2D::Draw() {
     object->OnCameraDraw(this);
   }
   objects_.clear();
+}
+
+Rect<> Camera2D::GetRect() {
+  if (follow_object_) {
+    Rect follow_rect = follow_object_->GetRect();
+    world_rect_.pos =
+        follow_rect.pos - (screen_rect_.size - follow_rect.size) / 2l;
+  }
+  return world_rect_;
 }
 
 void Camera2D::OnOverlap(Visible* object) {

@@ -30,8 +30,8 @@ class Camera2D {
     virtual bool operator<(Visible& other);
   };
 
-  // TODO
-  // void Follow(Visible* object);
+  // Remain centered on |object|.
+  void Follow(Visible* object);
 
   Graphics2D* InViewCoords() { return &view_graphics_; }
   Graphics2D* InWorldCoords() { return &world_graphics_; }
@@ -40,11 +40,12 @@ class Camera2D {
   void Draw();
 
   // Needed for RectSearchTree.
-  Rect<> GetRect() { return world_rect_; }
+  Rect<> GetRect();
   void OnOverlap(Visible* object);
   void OnTouch(Visible* object);
 
  private:
+  Visible* follow_object_ = nullptr;
   Rect<> world_rect_;
   Rect<> screen_rect_;
   OffsetGraphics2D view_graphics_;

@@ -65,9 +65,10 @@ int main(int argc, char** argv) {
   // TODO SDL_Init
 
   Rect<> world_rect{0, 0, 1000, 1000};
-  Rect<> screen_rect{0, 0, 800, 600};
+  Point<> screen_size{200, 150};
+  int64_t scale = 4l;
 
-  Camera2D camera(world_rect, screen_rect);
+  Camera2D camera(world_rect, {Point<>{0, 0}, screen_size});
   Pirate pirate({10, 10});
   PhysicsSprite background(/*rect=*/{0, 0, 400, 200}, /*mass_kg=*/1);
 
@@ -77,15 +78,18 @@ int main(int argc, char** argv) {
   arena.AddActive(&background);
   arena.AddReactive(&camera);
 
+  camera.Follow(&pirate);
+
   StateMutex state_mutex;
 
   std::thread video_thread([&] {
     auto video_context = VideoContext::Create();
     // TODO handle exceptions?
     auto window =
-        Window::Create("Pirate Demo", screen_rect, /*sdl_window_flags=*/0);
+        Window::Create("Pirate Demo", {Point<>{0, 0}, screen_size * scale},
+                       /*sdl_window_flags=*/0);
     auto graphics = BasicGraphics2D::Create(*window, /*sdl_renderer_flags=*/0);
-    graphics->SetScale(4, 4);
+    graphics->SetScale(scale);
 
     TextureCache texture_cache(graphics.get());
     camera.SetGraphics(graphics.get());
