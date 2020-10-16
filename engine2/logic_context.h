@@ -34,9 +34,13 @@ class LogicContext {
   // API here!
   // Creates a RunClause for running callbacks every frame.
   virtual std::unique_ptr<RunClause> EveryFrame() = 0;
+
+  virtual std::unique_ptr<RunClause> Every(double num,
+                                           Timing::TimeUnit unit) = 0;
+  virtual std::unique_ptr<RunClause> After(double num,
+                                           Timing::TimeUnit unit) = 0;
+
   /*
-  RunClause* Every(double num, Timing::TimeUnit unit);
-  RunClause* After(double num, Timing::TimeUnit unit);
   RunClause* After(Condition condition);
   RunClause* Whenever(Condition condition);
   RunClause* Until(Condition condition);

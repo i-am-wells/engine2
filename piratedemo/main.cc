@@ -12,6 +12,7 @@
 #include "engine2/state_mutex.h"
 #include "engine2/texture.h"
 #include "engine2/texture_cache.h"
+#include "engine2/timing.h"
 #include "engine2/video_context.h"
 #include "engine2/window.h"
 
@@ -25,6 +26,7 @@ using engine2::Rect;
 using engine2::StateMutex;
 using engine2::Texture;
 using engine2::TextureCache;
+using engine2::Timing;
 using engine2::VideoContext;
 using engine2::Window;
 
@@ -115,7 +117,9 @@ int main(int argc, char** argv) {
 
   auto context = engine2::LogicContext::Create();
 
+  int frame_count = 0;
   context->EveryFrame()->Run([&] {
+    ++frame_count;
     pirate.PhysicsUpdate();
     arena.Update(&pirate);
   });
@@ -123,6 +127,20 @@ int main(int argc, char** argv) {
   context->EnableKeyRepeat(false);
 
   /* clang-format off */
+  context->After(2, Timing::TimeUnit::kSeconds)->Run([] {
+    std::cerr << "ARRRRRRRRRR\n";
+  });
+  
+  auto yohoho = context->Every(500, Timing::TimeUnit::kMilliseconds)->Run([] {
+    std::cerr << "yo ho ho\n";
+  });
+
+  context->After(4, Timing::TimeUnit::kSeconds)->Run([&] {
+    std::cerr << "four seconds\n";
+    yohoho->Cancel();
+  });
+
+
   context->OnKey("Escape")
     ->Pressed([&] { context->Stop(); });
 

@@ -5,10 +5,34 @@
 #include <thread>
 
 namespace engine2 {
+namespace {
+
+constexpr int kSecondsScale = 1000;
+constexpr int kMinutesScale = kSecondsScale * 60;
+constexpr int kHoursScale = kMinutesScale * 60;
+constexpr int kDaysScale = kHoursScale * 24;
+
+}  // namespace
 
 // static
 uint32_t Timing::GetTicks() {
   return SDL_GetTicks();
+}
+
+// static
+uint32_t Timing::ToTicks(double num, TimeUnit unit) {
+  switch (unit) {
+    case TimeUnit::kMilliseconds:
+      return num;
+    case TimeUnit::kSeconds:
+      return num * kSecondsScale;
+    case TimeUnit::kMinutes:
+      return num * kMinutesScale;
+    case TimeUnit::kHours:
+      return num * kHoursScale;
+    case TimeUnit::kDays:
+      return num * kDaysScale;
+  }
 }
 
 // static

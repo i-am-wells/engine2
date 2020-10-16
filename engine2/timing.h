@@ -10,14 +10,9 @@ class Timing {
   static uint32_t GetTicks();
   static void Delay(uint32_t milliseconds);
 
-  enum class TimeUnit {
-    kMicroseconds,
-    kMilliseconds,
-    kSeconds,
-    kMinutes,
-    kHours,
-    kDays
-  };
+  enum class TimeUnit { kMilliseconds, kSeconds, kMinutes, kHours, kDays };
+
+  static uint32_t ToTicks(double num, TimeUnit unit);
 
   class FramerateRegulator {
    public:
