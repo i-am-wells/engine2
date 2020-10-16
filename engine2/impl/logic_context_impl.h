@@ -33,8 +33,9 @@ class LogicContextImpl : public LogicContext {
   std::unique_ptr<KeyboardEventClause> OnKey(SDL_Keycode key_code) override;
   std::unique_ptr<KeyboardEventClause> OnKey(const std::string& name) override;
 
-  // TODO every frame callbacks methods
-  std::vector<Callback> every_frame_callbacks_;
+  uint32_t AddEveryFrameCallback(Callback callback);
+  void CancelEveryFrameCallback(uint32_t id);
+
   uint32_t ScheduleCallback(Callback callback,
                             double num,
                             Timing::TimeUnit unit,
@@ -44,11 +45,12 @@ class LogicContextImpl : public LogicContext {
   void SetKeyUpHandler(SDL_Keycode key_code, KeyboardCallback callback);
 
  private:
-  void RunEveryFrameCallbacks();
   void HandleSDLEvents();
 
   WeakPointer<LogicContextImpl> GetWeakPointer();
 
+  std::vector<CallbackWithId> every_frame_callbacks_;
+  uint32_t next_every_frame_callback_id_ = 0;
   CallbackQueue callback_queue_;
   EventHandlersImpl event_handlers_;
   // TODO make configurable

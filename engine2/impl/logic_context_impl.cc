@@ -14,34 +14,20 @@ void StripKeyboardEvent(Callback callback, const SDL_KeyboardEvent& event) {
   callback();
 }
 
-// TODO test! also maybe define operator== instead
-bool Equal(const Callback& lhs, const Callback& rhs) {
-  return lhs.target<void (*)()>() == rhs.target<void (*)()>();
-}
-
 class EveryFrameCancelable : public LogicContext::Cancelable {
  public:
-  EveryFrameCancelable(WeakPointer<LogicContextImpl> context, Callback callback)
-      : context_(std::move(context)), callback_(callback) {}
+  EveryFrameCancelable(WeakPointer<LogicContextImpl> context, uint32_t id)
+      : context_(std::move(context)), id_(id) {}
   void Cancel() override {
     if (!context_)
       return;
-
-    int i = 0;
-    for (auto callback : context_->every_frame_callbacks_) {
-      if (Equal(callback, callback_)) {
-        context_->every_frame_callbacks_.erase(
-            context_->every_frame_callbacks_.begin() + i);
-        return;
-      }
-      ++i;
-    }
+    context_->CancelEveryFrameCallback(id_);
   }
   ~EveryFrameCancelable() override = default;
 
  private:
   WeakPointer<LogicContextImpl> context_;
-  Callback callback_;
+  uint32_t id_;
 };
 
 class EveryFrameRunClause : public LogicContext::RunClause {
@@ -49,11 +35,11 @@ class EveryFrameRunClause : public LogicContext::RunClause {
   explicit EveryFrameRunClause(WeakPointer<LogicContextImpl> context)
       : context_(std::move(context)) {}
   std::unique_ptr<LogicContext::Cancelable> Run(Callback callback) override {
-    // TODO: log warning if context_ is null
+    uint32_t id = 0;
     if (context_)
-      context_->every_frame_callbacks_.push_back(callback);
+      id = context_->AddEveryFrameCallback(std::move(callback));
 
-    return std::make_unique<EveryFrameCancelable>(context_, callback);
+    return std::make_unique<EveryFrameCancelable>(context_, id);
   }
   ~EveryFrameRunClause() override = default;
 
@@ -166,8 +152,13 @@ void LogicContextImpl::Run(StateMutex* state_mutex) {
     {
       auto lock = std::move(state_mutex->Lock());
 
-      RunEveryFrameCallbacks();
+      // Run all EveryFrame() callbacks
+      for (auto& callback : every_frame_callbacks_)
+        callback.callback();
+
+      // Run all timed callbacks
       callback_queue_.RunCurrent();
+
       HandleSDLEvents();
 
       state_mutex->SendSignal(std::move(lock), StateMutex::Signal::kGo);
@@ -181,11 +172,6 @@ void LogicContextImpl::Run(StateMutex* state_mutex) {
 
 void LogicContextImpl::Stop() {
   running_ = false;
-}
-
-void LogicContextImpl::RunEveryFrameCallbacks() {
-  for (auto& callback : every_frame_callbacks_)
-    callback();
 }
 
 void LogicContextImpl::HandleSDLEvents() {
@@ -240,6 +226,22 @@ std::unique_ptr<LogicContext::KeyboardEventClause> LogicContextImpl::OnKey(
 std::unique_ptr<LogicContext::KeyboardEventClause> LogicContextImpl::OnKey(
     const std::string& name) {
   return OnKey(SDL_GetKeyFromName(name.c_str()));
+}
+
+uint32_t LogicContextImpl::AddEveryFrameCallback(Callback callback) {
+  every_frame_callbacks_.push_back({callback, ++next_every_frame_callback_id_});
+  return next_every_frame_callback_id_;
+}
+
+void LogicContextImpl::CancelEveryFrameCallback(uint32_t id) {
+  int i = 0;
+  for (auto& callback : every_frame_callbacks_) {
+    if (callback.id == id) {
+      every_frame_callbacks_.erase(every_frame_callbacks_.begin() + i);
+      return;
+    }
+    ++i;
+  }
 }
 
 uint32_t LogicContextImpl::ScheduleCallback(Callback callback,
