@@ -7,6 +7,7 @@
 #include "engine2/physics_object_test.h"
 #include "engine2/rect_test.h"
 #include "engine2/texture_cache_test.h"
+#include "engine2/vec_test.h"
 
 namespace engine2 {
 namespace test {
@@ -20,7 +21,8 @@ void RunAllTests() {
                              RectSearchTreeTest().RunTests() +
                              Arena2DTest().RunTests() +
                              TextureCacheTest().RunTests() +
-                             PhysicsObjectTest().RunTests();
+                             PhysicsObjectTest().RunTests() +
+                             VecTest().RunTests();
   /* clang-format on */
   std::cerr << "\nTOTAL: " << result.passed << " passed, " << result.failed
             << " failed\n";

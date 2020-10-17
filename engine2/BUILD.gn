@@ -27,6 +27,7 @@ source_set("engine2") {
     "timing.h",
     "timing.cc",
     "types.h",
+    "vec.h",
     "video_context.cc",
     "video_context.h",
     "window.h",
@@ -62,6 +63,8 @@ source_set("tests") {
     "rect_test.h",
     "texture_cache_test.cc",
     "texture_cache_test.h",
+    "vec_test.cc",
+    "vec_test.h",
   ] 
   deps = [ 
     ":engine2",
