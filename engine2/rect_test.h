@@ -11,7 +11,6 @@ class RectTest : public TestGroup {
   void TestConstruct();
   void TestTouches();
   void TestOverlaps();
-  void TestCorner();
   void TestContainsPoint();
   void TestContainsRect();
   void TestGetOverlap();

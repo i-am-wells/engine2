@@ -3,45 +3,13 @@
 
 #include <cstdint>
 
+#include "engine2/vec.h"
+
 namespace engine2 {
 
-template <typename T = int64_t>
-struct Point {
-  union {
-    T p[2];
-    struct {
-      T x, y;
-    };
-  };
-
-  T& operator[](int i);
-  const T& operator[](int i) const;
-
-  bool operator==(const Point& other) const;
-  Point& operator+=(const Point& other);
-  Point& operator-=(const Point& other);
-};
-
-template <typename T>
-Point<T> operator+(const Point<T>& a, const Point<T>& b);
-
-template <typename T>
-Point<T> operator-(const Point<T>& a, const Point<T>& b);
-
-template <typename T>
-Point<T> operator*(const Point<T>& a, const Point<T>& b);
-
-template <typename T>
-Point<T> operator*(const Point<T>& p, const T& scalar);
-
-template <typename T>
-Point<T> operator/(const Point<T>& a, const Point<T>& b);
-
-template <typename T>
-Point<T> operator/(const Point<T>& p, const T& scalar);
+template <typename Scalar = int64_t, int N = 2>
+using Point = Vec<Scalar, N>;
 
 }  // namespace engine2
-
-#include "engine2/point.cc"
 
 #endif  // ENGINE2_POINT_H_

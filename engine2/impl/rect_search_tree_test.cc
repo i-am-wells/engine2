@@ -30,8 +30,8 @@ class SomeObject : public RectSearchTree<SomeObject>::RectObject {
 };
 
 std::string RectToString(const Rect<>& rect) {
-  return BuildString("{", rect.x, ", ", rect.y, ", ", rect.w, ", ", rect.h,
-                     "}");
+  return BuildString("{", rect.x(), ", ", rect.y(), ", ", rect.w(), ", ",
+                     rect.h(), "}");
 }
 
 }  // namespace

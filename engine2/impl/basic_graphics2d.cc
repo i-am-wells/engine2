@@ -8,9 +8,11 @@
 namespace engine2 {
 namespace {
 
-SDL_Rect ToSDLRect(const Rect<>& rect) {
-  return {static_cast<int>(rect.x), static_cast<int>(rect.y),
-          static_cast<int>(rect.w), static_cast<int>(rect.h)};
+template <typename T>
+SDL_Rect ToSDLRect(const Rect<T, 2>& rect) {
+  // TODO remove static casts and instead make Graphics2D API use ints
+  return {static_cast<int>(rect.x()), static_cast<int>(rect.y()),
+          static_cast<int>(rect.w()), static_cast<int>(rect.h())};
 }
 
 }  // namespace
@@ -49,12 +51,12 @@ Graphics2D* BasicGraphics2D::SetScale(float x_scale, float y_scale) {
 }
 
 Graphics2D* BasicGraphics2D::DrawPoint(const Point<>& p) {
-  SDL_RenderDrawPoint(renderer_, p.x, p.y);
+  SDL_RenderDrawPoint(renderer_, p.x(), p.y());
   return this;
 }
 
 Graphics2D* BasicGraphics2D::DrawLine(const Point<>& p0, const Point<>& p1) {
-  SDL_RenderDrawLine(renderer_, p0.x, p0.y, p1.x, p1.y);
+  SDL_RenderDrawLine(renderer_, p0.x(), p0.y(), p1.x(), p1.y());
   return this;
 }
 

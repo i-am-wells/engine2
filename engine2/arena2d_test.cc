@@ -68,7 +68,7 @@ void Arena2DTest::TestMoveActive() {
   arena.ReactAll();
   EXPECT_EQ(0, reactive.overlap_count);
 
-  active.rect.pos = {6, 6};
+  active.rect.pos = {{6, 6}};
   arena.ReactAll();
   EXPECT_EQ(0, reactive.overlap_count);
 

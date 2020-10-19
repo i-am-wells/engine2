@@ -6,16 +6,22 @@ namespace engine2 {
 namespace test {
 
 void VecTest::TestCompile() {
-  Vec<int, 1> a;
+  Vec<int, 1> a{};
   Vec<int, 2> b{4, 5};
   a[0] = 1;
-  Vec3<int> c{6, 7, 8};
+  Vec<int, 3> c{6, 7, 8};
+}
+
+void VecTest::TestDefaultZeroInit() {
+  Vec<int, 10> v{};
+  for (int i = 0; i < 10; ++i)
+    EXPECT_EQ(0, v[i]);
 }
 
 void VecTest::TestCompare() {
-  Vec3<double> a{4, 5};
-  Vec3<double> b{4, 5};
-  Vec3<double> c{6, 5};
+  Vec<double, 3> a{4, 5, 6};
+  Vec<double, 3> b{4, 5, 6};
+  Vec<double, 3> c{6, 5, 4};
   EXPECT_TRUE(a == b);
   EXPECT_TRUE(b == a);
   EXPECT_FALSE(a == c);
@@ -23,20 +29,20 @@ void VecTest::TestCompare() {
 }
 
 void VecTest::TestAdd() {
-  Vec2<int> a{4, 5}, b{6, 7};
+  Vec<int, 2> a{4, 5}, b{6, 7};
   a += b;
-  EXPECT_EQ(4 + 6, a.x);
-  EXPECT_EQ(5 + 7, a.y);
-  EXPECT_EQ(6, b.x);
-  EXPECT_EQ(7, b.y);
+  EXPECT_EQ(4 + 6, a.x());
+  EXPECT_EQ(5 + 7, a.y());
+  EXPECT_EQ(6, b.x());
+  EXPECT_EQ(7, b.y());
 
-  Vec2<int> c = a + Vec2<int>{10, 11};
-  EXPECT_EQ(4 + 6 + 10, c.x);
-  EXPECT_EQ(5 + 7 + 11, c.y);
+  Vec<int, 2> c = a + Vec<int, 2>{10, 11};
+  EXPECT_EQ(4 + 6 + 10, c.x());
+  EXPECT_EQ(5 + 7 + 11, c.y());
 
   a += 9;
-  EXPECT_EQ(4 + 6 + 9, a.x);
-  EXPECT_EQ(5 + 7 + 9, a.y);
+  EXPECT_EQ(4 + 6 + 9, a.x());
+  EXPECT_EQ(5 + 7 + 9, a.y());
 }
 
 VecTest::VecTest()
@@ -44,6 +50,7 @@ VecTest::VecTest()
                 {
                     std::bind(&VecTest::TestCompile, this),
                     std::bind(&VecTest::TestCompare, this),
+                    std::bind(&VecTest::TestDefaultZeroInit, this),
                     std::bind(&VecTest::TestAdd, this),
                 }) {}
 

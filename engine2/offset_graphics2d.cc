@@ -62,7 +62,7 @@ Graphics2D* OffsetGraphics2D::DrawTexture(const Texture& texture,
 Graphics2D* OffsetGraphics2D::DrawTexture(const Texture& texture,
                                           const Rect<>& src,
                                           const Rect<>& dest) {
-  graphics_->DrawTexture(texture, {src.pos, src.size}, OffsetRect(dest));
+  graphics_->DrawTexture(texture, src, OffsetRect(dest));
   return this;
 }
 

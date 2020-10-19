@@ -4,8 +4,10 @@
 
 namespace engine2 {
 
+// TODO support N dimensions
+
 bool Camera2D::Visible::operator<(Visible& other) {
-  return GetRect().y < other.GetRect().y;
+  return GetRect().y() < other.GetRect().y();
 }
 
 Camera2D::Camera2D(Rect<> world_rect, Rect<> screen_rect, Graphics2D* graphics)

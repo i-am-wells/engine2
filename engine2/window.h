@@ -17,7 +17,7 @@ class Window {
  public:
   // Create a window. Returns a null unique_ptr if something went wrong.
   static std::unique_ptr<Window> Create(const std::string& title,
-                                        const Rect<>& rect,
+                                        const Rect<int, 2>& rect,
                                         const SDLWindowFlags& flags);
   // The destructor calls SDL_DestroyWindow(), so if you use this constructor,
   // don't destroy the window yourself.

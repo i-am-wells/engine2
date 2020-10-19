@@ -15,7 +15,6 @@ source_set("engine2") {
     "offset_graphics2d.cc",
     "offset_graphics2d.h",
     "point.h",
-    "physics_object.cc",
     "physics_object.h",
     "rect.h",
     "state_mutex.cc",

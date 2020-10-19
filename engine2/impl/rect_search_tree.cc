@@ -2,6 +2,8 @@
 
 namespace engine2 {
 
+// TODO support N dimensions!
+
 // static
 template <typename Rep>
 std::unique_ptr<RectSearchTree<Rep>> RectSearchTree<Rep>::Create(
@@ -13,14 +15,14 @@ std::unique_ptr<RectSearchTree<Rep>> RectSearchTree<Rep>::Create(
   auto tree =
       std::unique_ptr<RectSearchTree<Rep>>(new RectSearchTree<Rep>(rect));
   Rect<> child_rect_1, child_rect_2;
-  if (rect.w < rect.h) {
+  if (rect.w() < rect.h()) {
     // Horizontal split:
     // +----+----+
     // |    |    |
     // +----+----+
-    child_rect_1 = {rect.x, rect.y, rect.w / 2, rect.h};
-    child_rect_2 = {rect.x + child_rect_1.w, rect.y, rect.w - child_rect_1.w,
-                    rect.h};
+    child_rect_1 = {rect.x(), rect.y(), rect.w() / 2, rect.h()};
+    child_rect_2 = {rect.x() + child_rect_1.w(), rect.y(),
+                    rect.w() - child_rect_1.w(), rect.h()};
   } else {
     // Vertical split:
     // +----+
@@ -28,9 +30,9 @@ std::unique_ptr<RectSearchTree<Rep>> RectSearchTree<Rep>::Create(
     // +----+
     // |    |
     // +----+
-    child_rect_1 = {rect.x, rect.y, rect.w, rect.h / 2};
-    child_rect_2 = {rect.x, rect.y + child_rect_1.h, rect.w,
-                    rect.h - child_rect_1.h};
+    child_rect_1 = {rect.x(), rect.y(), rect.w(), rect.h() / 2};
+    child_rect_2 = {rect.x(), rect.y() + child_rect_1.h(), rect.w(),
+                    rect.h() - child_rect_1.h()};
   }
 
   --tree_depth;
@@ -114,11 +116,11 @@ RectSearchTree<Rep>* RectSearchTree<Rep>::Find(const Rect<>& rect) {
 
   // Add one to each dimension so the rect is stored in the next node up if it
   // is near a boundary. This allows OnTouch() to work across node boundaries.
-  if (rect.w < rect_.w)
-    ++rect_copy.w;
+  if (rect.w() < rect_.w())
+    ++rect_copy.w();
 
-  if (rect.h < rect_.h)
-    ++rect_copy.h;
+  if (rect.h() < rect_.h())
+    ++rect_copy.h();
 
   return FindInternal(rect_copy);
 }

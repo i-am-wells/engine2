@@ -10,6 +10,8 @@
 
 namespace engine2 {
 
+// TODO Rect<int, 2>
+
 class Graphics2D {
  public:
   virtual ~Graphics2D() = default;

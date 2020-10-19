@@ -1,11 +1,31 @@
 #ifndef ENGINE2_VEC_H_
 #define ENGINE2_VEC_H_
 
+#include <initializer_list>
+
 namespace engine2 {
 
 template <typename Scalar, int N>
 struct Vec {
   Scalar value[N];
+
+  // TODO static asserts
+  Scalar& x() { return value[0]; }
+  const Scalar& x() const { return value[0]; }
+  Scalar& y() { return value[1]; }
+  const Scalar& y() const { return value[1]; }
+  Scalar& z() { return value[2]; }
+  const Scalar& z() const { return value[2]; }
+  Scalar& a() { return value[3]; }
+  const Scalar& a() const { return value[3]; }
+
+  template <typename OtherScalar>
+  Vec<OtherScalar, N> ConvertTo() const {
+    Vec<OtherScalar, N> result;
+    for (int i = 0; i < N; ++i)
+      result[i] = value[i];
+    return result;
+  }
 
   Scalar& operator[](int i) { return value[i]; }
   const Scalar& operator[](int i) const { return value[i]; }
@@ -139,116 +159,6 @@ Vec<Scalar, N> operator/(Scalar l, const Vec<Scalar, N>& r) {
     result[i] = l / r[i];
   return result;
 }
-
-#define VEC_SPECIAL_BEGIN(name, dim) \
-  template <typename Scalar>         \
-  struct name {                      \
-    union {                          \
-      Vec<Scalar, dim> value;        \
-      struct {
-// Note: Named fields go here!
-#define VEC_SPECIAL_END(name)                                            \
-  }                                                                      \
-  ;                                                                      \
-  }                                                                      \
-  ;                                                                      \
-  bool operator==(const name& other) { return value == other.value; }    \
-  name operator-() const { return -value; }                              \
-  name& operator+=(const name& other) {                                  \
-    value += other.value;                                                \
-    return *this;                                                        \
-  }                                                                      \
-  name& operator-=(const name& other) {                                  \
-    value -= other.value;                                                \
-    return *this;                                                        \
-  }                                                                      \
-  name& operator*=(const name& other) {                                  \
-    value *= other.value;                                                \
-    return *this;                                                        \
-  }                                                                      \
-  name& operator/=(const name& other) {                                  \
-    value /= other.value;                                                \
-    return *this;                                                        \
-  }                                                                      \
-  name& operator+=(Scalar scalar) {                                      \
-    value += scalar;                                                     \
-    return *this;                                                        \
-  }                                                                      \
-  name& operator-=(Scalar scalar) {                                      \
-    value -= scalar;                                                     \
-    return *this;                                                        \
-  }                                                                      \
-  name& operator*=(Scalar scalar) {                                      \
-    value *= scalar;                                                     \
-    return *this;                                                        \
-  }                                                                      \
-  name& operator/=(Scalar scalar) {                                      \
-    value /= scalar;                                                     \
-    return *this;                                                        \
-  }                                                                      \
-  }                                                                      \
-  ;                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator+(const name<Scalar>& l, const name<Scalar>& r) { \
-    return {l.value + r.value};                                          \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator-(const name<Scalar>& l, const name<Scalar>& r) { \
-    return {l.value - r.value};                                          \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator*(const name<Scalar>& l, const name<Scalar>& r) { \
-    return {l.value * r.value};                                          \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator/(const name<Scalar>& l, const name<Scalar>& r) { \
-    return {l.value / r.value};                                          \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator+(const name<Scalar>& l, Scalar r) {              \
-    return {l.value + r};                                                \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator-(const name<Scalar>& l, Scalar r) {              \
-    return {l.value - r};                                                \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator*(const name<Scalar>& l, Scalar r) {              \
-    return {l.value * r};                                                \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator/(const name<Scalar>& l, Scalar r) {              \
-    return {l.value / r};                                                \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator+(Scalar l, const name<Scalar>& r) {              \
-    return {l + r.value};                                                \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator-(Scalar l, const name<Scalar>& r) {              \
-    return {l - r.value};                                                \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator*(Scalar l, const name<Scalar>& r) {              \
-    return {l * r.value};                                                \
-  }                                                                      \
-  template <typename Scalar>                                             \
-  name<Scalar> operator/(Scalar l, const name<Scalar>& r) {              \
-    return {l / r.value};                                                \
-  }
-
-// Define Vec2, Vec3, and Vec4
-VEC_SPECIAL_BEGIN(Vec2, 2)
-Scalar x, y;
-VEC_SPECIAL_END(Vec2)
-
-VEC_SPECIAL_BEGIN(Vec3, 3)
-Scalar x, y, z;
-VEC_SPECIAL_END(Vec3)
-
-VEC_SPECIAL_BEGIN(Vec4, 4)
-Scalar x, y, z, a;
-VEC_SPECIAL_END(Vec4)
 
 }  // namespace engine2
 

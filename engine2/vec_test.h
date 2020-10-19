@@ -9,6 +9,7 @@ namespace test {
 class VecTest : public TestGroup {
  public:
   void TestCompile();
+  void TestDefaultZeroInit();
   void TestCompare();
   void TestAdd();
   void TestSubtract();
