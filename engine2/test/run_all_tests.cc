@@ -1,6 +1,6 @@
 #include <functional>
 
-#include "engine2/arena2d_test.h"
+#include "engine2/arena_test.h"
 #include "engine2/base/list_test.h"
 #include "engine2/impl/rect_search_tree_test.h"
 #include "engine2/memory/weak_pointer_test.h"
@@ -19,7 +19,7 @@ void RunAllTests() {
                              ListTest().RunTests() +
                              RectTest().RunTests() +
                              RectSearchTreeTest().RunTests() +
-                             Arena2DTest().RunTests() +
+                             ArenaTest().RunTests() +
                              TextureCacheTest().RunTests() +
                              PhysicsObjectTest().RunTests() +
                              VecTest().RunTests();

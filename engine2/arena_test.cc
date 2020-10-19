@@ -1,5 +1,5 @@
-#include "engine2/arena2d_test.h"
-#include "engine2/arena2d.h"
+#include "engine2/arena.h"
+#include "engine2/arena_test.h"
 #include "engine2/test/assert_macros.h"
 
 namespace engine2 {
@@ -8,14 +8,14 @@ namespace {
 
 class SomeActive {
  public:
-  SomeActive(Rect<> rect) : rect(rect) {}
-  Rect<> GetRect() const { return rect; }
-  Rect<> rect;
+  SomeActive(Rect<int64_t, 2> rect) : rect(rect) {}
+  Rect<int64_t, 2> GetRect() const { return rect; }
+  Rect<int64_t, 2> rect;
 };
 
 class SomeReactive : public SomeActive {
  public:
-  SomeReactive(Rect<> rect) : SomeActive(rect) {}
+  SomeReactive(Rect<int64_t, 2> rect) : SomeActive(rect) {}
 
   void OnOverlap(SomeActive* other) {
     ++overlap_count;
@@ -34,13 +34,13 @@ class SomeReactive : public SomeActive {
 
 }  // namespace
 
-void Arena2DTest::TestReact() {
+void ArenaTest::TestReact() {
   SomeActive active1({10, 10, 5, 5});
   SomeActive active2({20, 10, 5, 5});
   SomeReactive reactive1({10, 15, 5, 5});  // touches active1
   SomeReactive reactive2({12, 10, 8, 5});  // overlaps active1, touches active2
 
-  Arena2D<SomeActive, SomeReactive> arena({0, 0, 40, 40}, 1);
+  Arena<SomeActive, SomeReactive, 2> arena({0, 0, 40, 40}, 1);
   arena.AddActive(&active1);
   arena.AddActive(&active2);
   arena.AddReactive(&reactive1);
@@ -58,8 +58,8 @@ void Arena2DTest::TestReact() {
   EXPECT_EQ(&active2, reactive2.touching);
 }
 
-void Arena2DTest::TestMoveActive() {
-  Arena2D<SomeActive, SomeReactive> arena({0, 0, 10, 10}, 2);
+void ArenaTest::TestMoveActive() {
+  Arena<SomeActive, SomeReactive, 2> arena({0, 0, 10, 10}, 2);
   SomeActive active({2, 2, 2, 2});
   arena.AddActive(&active);
   SomeReactive reactive({7, 7, 2, 2});
@@ -77,11 +77,11 @@ void Arena2DTest::TestMoveActive() {
   EXPECT_EQ(1, reactive.overlap_count);
 }
 
-Arena2DTest::Arena2DTest()
-    : TestGroup("Arena2DTest",
+ArenaTest::ArenaTest()
+    : TestGroup("ArenaTest",
                 {
-                    std::bind(&Arena2DTest::TestReact, this),
-                    std::bind(&Arena2DTest::TestMoveActive, this),
+                    std::bind(&ArenaTest::TestReact, this),
+                    std::bind(&ArenaTest::TestMoveActive, this),
                 }) {}
 
 }  // namespace test
