@@ -13,6 +13,8 @@ class RectSearchTreeTest : public TestGroup {
   void TestHeight2();
   void TestFindOutsideBounds();
 
+  void Test4D();
+
   RectSearchTreeTest();
 };
 

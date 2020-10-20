@@ -69,8 +69,9 @@ std::unique_ptr<RectSearchTree<Rep, N>> RectSearchTree<Rep, N>::Create(
     return nullptr;
 
   auto tree =
-      std::unique_ptr<RectSearchTree<Rep>>(new RectSearchTree<Rep>(rect));
+      std::unique_ptr<RectSearchTree<Rep, N>>(new RectSearchTree<Rep, N>(rect));
 
+  // Find index and length of longest dimension of rect
   int longest_dimension = 0;
   int64_t longest_dimension_length = 0;
   for (int i = 0; i < N; ++i) {
@@ -82,6 +83,7 @@ std::unique_ptr<RectSearchTree<Rep, N>> RectSearchTree<Rep, N>::Create(
 
   int64_t half_longest_length = longest_dimension_length / 2;
 
+  // Rect is divided in half across its longest dimension
   Vec<int64_t, N> child_size_1 = rect.size;
   child_size_1[longest_dimension] = half_longest_length;
 
@@ -95,6 +97,7 @@ std::unique_ptr<RectSearchTree<Rep, N>> RectSearchTree<Rep, N>::Create(
   Rect<int64_t, N> child_rect_1{rect.pos, child_size_1};
   Rect<int64_t, N> child_rect_2{child_pos_2, child_size_2};
 
+  // Recursively create child trees
   --tree_depth;
   tree->child_a_ = Create(child_rect_1, tree_depth),
   tree->child_b_ = Create(child_rect_2, tree_depth);
@@ -127,7 +130,7 @@ RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::InsertForRect(
 template <typename Rep, int N>
 template <typename CallbackObject>
 void RectSearchTree<Rep, N>::RunCallbacksOn(CallbackObject* obj) {
-  Rect<> sender_rect = obj->GetRect();
+  Rect<int64_t, N> sender_rect = obj->GetRect();
   if (!rect_.Overlaps(sender_rect) && !rect_.Touches(sender_rect))
     return;
 
@@ -136,7 +139,7 @@ void RectSearchTree<Rep, N>::RunCallbacksOn(CallbackObject* obj) {
     if ((void*)(node->payload) == (void*)(obj))
       continue;
 
-    Rect<> found_rect = node->payload->GetRect();
+    Rect<int64_t, N> found_rect = node->payload->GetRect();
     if (sender_rect.Overlaps(found_rect))
       obj->OnOverlap(node->payload);
 

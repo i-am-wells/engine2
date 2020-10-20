@@ -6,19 +6,21 @@ namespace engine2 {
 namespace test {
 namespace {
 
-class SomeObject : public RectSearchTree<SomeObject>::RectObject {
+template <int N = 2>
+class SomeObject : public RectSearchTree<SomeObject<N>, N>::RectObject {
  public:
-  SomeObject(Rect<> rect, std::string name) : rect(rect), name(name) {}
+  SomeObject(Rect<int64_t, N> rect, std::string name)
+      : rect(rect), name(name) {}
   ~SomeObject() = default;
 
   const SomeObject* on_touch_rep = nullptr;
   const SomeObject* on_overlap_rep = nullptr;
   int on_touch_count = 0;
   int on_overlap_count = 0;
-  Rect<> rect;
+  Rect<int64_t, N> rect;
   std::string name;
 
-  Rect<> GetRect() override { return rect; }
+  Rect<int64_t, N> GetRect() override { return rect; }
   void OnTouch(SomeObject* other) override {
     on_touch_rep = other;
     ++on_touch_count;
@@ -40,24 +42,24 @@ std::string RectToString(const Rect<>& rect) {
 
 void RectSearchTreeTest::TestCreate() {
   Rect<> rect{0, 0, 10, 20};
-  auto tree = RectSearchTree<SomeObject>::Create(rect, 0);
+  auto tree = RectSearchTree<SomeObject<>>::Create(rect, 0);
   EXPECT_NULL(tree.get());
 
-  tree = RectSearchTree<SomeObject>::Create(rect, 1);
+  tree = RectSearchTree<SomeObject<>>::Create(rect, 1);
   ASSERT_NOT_NULL(tree.get());
 }
 
 void RectSearchTreeTest::TestSingleNode() {
-  auto tree = RectSearchTree<SomeObject>::Create({0, 0, 20, 20}, 1);
+  auto tree = RectSearchTree<SomeObject<>>::Create({0, 0, 20, 20}, 1);
   ASSERT_NOT_NULL(tree.get());
 
-  SomeObject a({5, 5, 5, 5}, "a");
+  SomeObject<> a({5, 5, 5, 5}, "a");
   tree->Insert(&a);
-  SomeObject b({7, 7, 5, 5}, "b");  // overlaps a
+  SomeObject<> b({7, 7, 5, 5}, "b");  // overlaps a
   tree->Insert(&b);
-  SomeObject c({6, 4, 2, 2}, "c");  // overlaps a but not b
+  SomeObject<> c({6, 4, 2, 2}, "c");  // overlaps a but not b
   tree->Insert(&c);
-  SomeObject d({6, 3, 1, 1}, "d");  // touches c
+  SomeObject<> d({6, 3, 1, 1}, "d");  // touches c
   tree->Insert(&d);
 
   tree->RunCallbacksOn(&a);
@@ -106,16 +108,16 @@ void RectSearchTreeTest::TestSingleNode() {
 }
 
 void RectSearchTreeTest::TestHeight2() {
-  auto tree = RectSearchTree<SomeObject>::Create({0, 0, 100, 100}, 2);
-  SomeObject map({0, 0, 100, 100}, "map");
+  auto tree = RectSearchTree<SomeObject<>>::Create({0, 0, 100, 100}, 2);
+  SomeObject<> map({0, 0, 100, 100}, "map");
   tree->Insert(&map);
-  SomeObject a({25, 25, 5, 5}, "a");
+  SomeObject<> a({25, 25, 5, 5}, "a");
   tree->Insert(&a);
-  SomeObject b({45, 45, 5, 5}, "b");
+  SomeObject<> b({45, 45, 5, 5}, "b");
   tree->Insert(&b);
-  SomeObject c({50, 45, 3, 3}, "c");
+  SomeObject<> c({50, 45, 3, 3}, "c");
   tree->Insert(&c);
-  SomeObject d({45, 50, 3, 3}, "d");
+  SomeObject<> d({45, 50, 3, 3}, "d");
   tree->Insert(&d);
 
   tree->RunCallbacksOn(&map);
@@ -140,12 +142,12 @@ void RectSearchTreeTest::TestHeight2() {
 }
 
 void RectSearchTreeTest::TestFindOutsideBounds() {
-  auto tree = RectSearchTree<SomeObject>::Create({0, 0, 10, 10}, 1);
-  SomeObject a({-1, -1, 2, 2}, "a");
+  auto tree = RectSearchTree<SomeObject<>>::Create({0, 0, 10, 10}, 1);
+  SomeObject<> a({-1, -1, 2, 2}, "a");
 
   ASSERT_NOT_NULL(tree->InsertTrimmed(&a));
 
-  SomeObject b({-2, -1, 1, 1}, "b");
+  SomeObject<> b({-2, -1, 1, 1}, "b");
   ASSERT_NOT_NULL(tree->InsertTrimmed(&b));
 
   // Don't run callbacks outside the tree?
@@ -155,6 +157,34 @@ void RectSearchTreeTest::TestFindOutsideBounds() {
   EXPECT_EQ(1, a.on_touch_count);
 }
 
+void RectSearchTreeTest::Test4D() {
+  auto tree = RectSearchTree<SomeObject<4>, 4>::Create(
+      {0, 0, 0, 0, 100, 100, 100, 100}, 8);
+
+  SomeObject<4> a({48, 48, 48, 48, 2, 2, 2, 2}, "a");
+  tree->Insert(&a);
+
+  SomeObject<4> b({50, 50, 50, 50, 2, 2, 2, 2}, "b");
+  tree->Insert(&b);
+
+  tree->RunCallbacksOn(&a);
+  tree->RunCallbacksOn(&b);
+  EXPECT_EQ(1, a.on_touch_count);
+  EXPECT_EQ(1, b.on_touch_count);
+
+  SomeObject<4> c({52, 52, 52, 52, 2, 2, 2, 2}, "c");
+  tree->Insert(&c);
+  tree->RunCallbacksOn(&c);
+  EXPECT_EQ(1, c.on_touch_count);
+
+  SomeObject<4> d({52, 52, 52, 53, 100, 100, 100, 100}, "d");
+  tree->InsertTrimmed(&d);
+  tree->RunCallbacksOn(&d);
+  EXPECT_EQ(1, d.on_overlap_count);
+  tree->RunCallbacksOn(&c);
+  EXPECT_EQ(1, c.on_overlap_count);
+}
+
 RectSearchTreeTest::RectSearchTreeTest()
     : TestGroup("RectSearchTreeTest",
                 {
@@ -162,6 +192,7 @@ RectSearchTreeTest::RectSearchTreeTest()
                     std::bind(&RectSearchTreeTest::TestSingleNode, this),
                     std::bind(&RectSearchTreeTest::TestHeight2, this),
                     std::bind(&RectSearchTreeTest::TestFindOutsideBounds, this),
+                    std::bind(&RectSearchTreeTest::Test4D, this),
                 }) {}
 
 }  // namespace test
