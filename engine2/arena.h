@@ -37,7 +37,7 @@ class Arena {
   void ReactAll();
 
  private:
-  class ReactiveWrapper : public RectSearchTree<Active, N>::RectObject {
+  class ReactiveWrapper : public RectSearchTree<Active*, N>::RectObject {
    public:
     ReactiveWrapper(Reactive* reactive = nullptr) : reactive_(reactive) {}
     ~ReactiveWrapper() = default;
@@ -52,13 +52,14 @@ class Arena {
     Reactive* reactive_;
   };
   List<ReactiveWrapper> reactives_;
-  std::unique_ptr<RectSearchTree<Active, N>> tree_;
-  std::unordered_map<Active*, RectSearchTree<Active, N>*> tree_node_for_active_;
+  std::unique_ptr<RectSearchTree<Active*, N>> tree_;
+  std::unordered_map<Active*, RectSearchTree<Active*, N>*>
+      tree_node_for_active_;
 };
 
 template <typename Active, typename Reactive, int N>
 Arena<Active, Reactive, N>::Arena(Rect<int64_t, N> rect, int tree_depth)
-    : tree_(RectSearchTree<Active, N>::Create(rect, tree_depth)) {}
+    : tree_(RectSearchTree<Active*, N>::Create(rect, tree_depth)) {}
 
 template <typename Active, typename Reactive, int N>
 void Arena<Active, Reactive, N>::AddActive(Active* obj) {
@@ -72,7 +73,7 @@ void Arena<Active, Reactive, N>::AddReactive(Reactive* obj) {
 
 template <typename Active, typename Reactive, int N>
 void Arena<Active, Reactive, N>::Update(Active* obj) {
-  RectSearchTree<Active>* current_node = tree_node_for_active_[obj];
+  RectSearchTree<Active*>* current_node = tree_node_for_active_[obj];
   // TODO debug log here?
   if (!current_node)
     return;
@@ -80,7 +81,7 @@ void Arena<Active, Reactive, N>::Update(Active* obj) {
   Rect<> rect = obj->GetRect().GetOverlap(tree_->GetRect());
 
   // First search down from the current node.
-  RectSearchTree<Active>* proper_home = current_node->Find(rect);
+  RectSearchTree<Active*>* proper_home = current_node->Find(rect);
 
   // If it doesn't belong below current_node, search from root.
   if (!proper_home)

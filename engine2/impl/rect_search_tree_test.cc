@@ -7,7 +7,7 @@ namespace test {
 namespace {
 
 template <int N = 2>
-class SomeObject : public RectSearchTree<SomeObject<N>, N>::RectObject {
+class SomeObject : public RectSearchTree<SomeObject<N>*, N>::RectObject {
  public:
   SomeObject(Rect<int64_t, N> rect, std::string name)
       : rect(rect), name(name) {}
@@ -42,15 +42,15 @@ std::string RectToString(const Rect<>& rect) {
 
 void RectSearchTreeTest::TestCreate() {
   Rect<> rect{0, 0, 10, 20};
-  auto tree = RectSearchTree<SomeObject<>>::Create(rect, 0);
+  auto tree = RectSearchTree<SomeObject<>*>::Create(rect, 0);
   EXPECT_NULL(tree.get());
 
-  tree = RectSearchTree<SomeObject<>>::Create(rect, 1);
+  tree = RectSearchTree<SomeObject<>*>::Create(rect, 1);
   ASSERT_NOT_NULL(tree.get());
 }
 
 void RectSearchTreeTest::TestSingleNode() {
-  auto tree = RectSearchTree<SomeObject<>>::Create({0, 0, 20, 20}, 1);
+  auto tree = RectSearchTree<SomeObject<>*>::Create({0, 0, 20, 20}, 1);
   ASSERT_NOT_NULL(tree.get());
 
   SomeObject<> a({5, 5, 5, 5}, "a");
@@ -108,7 +108,7 @@ void RectSearchTreeTest::TestSingleNode() {
 }
 
 void RectSearchTreeTest::TestHeight2() {
-  auto tree = RectSearchTree<SomeObject<>>::Create({0, 0, 100, 100}, 2);
+  auto tree = RectSearchTree<SomeObject<>*>::Create({0, 0, 100, 100}, 2);
   SomeObject<> map({0, 0, 100, 100}, "map");
   tree->Insert(&map);
   SomeObject<> a({25, 25, 5, 5}, "a");
@@ -142,7 +142,7 @@ void RectSearchTreeTest::TestHeight2() {
 }
 
 void RectSearchTreeTest::TestFindOutsideBounds() {
-  auto tree = RectSearchTree<SomeObject<>>::Create({0, 0, 10, 10}, 1);
+  auto tree = RectSearchTree<SomeObject<>*>::Create({0, 0, 10, 10}, 1);
   SomeObject<> a({-1, -1, 2, 2}, "a");
 
   ASSERT_NOT_NULL(tree->InsertTrimmed(&a));
@@ -158,7 +158,7 @@ void RectSearchTreeTest::TestFindOutsideBounds() {
 }
 
 void RectSearchTreeTest::Test4D() {
-  auto tree = RectSearchTree<SomeObject<4>, 4>::Create(
+  auto tree = RectSearchTree<SomeObject<4>*, 4>::Create(
       {0, 0, 0, 0, 100, 100, 100, 100}, 8);
 
   SomeObject<4> a({48, 48, 48, 48, 2, 2, 2, 2}, "a");

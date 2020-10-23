@@ -20,23 +20,23 @@ class RectSearchTree {
   // Add an object to the search tree. Returns a pointer to the subtree the
   // object was added to. Note: if you insert the same object twice, its
   // callbacks will run twice per update.
-  RectSearchTree* Insert(Rep* obj);
+  RectSearchTree* Insert(Rep obj);
 
   // Same as Insert(), but search based on the intersection of obj->GetRect()
   // and rect_.
-  RectSearchTree* InsertTrimmed(Rep* obj);
+  RectSearchTree* InsertTrimmed(Rep obj);
 
   // Store an object in reps_.
-  void InsertToSelf(Rep* obj);
-  void InsertToSelf(std::unique_ptr<typename List<Rep*>::Node> node);
+  void InsertToSelf(Rep obj);
+  void InsertToSelf(std::unique_ptr<typename List<Rep>::Node> node);
   // Remove an object from reps_.
-  std::unique_ptr<typename List<Rep*>::Node> RemoveFromSelf(Rep* obj);
+  std::unique_ptr<typename List<Rep>::Node> RemoveFromSelf(Rep obj);
 
   class RectObject {
    public:
     virtual Rect<int64_t, N> GetRect() = 0;
-    virtual void OnOverlap(Rep* obj) = 0;
-    virtual void OnTouch(Rep* obj) = 0;
+    virtual void OnOverlap(Rep obj) = 0;
+    virtual void OnTouch(Rep obj) = 0;
     virtual ~RectObject() = default;
   };
   // Runs obj's callbacks:
@@ -51,13 +51,13 @@ class RectSearchTree {
 
  private:
   RectSearchTree(Rect<int64_t, N> rect);
-  RectSearchTree* InsertForRect(Rep* obj, const Rect<int64_t, N>& rect);
+  RectSearchTree* InsertForRect(Rep obj, const Rect<int64_t, N>& rect);
   RectSearchTree* FindInternal(const Rect<int64_t, N>& rect);
 
   Rect<int64_t, N> rect_;
   std::unique_ptr<RectSearchTree> child_a_;
   std::unique_ptr<RectSearchTree> child_b_;
-  List<Rep*> reps_;
+  List<Rep> reps_;
 };
 
 // static
@@ -106,19 +106,19 @@ std::unique_ptr<RectSearchTree<Rep, N>> RectSearchTree<Rep, N>::Create(
 }
 
 template <typename Rep, int N>
-RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::Insert(Rep* obj) {
+RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::Insert(Rep obj) {
   return InsertForRect(obj, obj->GetRect());
 }
 
 template <typename Rep, int N>
-RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::InsertTrimmed(Rep* obj) {
+RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::InsertTrimmed(Rep obj) {
   // Trim rect to fit in the tree.
   return InsertForRect(obj, obj->GetRect().GetOverlap(rect_));
 }
 
 template <typename Rep, int N>
 RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::InsertForRect(
-    Rep* obj,
+    Rep obj,
     const Rect<int64_t, N>& rect) {
   auto* subtree = Find(rect);
   if (!subtree)
@@ -127,6 +127,7 @@ RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::InsertForRect(
   return subtree;
 }
 
+// TODO remove
 template <typename Rep, int N>
 template <typename CallbackObject>
 void RectSearchTree<Rep, N>::RunCallbacksOn(CallbackObject* obj) {
@@ -154,19 +155,19 @@ void RectSearchTree<Rep, N>::RunCallbacksOn(CallbackObject* obj) {
 }
 
 template <typename Rep, int N>
-void RectSearchTree<Rep, N>::InsertToSelf(Rep* obj) {
+void RectSearchTree<Rep, N>::InsertToSelf(Rep obj) {
   reps_.AddToHead(obj);
 }
 
 template <typename Rep, int N>
 void RectSearchTree<Rep, N>::InsertToSelf(
-    std::unique_ptr<typename List<Rep*>::Node> node) {
+    std::unique_ptr<typename List<Rep>::Node> node) {
   reps_.AddToHead(std::move(node));
 }
 
 template <typename Rep, int N>
-std::unique_ptr<typename List<Rep*>::Node>
-RectSearchTree<Rep, N>::RemoveFromSelf(Rep* obj) {
+std::unique_ptr<typename List<Rep>::Node>
+RectSearchTree<Rep, N>::RemoveFromSelf(Rep obj) {
   for (auto* node = reps_.Head(); node; node = node->Next()) {
     if (node->payload == obj)
       return std::move(node->UnlinkSelf());
