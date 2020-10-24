@@ -50,8 +50,6 @@ source_set("test_support") {
 
 source_set("tests") {
   sources = [
-    "arena_test.cc",
-    "arena_test.h",
     "base/list_test.cc",
     "base/list_test.h",
     "memory/weak_pointer_test.cc",

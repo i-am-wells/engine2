@@ -1,5 +1,6 @@
 #include "engine2/impl/rect_search_tree_test.h"
 #include "engine2/impl/rect_search_tree.h"
+#include "engine2/rect_object.h"
 #include "engine2/test/assert_macros.h"
 
 namespace engine2 {
@@ -7,7 +8,9 @@ namespace test {
 namespace {
 
 template <int N = 2>
-class SomeObject : public RectSearchTree<SomeObject<N>*, N>::RectObject {
+class SomeObject
+    : public RectObject<int64_t, N>,
+      public RectSearchTree<SomeObject<N>*, N>::OverlapAndTouchReceiver {
  public:
   SomeObject(Rect<int64_t, N> rect, std::string name)
       : rect(rect), name(name) {}
@@ -20,7 +23,10 @@ class SomeObject : public RectSearchTree<SomeObject<N>*, N>::RectObject {
   Rect<int64_t, N> rect;
   std::string name;
 
+  // RectObject
   Rect<int64_t, N> GetRect() override { return rect; }
+
+  // OverlapAndTouchReceiver
   void OnTouch(SomeObject* other) override {
     on_touch_rep = other;
     ++on_touch_count;
@@ -34,6 +40,12 @@ class SomeObject : public RectSearchTree<SomeObject<N>*, N>::RectObject {
 std::string RectToString(const Rect<>& rect) {
   return BuildString("{", rect.x(), ", ", rect.y(), ", ", rect.w(), ", ",
                      rect.h(), "}");
+}
+
+template <int N>
+void RunCallbacksOn(RectSearchTree<SomeObject<N>*, N>* tree,
+                    SomeObject<N>* receiver) {
+  tree->FindOverlapsAndTouches(receiver->GetRect(), true, true, receiver);
 }
 
 }  // namespace
@@ -62,8 +74,8 @@ void RectSearchTreeTest::TestSingleNode() {
   SomeObject<> d({6, 3, 1, 1}, "d");  // touches c
   tree->Insert(&d);
 
-  tree->RunCallbacksOn(&a);
-  EXPECT_EQ(2, a.on_overlap_count);
+  RunCallbacksOn(tree.get(), &a);
+  EXPECT_EQ(3, a.on_overlap_count);
   EXPECT_EQ(0, a.on_touch_count);
   EXPECT_EQ(0, b.on_overlap_count);
   EXPECT_EQ(0, b.on_touch_count);
@@ -72,39 +84,35 @@ void RectSearchTreeTest::TestSingleNode() {
   EXPECT_EQ(0, d.on_overlap_count);
   EXPECT_EQ(0, d.on_touch_count);
 
-  tree->RunCallbacksOn(&b);
-  EXPECT_EQ(2, a.on_overlap_count);
+  RunCallbacksOn(tree.get(), &b);
+  EXPECT_EQ(3, a.on_overlap_count);
   EXPECT_EQ(0, a.on_touch_count);
-  EXPECT_EQ(1, b.on_overlap_count);
+  EXPECT_EQ(2, b.on_overlap_count);
   EXPECT_EQ(0, b.on_touch_count);
   EXPECT_EQ(0, c.on_overlap_count);
   EXPECT_EQ(0, c.on_touch_count);
   EXPECT_EQ(0, d.on_overlap_count);
   EXPECT_EQ(0, d.on_touch_count);
-  EXPECT_EQ(&a, b.on_overlap_rep);
 
-  tree->RunCallbacksOn(&c);
-  EXPECT_EQ(2, a.on_overlap_count);
+  RunCallbacksOn(tree.get(), &c);
+  EXPECT_EQ(3, a.on_overlap_count);
   EXPECT_EQ(0, a.on_touch_count);
-  EXPECT_EQ(1, b.on_overlap_count);
+  EXPECT_EQ(2, b.on_overlap_count);
   EXPECT_EQ(0, b.on_touch_count);
-  EXPECT_EQ(1, c.on_overlap_count);
+  EXPECT_EQ(2, c.on_overlap_count);
   EXPECT_EQ(1, c.on_touch_count);
   EXPECT_EQ(0, d.on_overlap_count);
   EXPECT_EQ(0, d.on_touch_count);
-  EXPECT_EQ(&a, c.on_overlap_rep);
-  EXPECT_EQ(&d, c.on_touch_rep);
 
-  tree->RunCallbacksOn(&d);
-  EXPECT_EQ(2, a.on_overlap_count);
+  RunCallbacksOn(tree.get(), &d);
+  EXPECT_EQ(3, a.on_overlap_count);
   EXPECT_EQ(0, a.on_touch_count);
-  EXPECT_EQ(1, b.on_overlap_count);
+  EXPECT_EQ(2, b.on_overlap_count);
   EXPECT_EQ(0, b.on_touch_count);
-  EXPECT_EQ(1, c.on_overlap_count);
+  EXPECT_EQ(2, c.on_overlap_count);
   EXPECT_EQ(1, c.on_touch_count);
-  EXPECT_EQ(0, d.on_overlap_count);
+  EXPECT_EQ(1, d.on_overlap_count);
   EXPECT_EQ(1, d.on_touch_count);
-  EXPECT_EQ(&c, d.on_touch_rep);
 }
 
 void RectSearchTreeTest::TestHeight2() {
@@ -120,25 +128,21 @@ void RectSearchTreeTest::TestHeight2() {
   SomeObject<> d({45, 50, 3, 3}, "d");
   tree->Insert(&d);
 
-  tree->RunCallbacksOn(&map);
-  EXPECT_EQ(4, map.on_overlap_count);
+  RunCallbacksOn(tree.get(), &map);
+  EXPECT_EQ(5, map.on_overlap_count);
 
-  tree->RunCallbacksOn(&a);
-  EXPECT_EQ(1, a.on_overlap_count);
-  EXPECT_EQ(&map, a.on_overlap_rep);
+  RunCallbacksOn(tree.get(), &a);
+  EXPECT_EQ(2, a.on_overlap_count);
 
-  tree->RunCallbacksOn(&b);
-  EXPECT_EQ(1, b.on_overlap_count);
-  EXPECT_EQ(&map, b.on_overlap_rep);
+  RunCallbacksOn(tree.get(), &b);
+  EXPECT_EQ(2, b.on_overlap_count);
   EXPECT_EQ(2, b.on_touch_count);
 
-  tree->RunCallbacksOn(&c);
+  RunCallbacksOn(tree.get(), &c);
   EXPECT_EQ(1, c.on_touch_count);
-  EXPECT_EQ(&b, c.on_touch_rep);
 
-  tree->RunCallbacksOn(&d);
+  RunCallbacksOn(tree.get(), &d);
   EXPECT_EQ(1, d.on_touch_count);
-  EXPECT_EQ(&b, d.on_touch_rep);
 }
 
 void RectSearchTreeTest::TestFindOutsideBounds() {
@@ -151,9 +155,9 @@ void RectSearchTreeTest::TestFindOutsideBounds() {
   ASSERT_NOT_NULL(tree->InsertTrimmed(&b));
 
   // Don't run callbacks outside the tree?
-  tree->RunCallbacksOn(&b);
+  RunCallbacksOn(tree.get(), &b);
   EXPECT_EQ(0, b.on_touch_count);
-  tree->RunCallbacksOn(&a);
+  RunCallbacksOn(tree.get(), &a);
   EXPECT_EQ(1, a.on_touch_count);
 }
 
@@ -167,22 +171,22 @@ void RectSearchTreeTest::Test4D() {
   SomeObject<4> b({50, 50, 50, 50, 2, 2, 2, 2}, "b");
   tree->Insert(&b);
 
-  tree->RunCallbacksOn(&a);
-  tree->RunCallbacksOn(&b);
+  RunCallbacksOn(tree.get(), &a);
+  RunCallbacksOn(tree.get(), &b);
   EXPECT_EQ(1, a.on_touch_count);
   EXPECT_EQ(1, b.on_touch_count);
 
   SomeObject<4> c({52, 52, 52, 52, 2, 2, 2, 2}, "c");
   tree->Insert(&c);
-  tree->RunCallbacksOn(&c);
+  RunCallbacksOn(tree.get(), &c);
   EXPECT_EQ(1, c.on_touch_count);
 
   SomeObject<4> d({52, 52, 52, 53, 100, 100, 100, 100}, "d");
   tree->InsertTrimmed(&d);
-  tree->RunCallbacksOn(&d);
-  EXPECT_EQ(1, d.on_overlap_count);
-  tree->RunCallbacksOn(&c);
-  EXPECT_EQ(1, c.on_overlap_count);
+  RunCallbacksOn(tree.get(), &d);
+  EXPECT_EQ(2, d.on_overlap_count);
+  RunCallbacksOn(tree.get(), &c);
+  EXPECT_EQ(3, c.on_overlap_count);
 }
 
 RectSearchTreeTest::RectSearchTreeTest()

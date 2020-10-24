@@ -32,18 +32,17 @@ class RectSearchTree {
   // Remove an object from reps_.
   std::unique_ptr<typename List<Rep>::Node> RemoveFromSelf(Rep obj);
 
-  class RectObject {
+  class OverlapAndTouchReceiver {
    public:
-    virtual Rect<int64_t, N> GetRect() = 0;
     virtual void OnOverlap(Rep obj) = 0;
     virtual void OnTouch(Rep obj) = 0;
-    virtual ~RectObject() = default;
+    virtual ~OverlapAndTouchReceiver() = default;
   };
-  // Runs obj's callbacks:
-  //  obj->OnOverlap() for every object overlapping obj
-  //  obj->OnTouch() for every object touching obj
-  template <typename CallbackObject>
-  void RunCallbacksOn(CallbackObject* obj);
+
+  void FindOverlapsAndTouches(const Rect<int64_t, N>& rect,
+                              bool overlap,
+                              bool touch,
+                              OverlapAndTouchReceiver* receiver);
 
   RectSearchTree* Find(const Rect<int64_t, N>& rect);
 
@@ -127,30 +126,28 @@ RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::InsertForRect(
   return subtree;
 }
 
-// TODO remove
 template <typename Rep, int N>
-template <typename CallbackObject>
-void RectSearchTree<Rep, N>::RunCallbacksOn(CallbackObject* obj) {
-  Rect<int64_t, N> sender_rect = obj->GetRect();
-  if (!rect_.Overlaps(sender_rect) && !rect_.Touches(sender_rect))
+void RectSearchTree<Rep, N>::FindOverlapsAndTouches(
+    const Rect<int64_t, N>& rect,
+    bool overlap,
+    bool touch,
+    OverlapAndTouchReceiver* receiver) {
+  if (!rect_.Overlaps(rect) && !rect_.Touches(rect))
     return;
 
   // Run with own objects
   for (auto* node = reps_.Head(); node; node = node->Next()) {
-    if ((void*)(node->payload) == (void*)(obj))
-      continue;
-
     Rect<int64_t, N> found_rect = node->payload->GetRect();
-    if (sender_rect.Overlaps(found_rect))
-      obj->OnOverlap(node->payload);
+    if (overlap && rect.Overlaps(found_rect))
+      receiver->OnOverlap(node->payload);
 
-    if (sender_rect.Touches(found_rect))
-      obj->OnTouch(node->payload);
+    if (touch && rect.Touches(found_rect))
+      receiver->OnTouch(node->payload);
   }
 
   if (child_a_ && child_b_) {
-    child_a_->RunCallbacksOn(obj);
-    child_b_->RunCallbacksOn(obj);
+    child_a_->FindOverlapsAndTouches(rect, overlap, touch, receiver);
+    child_b_->FindOverlapsAndTouches(rect, overlap, touch, receiver);
   }
 }
 
