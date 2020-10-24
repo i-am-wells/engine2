@@ -10,65 +10,67 @@
 
 namespace engine2 {
 
-template <typename Rep, int N = 2>
+template <int N, class Rep>
 class RectSearchTree {
  public:
+  using Rect = Rect<int64_t, N>;
+
   // Create a new tree of depth |tree_depth| spanning |rect|.
-  static std::unique_ptr<RectSearchTree> Create(Rect<int64_t, N> rect,
+  static std::unique_ptr<RectSearchTree> Create(const Rect& rect,
                                                 int tree_depth);
 
   // Add an object to the search tree. Returns a pointer to the subtree the
   // object was added to. Note: if you insert the same object twice, its
   // callbacks will run twice per update.
-  RectSearchTree* Insert(Rep obj);
+  RectSearchTree* Insert(const Rect& rect, Rep obj);
 
   // Same as Insert(), but search based on the intersection of obj->GetRect()
   // and rect_.
-  RectSearchTree* InsertTrimmed(Rep obj);
+  RectSearchTree* InsertTrimmed(const Rect& rect, Rep obj);
 
   // Store an object in reps_.
-  void InsertToSelf(Rep obj);
-  void InsertToSelf(std::unique_ptr<typename List<Rep>::Node> node);
+  void InsertLocal(Rep obj);
+  void InsertLocal(std::unique_ptr<typename List<Rep>::Node> node);
   // Remove an object from reps_.
   std::unique_ptr<typename List<Rep>::Node> RemoveFromSelf(Rep obj);
 
   class OverlapAndTouchReceiver {
    public:
+    virtual Rect GetRect(Rep* obj) = 0;
     virtual void OnOverlap(Rep obj) = 0;
     virtual void OnTouch(Rep obj) = 0;
     virtual ~OverlapAndTouchReceiver() = default;
   };
 
-  void FindOverlapsAndTouches(const Rect<int64_t, N>& rect,
+  void FindOverlapsAndTouches(const Rect& rect,
                               bool overlap,
                               bool touch,
                               OverlapAndTouchReceiver* receiver);
 
-  RectSearchTree* Find(const Rect<int64_t, N>& rect);
+  RectSearchTree* Find(const Rect& rect);
 
-  const Rect<int64_t, N>& GetRect() const { return rect_; }
+  const Rect& GetRect() const { return rect_; }
 
  private:
-  RectSearchTree(Rect<int64_t, N> rect);
-  RectSearchTree* InsertForRect(Rep obj, const Rect<int64_t, N>& rect);
-  RectSearchTree* FindInternal(const Rect<int64_t, N>& rect);
+  RectSearchTree(Rect rect);
+  RectSearchTree* FindInternal(const Rect& rect);
 
-  Rect<int64_t, N> rect_;
+  Rect rect_;
   std::unique_ptr<RectSearchTree> child_a_;
   std::unique_ptr<RectSearchTree> child_b_;
   List<Rep> reps_;
 };
 
 // static
-template <typename Rep, int N>
-std::unique_ptr<RectSearchTree<Rep, N>> RectSearchTree<Rep, N>::Create(
-    Rect<int64_t, N> rect,
+template <int N, class Rep>
+std::unique_ptr<RectSearchTree<N, Rep>> RectSearchTree<N, Rep>::Create(
+    const Rect& rect,
     int tree_depth) {
   if (tree_depth == 0)
     return nullptr;
 
   auto tree =
-      std::unique_ptr<RectSearchTree<Rep, N>>(new RectSearchTree<Rep, N>(rect));
+      std::unique_ptr<RectSearchTree<N, Rep>>(new RectSearchTree<N, Rep>(rect));
 
   // Find index and length of longest dimension of rect
   int longest_dimension = 0;
@@ -93,8 +95,8 @@ std::unique_ptr<RectSearchTree<Rep, N>> RectSearchTree<Rep, N>::Create(
   Vec<int64_t, N> child_pos_2 = rect.pos;
   child_pos_2[longest_dimension] += half_longest_length;
 
-  Rect<int64_t, N> child_rect_1{rect.pos, child_size_1};
-  Rect<int64_t, N> child_rect_2{child_pos_2, child_size_2};
+  Rect child_rect_1{rect.pos, child_size_1};
+  Rect child_rect_2{child_pos_2, child_size_2};
 
   // Recursively create child trees
   --tree_depth;
@@ -104,31 +106,26 @@ std::unique_ptr<RectSearchTree<Rep, N>> RectSearchTree<Rep, N>::Create(
   return tree;
 }
 
-template <typename Rep, int N>
-RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::Insert(Rep obj) {
-  return InsertForRect(obj, obj->GetRect());
-}
-
-template <typename Rep, int N>
-RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::InsertTrimmed(Rep obj) {
-  // Trim rect to fit in the tree.
-  return InsertForRect(obj, obj->GetRect().GetOverlap(rect_));
-}
-
-template <typename Rep, int N>
-RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::InsertForRect(
-    Rep obj,
-    const Rect<int64_t, N>& rect) {
+template <int N, class Rep>
+RectSearchTree<N, Rep>* RectSearchTree<N, Rep>::Insert(const Rect& rect,
+                                                       Rep obj) {
   auto* subtree = Find(rect);
   if (!subtree)
     subtree = this;
-  subtree->InsertToSelf(obj);
+  subtree->InsertLocal(obj);
   return subtree;
 }
 
-template <typename Rep, int N>
-void RectSearchTree<Rep, N>::FindOverlapsAndTouches(
-    const Rect<int64_t, N>& rect,
+template <int N, class Rep>
+RectSearchTree<N, Rep>* RectSearchTree<N, Rep>::InsertTrimmed(const Rect& rect,
+                                                              Rep obj) {
+  // Trim rect to fit in the tree.
+  return Insert(rect.GetOverlap(rect_), obj);
+}
+
+template <int N, class Rep>
+void RectSearchTree<N, Rep>::FindOverlapsAndTouches(
+    const Rect& rect,
     bool overlap,
     bool touch,
     OverlapAndTouchReceiver* receiver) {
@@ -137,7 +134,7 @@ void RectSearchTree<Rep, N>::FindOverlapsAndTouches(
 
   // Run with own objects
   for (auto* node = reps_.Head(); node; node = node->Next()) {
-    Rect<int64_t, N> found_rect = node->payload->GetRect();
+    Rect found_rect = receiver->GetRect(&(node->payload));
     if (overlap && rect.Overlaps(found_rect))
       receiver->OnOverlap(node->payload);
 
@@ -151,20 +148,20 @@ void RectSearchTree<Rep, N>::FindOverlapsAndTouches(
   }
 }
 
-template <typename Rep, int N>
-void RectSearchTree<Rep, N>::InsertToSelf(Rep obj) {
+template <int N, class Rep>
+void RectSearchTree<N, Rep>::InsertLocal(Rep obj) {
   reps_.AddToHead(obj);
 }
 
-template <typename Rep, int N>
-void RectSearchTree<Rep, N>::InsertToSelf(
+template <int N, class Rep>
+void RectSearchTree<N, Rep>::InsertLocal(
     std::unique_ptr<typename List<Rep>::Node> node) {
   reps_.AddToHead(std::move(node));
 }
 
-template <typename Rep, int N>
+template <int N, class Rep>
 std::unique_ptr<typename List<Rep>::Node>
-RectSearchTree<Rep, N>::RemoveFromSelf(Rep obj) {
+RectSearchTree<N, Rep>::RemoveFromSelf(Rep obj) {
   for (auto* node = reps_.Head(); node; node = node->Next()) {
     if (node->payload == obj)
       return std::move(node->UnlinkSelf());
@@ -172,10 +169,9 @@ RectSearchTree<Rep, N>::RemoveFromSelf(Rep obj) {
   return nullptr;
 }
 
-template <typename Rep, int N>
-RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::Find(
-    const Rect<int64_t, N>& rect) {
-  Rect<int64_t, N> rect_copy = rect;
+template <int N, class Rep>
+RectSearchTree<N, Rep>* RectSearchTree<N, Rep>::Find(const Rect& rect) {
+  Rect rect_copy = rect;
 
   // Add one to each dimension so the rect is stored in the next node up if it
   // is near a boundary. This allows OnTouch() to work across node boundaries.
@@ -185,9 +181,8 @@ RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::Find(
   return FindInternal(rect_copy);
 }
 
-template <typename Rep, int N>
-RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::FindInternal(
-    const Rect<int64_t, N>& rect) {
+template <int N, class Rep>
+RectSearchTree<N, Rep>* RectSearchTree<N, Rep>::FindInternal(const Rect& rect) {
   if (!rect_.Contains(rect))
     return nullptr;
 
@@ -203,8 +198,8 @@ RectSearchTree<Rep, N>* RectSearchTree<Rep, N>::FindInternal(
   return this;
 }
 
-template <typename Rep, int N>
-RectSearchTree<Rep, N>::RectSearchTree(Rect<int64_t, N> rect) : rect_(rect) {}
+template <int N, class Rep>
+RectSearchTree<N, Rep>::RectSearchTree(Rect rect) : rect_(rect) {}
 
 }  // namespace engine2
 
