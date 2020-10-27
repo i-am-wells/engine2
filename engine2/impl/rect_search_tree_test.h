@@ -15,6 +15,9 @@ class RectSearchTreeTest : public TestGroup {
 
   void Test4D();
 
+  void TestAllIterator();
+  void TestNearIterator();
+
   RectSearchTreeTest();
 };
 

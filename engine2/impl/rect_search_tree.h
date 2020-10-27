@@ -2,6 +2,7 @@
 #define ENGINE2_IMPL_RECT_SEARCH_TREE_H_
 
 #include <cstdint>
+#include <list>
 #include <memory>
 #include <vector>
 
@@ -10,46 +11,117 @@
 
 namespace engine2 {
 
+// RectSearchTree stores objects so that sets of objects that overlap or touch a
+// given rectangle can be retrieved efficiently.
+//
+// Example:
+//  for (SomeObject* object : rect_search_tree.Near(lookup_rect)) {
+//    if (lookup_rect.Overlaps(object->GetRect()) {
+//      ...
+//    } else if (lookup_rect.Touches(object->GetRect()) {
+//      ...
+//    }
+//  }
+
 template <int N, class Rep>
 class RectSearchTree {
  public:
   using Rect = Rect<int64_t, N>;
+  class Iterator;
+  class NearIterator;
+  struct NearIterable;
+
+  // Iterators can only be invalidated by their target objects being moved
+  // or removed from the tree.
+  //
+  // Iterator: Visits all objects in the tree.
+  Iterator begin() { return Iterator(this); }
+  Iterator end() { return Iterator(); }
+
+  // NearIterator: Tries to skip objects that couldn't touch or overlap |rect|.
+  // In the best case, visits only |tree_depth| nodes.
+  NearIterable Near(Rect rect) { return NearIterable{this, rect}; }
+  struct NearIterable {
+    RectSearchTree* tree;
+    Rect rect;
+    NearIterator begin() { return NearIterator(tree, rect); }
+    NearIterator end() { return NearIterator(); }
+  };
 
   // Create a new tree of depth |tree_depth| spanning |rect|.
   static std::unique_ptr<RectSearchTree> Create(const Rect& rect,
                                                 int tree_depth);
 
-  // Add an object to the search tree. Returns a pointer to the subtree the
+  // Add an object to the search tree. Returns iterator to the subtree the
   // object was added to. Note: if you insert the same object twice, its
   // callbacks will run twice per update.
-  RectSearchTree* Insert(const Rect& rect, Rep obj);
+  Iterator Insert(const Rect& rect, Rep obj);
+  Iterator Insert(Iterator&& iterator, Rep obj);
 
-  // Same as Insert(), but search based on the intersection of obj->GetRect()
+  // Same as Insert(Rect, Rep), but search based on the intersection of rect
   // and rect_.
-  RectSearchTree* InsertTrimmed(const Rect& rect, Rep obj);
+  Iterator InsertTrimmed(const Rect& rect, Rep obj);
 
-  // Store an object in reps_.
-  void InsertLocal(Rep obj);
-  void InsertLocal(std::unique_ptr<typename List<Rep>::Node> node);
-  // Remove an object from reps_.
-  std::unique_ptr<typename List<Rep>::Node> RemoveFromSelf(Rep obj);
+  // Remove an object from the tree (if present).
+  void Remove(Iterator&& iterator);
 
-  class OverlapAndTouchReceiver {
-   public:
-    virtual Rect GetRect(Rep* obj) = 0;
-    virtual void OnOverlap(Rep obj) = 0;
-    virtual void OnTouch(Rep obj) = 0;
-    virtual ~OverlapAndTouchReceiver() = default;
-  };
-
-  void FindOverlapsAndTouches(const Rect& rect,
-                              bool overlap,
-                              bool touch,
-                              OverlapAndTouchReceiver* receiver);
-
-  RectSearchTree* Find(const Rect& rect);
+  // Finds the smallest subtree |rect| could belong to and returns
+  // subtree.begin().
+  Iterator Find(const Rect& rect);
 
   const Rect& GetRect() const { return rect_; }
+
+  class Iterator {
+   public:
+    virtual bool ShouldIncludeSubtree(RectSearchTree* subtree) {
+      // All subtrees should be included (but stop when subtree is null).
+      return subtree;
+    }
+
+    Iterator() = default;
+    Iterator(RectSearchTree* start_node);
+
+    RectSearchTree* Subtree() { return node_queue_.front(); }
+
+    Iterator InsertBefore(Rep obj);
+    void Erase();
+
+    Rep& operator*() { return *list_iterator_; }
+    operator bool() const { return !node_queue_.empty(); }
+    bool operator==(const Iterator& other) const;
+    bool operator!=(const Iterator& other) const { return !(*this == other); }
+    Iterator& operator++() {
+      Advance();
+      return *this;
+    }
+
+   protected:
+    void Advance();
+
+    std::list<RectSearchTree*> node_queue_;
+    typename std::list<Rep>::iterator list_iterator_;
+  };
+
+  class NearIterator : public Iterator {
+   public:
+    NearIterator() = default;
+    NearIterator(RectSearchTree* start_node, Rect rect)
+        : Iterator(start_node), rect_(rect) {}
+
+    bool ShouldIncludeSubtree(RectSearchTree* subtree) override {
+      // Include only subtrees that touch or overlap |rect_|.
+      return subtree &&
+             (rect_.Overlaps(subtree->rect_) || rect_.Touches(subtree->rect_));
+    }
+
+    NearIterator& operator++() {
+      Iterator::Advance();
+      return *this;
+    }
+
+   private:
+    Rect rect_;
+  };
 
  private:
   RectSearchTree(Rect rect);
@@ -58,8 +130,80 @@ class RectSearchTree {
   Rect rect_;
   std::unique_ptr<RectSearchTree> child_a_;
   std::unique_ptr<RectSearchTree> child_b_;
-  List<Rep> reps_;
+  std::list<Rep> reps_;
 };
+
+template <int N, class Rep>
+RectSearchTree<N, Rep>::Iterator::Iterator(RectSearchTree* start_node) {
+  if (ShouldIncludeSubtree(start_node)) {
+    list_iterator_ = start_node->reps_.begin();
+    node_queue_.push_back(start_node);
+  }
+}
+
+template <int N, class Rep>
+typename RectSearchTree<N, Rep>::Iterator
+RectSearchTree<N, Rep>::Iterator::InsertBefore(Rep obj) {
+  Iterator result(Subtree());
+  result.list_iterator_ = Subtree()->reps_.insert(list_iterator_, obj);
+  return result;
+}
+
+template <int N, class Rep>
+void RectSearchTree<N, Rep>::Iterator::Erase() {
+  Subtree()->reps_.erase(list_iterator_);
+}
+
+template <int N, class Rep>
+bool RectSearchTree<N, Rep>::Iterator::operator==(const Iterator& other) const {
+  if (node_queue_.empty() && other.node_queue_.empty())
+    return true;
+
+  if (node_queue_.empty() != other.node_queue_.empty())
+    return false;
+
+  return (node_queue_.front() == other.node_queue_.front()) &&
+         (list_iterator_ == other.list_iterator_);
+}
+
+template <int N, class Rep>
+void RectSearchTree<N, Rep>::Iterator::Advance() {
+  // We assume that we're in a valid non-end state: node_queue_ is non-empty,
+  // current node reps_ is non-empty, and list_iterator_ points somwhere inside
+  // reps_ before end.
+
+  bool in_same_node = true;
+
+  // Keep going until we reach a non-empty node or we reach the end.
+  while (!node_queue_.empty()) {
+    // Stop if we're still inside current_node.
+    RectSearchTree* current_node = node_queue_.front();
+    if (in_same_node && (list_iterator_ != current_node->reps_.end()) &&
+        (++list_iterator_ != current_node->reps_.end())) {
+      return;
+    }
+
+    if (ShouldIncludeSubtree(current_node->child_a_.get()))
+      node_queue_.push_back(current_node->child_a_.get());
+
+    if (ShouldIncludeSubtree(current_node->child_b_.get()))
+      node_queue_.push_back(current_node->child_b_.get());
+
+    // Try to get the next subtree and point list_iterator_ at its beginning.
+    node_queue_.pop_front();
+    in_same_node = false;
+
+    if (node_queue_.empty())
+      return;
+
+    if (!node_queue_.front()->reps_.empty()) {
+      list_iterator_ = node_queue_.front()->reps_.begin();
+      return;
+    }
+
+    // Note: loop only if current_node is empty
+  }
+}
 
 // static
 template <int N, class Rep>
@@ -107,70 +251,35 @@ std::unique_ptr<RectSearchTree<N, Rep>> RectSearchTree<N, Rep>::Create(
 }
 
 template <int N, class Rep>
-RectSearchTree<N, Rep>* RectSearchTree<N, Rep>::Insert(const Rect& rect,
-                                                       Rep obj) {
-  auto* subtree = Find(rect);
-  if (!subtree)
-    subtree = this;
-  subtree->InsertLocal(obj);
-  return subtree;
+typename RectSearchTree<N, Rep>::Iterator RectSearchTree<N, Rep>::Insert(
+    const Rect& rect,
+    Rep obj) {
+  return Insert(Find(rect), obj);
 }
 
 template <int N, class Rep>
-RectSearchTree<N, Rep>* RectSearchTree<N, Rep>::InsertTrimmed(const Rect& rect,
-                                                              Rep obj) {
+typename RectSearchTree<N, Rep>::Iterator RectSearchTree<N, Rep>::Insert(
+    Iterator&& iterator,
+    Rep obj) {
+  return iterator.InsertBefore(obj);
+}
+
+template <int N, class Rep>
+typename RectSearchTree<N, Rep>::Iterator RectSearchTree<N, Rep>::InsertTrimmed(
+    const RectSearchTree<N, Rep>::Rect& rect,
+    Rep obj) {
   // Trim rect to fit in the tree.
   return Insert(rect.GetOverlap(rect_), obj);
 }
 
 template <int N, class Rep>
-void RectSearchTree<N, Rep>::FindOverlapsAndTouches(
-    const Rect& rect,
-    bool overlap,
-    bool touch,
-    OverlapAndTouchReceiver* receiver) {
-  if (!rect_.Overlaps(rect) && !rect_.Touches(rect))
-    return;
-
-  // Run with own objects
-  for (auto* node = reps_.Head(); node; node = node->Next()) {
-    Rect found_rect = receiver->GetRect(&(node->payload));
-    if (overlap && rect.Overlaps(found_rect))
-      receiver->OnOverlap(node->payload);
-
-    if (touch && rect.Touches(found_rect))
-      receiver->OnTouch(node->payload);
-  }
-
-  if (child_a_ && child_b_) {
-    child_a_->FindOverlapsAndTouches(rect, overlap, touch, receiver);
-    child_b_->FindOverlapsAndTouches(rect, overlap, touch, receiver);
-  }
+void RectSearchTree<N, Rep>::Remove(Iterator&& iterator) {
+  iterator.Erase();
 }
 
 template <int N, class Rep>
-void RectSearchTree<N, Rep>::InsertLocal(Rep obj) {
-  reps_.AddToHead(obj);
-}
-
-template <int N, class Rep>
-void RectSearchTree<N, Rep>::InsertLocal(
-    std::unique_ptr<typename List<Rep>::Node> node) {
-  reps_.AddToHead(std::move(node));
-}
-
-template <int N, class Rep>
-std::unique_ptr<typename List<Rep>::Node>
-RectSearchTree<N, Rep>::RemoveFromSelf(Rep obj) {
-  for (auto* node = reps_.Head(); node; node = node->Next()) {
-    if (node->payload == obj)
-      return std::move(node->UnlinkSelf());
-  }
-  return nullptr;
-}
-
-template <int N, class Rep>
-RectSearchTree<N, Rep>* RectSearchTree<N, Rep>::Find(const Rect& rect) {
+typename RectSearchTree<N, Rep>::Iterator RectSearchTree<N, Rep>::Find(
+    const RectSearchTree<N, Rep>::Rect& rect) {
   Rect rect_copy = rect;
 
   // Add one to each dimension so the rect is stored in the next node up if it
@@ -178,7 +287,10 @@ RectSearchTree<N, Rep>* RectSearchTree<N, Rep>::Find(const Rect& rect) {
   for (int i = 0; i < N; ++i)
     ++rect_copy.size[i];
 
-  return FindInternal(rect_copy);
+  RectSearchTree* subtree = FindInternal(rect_copy);
+  if (!subtree)
+    return Iterator(this);
+  return Iterator(subtree);
 }
 
 template <int N, class Rep>
