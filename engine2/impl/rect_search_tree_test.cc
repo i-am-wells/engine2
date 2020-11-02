@@ -141,17 +141,20 @@ void RectSearchTreeTest::TestHeight2() {
 
 void RectSearchTreeTest::TestFindOutsideBounds() {
   auto tree = RectSearchTree<2, SomeObject<>*>::Create({0, 0, 10, 10}, 1);
+
   SomeObject<> a({-1, -1, 2, 2}, "a");
-
   ASSERT_ITER(tree->InsertTrimmed(a.rect, &a));
-
   SomeObject<> b({-2, -1, 1, 1}, "b");
   ASSERT_ITER(tree->InsertTrimmed(b.rect, &b));
 
+  // b doesn't overlap or touch the tree at all, so Near() will give an empty
+  // range.
   RunCallbacksOn(tree.get(), &b);
-  EXPECT_EQ(1, b.touch_set.size());
-  EXPECT_EQ(1, b.touch_set.count(&a));
+  EXPECT_EQ(0, b.touch_set.size());
+  EXPECT_EQ(0, b.touch_set.count(&a));
 
+  // a overlaps the tree, so the range given by Near(a.rect) will include at
+  // least the root node.
   RunCallbacksOn(tree.get(), &a);
   EXPECT_EQ(1, a.touch_set.size());
   EXPECT_EQ(1, a.touch_set.count(&b));
