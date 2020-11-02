@@ -238,6 +238,26 @@ void RectSearchTreeTest::TestNearIterator() {
   EXPECT_EQ(1, found.count(2));
 }
 
+void RectSearchTreeTest::TestMove() {
+  auto tree = RectSearchTree<2, int>::Create({0, 0, 100, 100}, 2);
+  auto iter = tree->Insert({0, 0, 10, 10}, 1);
+
+  std::unordered_set<int> found;
+  for (int i : tree->Near({70, 70, 10, 10})) {
+    found.insert(i);
+    std::cerr << i << std::endl;
+  }
+
+  EXPECT_EQ(0, found.size());
+
+  tree->Move(std::move(iter), {72, 72, 10, 10});
+  for (int i : tree->Near({70, 70, 10, 10}))
+    found.insert(i);
+
+  EXPECT_EQ(1, found.size());
+  EXPECT_EQ(1, found.count(1));
+}
+
 RectSearchTreeTest::RectSearchTreeTest()
     : TestGroup("RectSearchTreeTest",
                 {
@@ -245,6 +265,7 @@ RectSearchTreeTest::RectSearchTreeTest()
                     std::bind(&RectSearchTreeTest::TestSingleNode, this),
                     std::bind(&RectSearchTreeTest::TestHeight2, this),
                     std::bind(&RectSearchTreeTest::TestFindOutsideBounds, this),
+                    std::bind(&RectSearchTreeTest::TestMove, this),
                     std::bind(&RectSearchTreeTest::Test4D, this),
                     std::bind(&RectSearchTreeTest::TestAllIterator, this),
                     std::bind(&RectSearchTreeTest::TestNearIterator, this),

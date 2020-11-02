@@ -12,6 +12,7 @@ class RectSearchTreeTest : public TestGroup {
   void TestSingleNode();
   void TestHeight2();
   void TestFindOutsideBounds();
+  void TestMove();
 
   void Test4D();
 
