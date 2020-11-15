@@ -14,6 +14,8 @@ class PhysicsObjectTest : public TestGroup {
   void TestUpdatePositionFromVelocity();
   void TestUpdateVelocityFromForces();
 
+  void TestGetCollisionTime1D();
+
   PhysicsObjectTest();
 };
 

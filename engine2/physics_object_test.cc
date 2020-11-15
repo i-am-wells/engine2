@@ -81,16 +81,40 @@ void PhysicsObjectTest::TestUpdateVelocityFromForces() {
   EXPECT_EQ(2, obj.velocity.y());
 }
 
+void PhysicsObjectTest::TestGetCollisionTime1D() {
+  PhysicsObject a(Rect<>{0, 0, 10, 10}, 1);
+  // a moves in the +x direction at 10 pixels/second.
+  a.velocity = {10, 0};
+  // TODO maybe time should just be 0 by default?
+  a.time_seconds = 0;
+
+  // a's leading edge is at x=10, so distance=40. a should touch b after 4
+  // seconds.
+  PhysicsObject b(Rect<>{50, 0, 10, 10}, 1);
+  b.time_seconds = 0;
+  EXPECT_EQ(4., GetCollisionTime1D(a, b, 0));
+  // a and b don't collide via movement in the y direction.
+  EXPECT_EQ(-1., GetCollisionTime1D(a, b, 1));
+
+  // a shouldn't touch c at all.
+  PhysicsObject c(Rect<>{50, 30, 10, 10}, 1);
+  c.time_seconds = 0;
+  EXPECT_EQ(-1., GetCollisionTime1D(a, c, 0));
+}
+
 PhysicsObjectTest::PhysicsObjectTest()
     : TestGroup(
           "PhysicsObjectTest",
           {
               std::bind(&PhysicsObjectTest::TestDefault, this),
+              /* TODO: disabled until design is final
               std::bind(&PhysicsObjectTest::TestApplyForces, this),
               std::bind(&PhysicsObjectTest::TestUpdateZero, this),
               std::bind(&PhysicsObjectTest::TestUpdatePositionFromVelocity,
                         this),
               std::bind(&PhysicsObjectTest::TestUpdateVelocityFromForces, this),
+              */
+              std::bind(&PhysicsObjectTest::TestGetCollisionTime1D, this),
           }) {}
 
 }  // namespace test
