@@ -102,6 +102,51 @@ void PhysicsObjectTest::TestGetCollisionTime1D() {
   EXPECT_EQ(-1., GetCollisionTime1D(a, c, 0));
 }
 
+void PhysicsObjectTest::TestGetCollisionTime() {
+  PhysicsObject a(Rect<>{0, 0, 10, 10}, 1);
+  // a moves in the +x direction at 10 pixels/second.
+  a.velocity = {10, 0};
+  // TODO maybe time should just be 0 by default?
+  a.time_seconds = 0;
+
+  // a's leading edge is at x=10, so distance=40. a should touch b after 4
+  // seconds.
+  PhysicsObject b(Rect<>{50, 0, 10, 10}, 1);
+  b.time_seconds = 0;
+  EXPECT_EQ(4., GetCollisionTime(a, b));
+
+  // a shouldn't touch c at all.
+  PhysicsObject c(Rect<>{50, 30, 10, 10}, 1);
+  c.time_seconds = 0;
+  EXPECT_EQ(-1., GetCollisionTime(a, c));
+}
+
+void PhysicsObjectTest::TestElasticCollision() {
+  // a and b are already touching
+  PhysicsObject a(Rect<>{10, 0, 10, 10}, 1);
+  a.velocity = {10, 0};
+  PhysicsObject b(Rect<>{20, 0, 10, 10}, 1);
+  b.velocity = {0, 0};
+
+  PhysicsObject<2>::ElasticCollision(&a, &b);
+  EXPECT_EQ(0, a.velocity.x());
+  EXPECT_EQ(0, a.velocity.y());
+
+  EXPECT_EQ(10, b.velocity.x());
+  EXPECT_EQ(0, b.velocity.y());
+}
+
+void PhysicsObjectTest::TestUpdateToTime() {
+  PhysicsObject a(Rect<>{0, 0, 10, 10}, 1);
+  a.velocity = {1, 2};
+  a.time_seconds = 0;
+
+  a.UpdateToTime(10);
+  EXPECT_EQ(10, a.rect.x());
+  EXPECT_EQ(20, a.rect.y());
+  EXPECT_EQ(10., a.time_seconds);
+}
+
 PhysicsObjectTest::PhysicsObjectTest()
     : TestGroup(
           "PhysicsObjectTest",
@@ -115,6 +160,9 @@ PhysicsObjectTest::PhysicsObjectTest()
               std::bind(&PhysicsObjectTest::TestUpdateVelocityFromForces, this),
               */
               std::bind(&PhysicsObjectTest::TestGetCollisionTime1D, this),
+              std::bind(&PhysicsObjectTest::TestGetCollisionTime, this),
+              std::bind(&PhysicsObjectTest::TestElasticCollision, this),
+              std::bind(&PhysicsObjectTest::TestUpdateToTime, this),
           }) {}
 
 }  // namespace test

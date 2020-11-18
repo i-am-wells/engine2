@@ -15,11 +15,12 @@ struct PhysicsObject {
   Rect<int64_t, N> GetRectAtTime(double other_seconds) const;
 
   void Update();
+
+  void UpdateToTime(double seconds);
+
   void ApplyForce(const Point<double, N>& force_vector);
 
-  // Update own forces only
-  // TODO
-  void CollideWith(const PhysicsObject& other);
+  static void ElasticCollision(PhysicsObject<N>* a, PhysicsObject<N>* b);
 
   Rect<double, N> rect;
   double mass_kg;
@@ -31,13 +32,34 @@ struct PhysicsObject {
   Point<double, N> forces_sum{};
 
   double time_seconds;
+
+ private:
+  void HalfElasticCollision(const PhysicsObject& other,
+                            const Point<double, N>& other_vel_initial);
 };
 
 template <int N>
+void PhysicsObject<N>::HalfElasticCollision(
+    const PhysicsObject& other,
+    const Point<double, N>& other_vel_initial) {
+  velocity = velocity * (mass_kg - other.mass_kg) +
+             other_vel_initial * 2. * other.mass_kg;
+  velocity /= (mass_kg + other.mass_kg);
+}
+
+// static
+template <int N>
+void PhysicsObject<N>::ElasticCollision(PhysicsObject<N>* a,
+                                        PhysicsObject<N>* b) {
+  Point<double, N> vel_a_initial = a->velocity;
+  a->HalfElasticCollision(*b, b->velocity);
+  b->HalfElasticCollision(*a, vel_a_initial);
+}
+
+template <int N>
 double GetCollisionTime1D(const PhysicsObject<N>& a,
-                           const PhysicsObject<N>& b,
-                           int d) {
-                             
+                          const PhysicsObject<N>& b,
+                          int d) {
   double vel_a = a.velocity[d];
   double vel_b = b.velocity[d];
   if (vel_a == vel_b)
@@ -47,7 +69,6 @@ double GetCollisionTime1D(const PhysicsObject<N>& a,
   int64_t pos_a = a.rect.pos[d] + a.rect.size[d];
   int64_t pos_b = b.rect.pos[d];
 
-  // TODO fix units! time is in microseconds but velocity assumes seconds
   // initial times
   double t0_a = a.time_seconds;
   double t0_b = b.time_seconds;
@@ -139,6 +160,14 @@ void PhysicsObject<N>::Update() {
   rect.pos += velocity * elapsed_seconds;
 
   time_seconds = time;
+}
+
+template <int N>
+void PhysicsObject<N>::UpdateToTime(double seconds) {
+  // TODO what about acceleration?
+  double dt = seconds - time_seconds;
+  rect.pos += velocity * dt;
+  time_seconds = seconds;
 }
 
 template <int N>
