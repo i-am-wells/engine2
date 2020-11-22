@@ -12,11 +12,9 @@ struct PhysicsObject {
   PhysicsObject(const Rect<int64_t, N>& rect, double mass_kg);
 
   Rect<int64_t, N> GetRect() const;
-  Rect<int64_t, N> GetRectAtTime(double other_seconds) const;
+  Rect<int64_t, N> GetRectAfterTime(double elapsed_seconds) const;
 
-  void Update();
-
-  void UpdateToTime(double seconds);
+  void Update(double elapsed_seconds);
 
   void ApplyForce(const Point<double, N>& force_vector);
 
@@ -30,8 +28,6 @@ struct PhysicsObject {
   // TODO support constant force?
   // Point<double> acceleration = {0, 0};
   Point<double, N> forces_sum{};
-
-  double time_seconds;
 
  private:
   void HalfElasticCollision(const PhysicsObject& other,
@@ -58,7 +54,9 @@ void PhysicsObject<N>::ElasticCollision(PhysicsObject<N>* a,
 
 template <int N>
 double GetCollisionTime1D(const PhysicsObject<N>& a,
+                          double t0_a,
                           const PhysicsObject<N>& b,
+                          double t0_b,
                           int d) {
   double vel_a = a.velocity[d];
   double vel_b = b.velocity[d];
@@ -68,10 +66,6 @@ double GetCollisionTime1D(const PhysicsObject<N>& a,
   // Positions of edges that could collide.
   int64_t pos_a = a.rect.pos[d] + a.rect.size[d];
   int64_t pos_b = b.rect.pos[d];
-
-  // initial times
-  double t0_a = a.time_seconds;
-  double t0_b = b.time_seconds;
 
   // TODO this is constant velocity only; update for forces
   int64_t pos_final =
@@ -86,8 +80,8 @@ double GetCollisionTime1D(const PhysicsObject<N>& a,
 
   // Check whether there's actually a collision at time_final
   // TODO store this somewhere?
-  Rect<int64_t, N> next_rect_a = a.GetRectAtTime(time_final);
-  Rect<int64_t, N> next_rect_b = b.GetRectAtTime(time_final);
+  Rect<int64_t, N> next_rect_a = a.GetRectAfterTime(time_final - t0_a);
+  Rect<int64_t, N> next_rect_b = b.GetRectAfterTime(time_final - t0_b);
 
   if (!next_rect_a.Touches(next_rect_b))
     return -1;
@@ -98,15 +92,20 @@ double GetCollisionTime1D(const PhysicsObject<N>& a,
 // Return the collision time if there's a collision or -1 if the objects never
 // collide.
 template <int N>
-double GetCollisionTime(const PhysicsObject<N>& a, const PhysicsObject<N>& b) {
+double GetCollisionTime(const PhysicsObject<N>& a,
+                        double a_time_seconds,
+                        const PhysicsObject<N>& b,
+                        double b_time_seconds) {
   double double_max = std::numeric_limits<double>::max();
   double collision_time = double_max;
   for (int i = 0; i < N; ++i) {
-    double maybe_collision_time = GetCollisionTime1D(a, b, i);
+    double maybe_collision_time =
+        GetCollisionTime1D(a, a_time_seconds, b, b_time_seconds, i);
     if (maybe_collision_time >= 0 && maybe_collision_time < collision_time)
       collision_time = maybe_collision_time;
 
-    maybe_collision_time = GetCollisionTime1D(b, a, i);
+    maybe_collision_time =
+        GetCollisionTime1D(b, b_time_seconds, a, a_time_seconds, i);
     if (maybe_collision_time >= 0 && maybe_collision_time < collision_time)
       collision_time = maybe_collision_time;
   }
@@ -117,9 +116,7 @@ double GetCollisionTime(const PhysicsObject<N>& a, const PhysicsObject<N>& b) {
 
 template <int N>
 PhysicsObject<N>::PhysicsObject(const Rect<int64_t, N>& rect, double mass_kg)
-    : rect(rect.template ConvertTo<double>()),
-      mass_kg(mass_kg),
-      time_seconds(Timing::GetTicks() / 1000) {}
+    : rect(rect.template ConvertTo<double>()), mass_kg(mass_kg) {}
 
 template <int N>
 Rect<int64_t, N> PhysicsObject<N>::GetRect() const {
@@ -127,12 +124,11 @@ Rect<int64_t, N> PhysicsObject<N>::GetRect() const {
 }
 
 template <int N>
-Rect<int64_t, N> PhysicsObject<N>::GetRectAtTime(double other_seconds) const {
-  double dt = other_seconds - time_seconds;
-
+Rect<int64_t, N> PhysicsObject<N>::GetRectAfterTime(
+    double elapsed_seconds) const {
   Rect<int64_t, N> result;
   for (int i = 0; i < N; ++i) {
-    result.pos[i] = rect.pos[i] + dt * velocity[i];
+    result.pos[i] = rect.pos[i] + elapsed_seconds * velocity[i];
     // TODO include forces, constant accel. etc
 
     // for now, size doesn't change with time
@@ -141,6 +137,7 @@ Rect<int64_t, N> PhysicsObject<N>::GetRectAtTime(double other_seconds) const {
   return result;
 }
 
+/*
 // TODO separate constant accel. and velocity; just update position here
 template <int N>
 void PhysicsObject<N>::Update() {
@@ -161,13 +158,12 @@ void PhysicsObject<N>::Update() {
 
   time_seconds = time;
 }
+*/
 
 template <int N>
-void PhysicsObject<N>::UpdateToTime(double seconds) {
+void PhysicsObject<N>::Update(double elapsed_seconds) {
   // TODO what about acceleration?
-  double dt = seconds - time_seconds;
-  rect.pos += velocity * dt;
-  time_seconds = seconds;
+  rect.pos += velocity * elapsed_seconds;
 }
 
 template <int N>

@@ -5,13 +5,6 @@
 
 namespace engine2 {
 namespace test {
-namespace {
-
-void Wait(double seconds) {
-  Timing::Delay(seconds * 1000);
-}
-
-}  // namespace
 
 void PhysicsObjectTest::TestDefault() {
   PhysicsObject obj(Rect<>{1, 2, 3, 4}, 56);
@@ -42,6 +35,7 @@ void PhysicsObjectTest::TestApplyForces() {
   EXPECT_EQ(2 + 4, obj.forces_sum.y());
 }
 
+/*
 void PhysicsObjectTest::TestUpdateZero() {
   PhysicsObject obj(Rect<>{100, 100, 10, 10}, 10);
 
@@ -80,45 +74,38 @@ void PhysicsObjectTest::TestUpdateVelocityFromForces() {
   EXPECT_EQ(1, obj.velocity.x());
   EXPECT_EQ(2, obj.velocity.y());
 }
+*/
 
 void PhysicsObjectTest::TestGetCollisionTime1D() {
   PhysicsObject a(Rect<>{0, 0, 10, 10}, 1);
   // a moves in the +x direction at 10 pixels/second.
   a.velocity = {10, 0};
-  // TODO maybe time should just be 0 by default?
-  a.time_seconds = 0;
 
   // a's leading edge is at x=10, so distance=40. a should touch b after 4
   // seconds.
   PhysicsObject b(Rect<>{50, 0, 10, 10}, 1);
-  b.time_seconds = 0;
-  EXPECT_EQ(4., GetCollisionTime1D(a, b, 0));
+  EXPECT_EQ(4., GetCollisionTime1D(a, 0, b, 0, 0));
   // a and b don't collide via movement in the y direction.
-  EXPECT_EQ(-1., GetCollisionTime1D(a, b, 1));
+  EXPECT_EQ(-1., GetCollisionTime1D(a, 0, b, 0, 1));
 
   // a shouldn't touch c at all.
   PhysicsObject c(Rect<>{50, 30, 10, 10}, 1);
-  c.time_seconds = 0;
-  EXPECT_EQ(-1., GetCollisionTime1D(a, c, 0));
+  EXPECT_EQ(-1., GetCollisionTime1D(a, 0, c, 0, 0));
 }
 
 void PhysicsObjectTest::TestGetCollisionTime() {
   PhysicsObject a(Rect<>{0, 0, 10, 10}, 1);
   // a moves in the +x direction at 10 pixels/second.
   a.velocity = {10, 0};
-  // TODO maybe time should just be 0 by default?
-  a.time_seconds = 0;
 
   // a's leading edge is at x=10, so distance=40. a should touch b after 4
   // seconds.
   PhysicsObject b(Rect<>{50, 0, 10, 10}, 1);
-  b.time_seconds = 0;
-  EXPECT_EQ(4., GetCollisionTime(a, b));
+  EXPECT_EQ(4., GetCollisionTime(a, 0, b, 0));
 
   // a shouldn't touch c at all.
   PhysicsObject c(Rect<>{50, 30, 10, 10}, 1);
-  c.time_seconds = 0;
-  EXPECT_EQ(-1., GetCollisionTime(a, c));
+  EXPECT_EQ(-1., GetCollisionTime(a, 0, c, 0));
 }
 
 void PhysicsObjectTest::TestElasticCollision() {
@@ -139,12 +126,10 @@ void PhysicsObjectTest::TestElasticCollision() {
 void PhysicsObjectTest::TestUpdateToTime() {
   PhysicsObject a(Rect<>{0, 0, 10, 10}, 1);
   a.velocity = {1, 2};
-  a.time_seconds = 0;
 
-  a.UpdateToTime(10);
+  a.Update(10);
   EXPECT_EQ(10, a.rect.x());
   EXPECT_EQ(20, a.rect.y());
-  EXPECT_EQ(10., a.time_seconds);
 }
 
 PhysicsObjectTest::PhysicsObjectTest()
