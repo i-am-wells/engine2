@@ -1,0 +1,16 @@
+import("//build/shell.gni")
+
+template("shell_build") {
+  _extra_args = []
+  if (defined(invoker.extra_args)) {
+    _extra_args = invoker.extra_args
+  }
+
+  shell(target_name) {
+    forward_variables_from(invoker, [ "deps", "outputs" ])
+    command = [
+      rebase_path(invoker.script),
+      rebase_path(target_out_dir)
+    ] + _extra_args
+  }
+}

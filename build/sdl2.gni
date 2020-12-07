@@ -1,4 +1,4 @@
 
-sdl2_cflags = string_split(exec_script("shell.py", ["sdl2-config --cflags"], "string"))
-sdl2_ldflags = string_split(exec_script("shell.py", ["sdl2-config --libs"], "string"))
+sdl2_cflags = string_split(exec_script("shell.py", ["stdout", "sdl2-config", "--cflags"], "string"))
+sdl2_ldflags = string_split(exec_script("shell.py", ["stdout", "sdl2-config", "--libs"], "string"))
 sdl2_ldflags += ["-lSDL2_image", "-lSDL2_mixer"]

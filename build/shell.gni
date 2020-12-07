@@ -1,0 +1,11 @@
+template("shell") {
+  action(target_name) {
+    script = "//build/shell.py"
+    args = invoker.command
+
+    forward_variables_from(invoker, [
+      "deps",
+      "outputs",
+    ])
+  }
+}

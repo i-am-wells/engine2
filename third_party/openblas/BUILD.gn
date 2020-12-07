@@ -1,0 +1,6 @@
+import("//build/shell_build.gni")
+
+shell_build("openblas") {
+  script = "build_openblas.sh"
+  outputs = [ "${target_out_dir}/libopenblas_engine2.a" ]
+}
