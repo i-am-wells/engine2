@@ -101,11 +101,14 @@ void PhysicsObjectTest::TestGetCollisionTime() {
   // a's leading edge is at x=10, so distance=40. a should touch b after 4
   // seconds.
   PhysicsObject b(Rect<>{50, 0, 10, 10}, 1);
-  EXPECT_EQ(4., GetCollisionTime(a, 0, b, 0));
+  auto [collision_time, dimension] = GetCollisionTime(a, 0, b, 0);
+  EXPECT_EQ(4., collision_time);
+  EXPECT_EQ(0, dimension);
 
   // a shouldn't touch c at all.
   PhysicsObject c(Rect<>{50, 30, 10, 10}, 1);
-  EXPECT_EQ(-1., GetCollisionTime(a, 0, c, 0));
+  auto [collision_time_2, dimension_2] = GetCollisionTime(a, 0, c, 0);
+  EXPECT_EQ(-1., collision_time_2);
 }
 
 void PhysicsObjectTest::TestElasticCollision() {
@@ -120,6 +123,31 @@ void PhysicsObjectTest::TestElasticCollision() {
   EXPECT_EQ(0, a.velocity.y());
 
   EXPECT_EQ(10, b.velocity.x());
+  EXPECT_EQ(0, b.velocity.y());
+}
+
+void PhysicsObjectTest::TestAngledElasticCollision() {
+  // a and b are already touching
+  PhysicsObject a(Rect<>{10, 0, 10, 10}, 1);
+  a.velocity = {1, 1};
+  PhysicsObject b(Rect<>{20, 0, 10, 10}, 3);
+  b.velocity = {0, 0};
+
+  // Test collision affecting all dimensions
+  PhysicsObject<2>::ElasticCollision(&a, &b);
+  EXPECT_EQ(-0.5, a.velocity.x());
+  EXPECT_EQ(-0.5, a.velocity.y());
+  EXPECT_EQ(0.5, b.velocity.x());
+  EXPECT_EQ(0.5, b.velocity.y());
+
+  a.velocity = {1, 1};
+  b.velocity = {0, 0};
+
+  // Test collision affecting one dimension
+  PhysicsObject<2>::ElasticCollision1D(&a, &b, 0);
+  EXPECT_EQ(-0.5, a.velocity.x());
+  EXPECT_EQ(1, a.velocity.y());
+  EXPECT_EQ(0.5, b.velocity.x());
   EXPECT_EQ(0, b.velocity.y());
 }
 
@@ -147,6 +175,7 @@ PhysicsObjectTest::PhysicsObjectTest()
               std::bind(&PhysicsObjectTest::TestGetCollisionTime1D, this),
               std::bind(&PhysicsObjectTest::TestGetCollisionTime, this),
               std::bind(&PhysicsObjectTest::TestElasticCollision, this),
+              std::bind(&PhysicsObjectTest::TestAngledElasticCollision, this),
               std::bind(&PhysicsObjectTest::TestUpdateToTime, this),
           }) {}
 

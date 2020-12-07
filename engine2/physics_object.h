@@ -18,7 +18,17 @@ struct PhysicsObject {
 
   void ApplyForce(const Point<double, N>& force_vector);
 
+  void HalfElasticCollision(double other_mass_kg,
+                            const Point<double, N>& other_vel_initial);
+
+  void HalfElasticCollision1D(double other_mass_kg,
+                              const Point<double, N>& other_vel_initial,
+                              int d);
+
   static void ElasticCollision(PhysicsObject<N>* a, PhysicsObject<N>* b);
+  static void ElasticCollision1D(PhysicsObject<N>* a,
+                                 PhysicsObject<N>* b,
+                                 int d);
 
   Rect<double, N> rect;
   double mass_kg;
@@ -32,15 +42,45 @@ struct PhysicsObject {
  private:
   void HalfElasticCollision(const PhysicsObject& other,
                             const Point<double, N>& other_vel_initial);
+
+  void HalfElasticCollision1D(const PhysicsObject& other,
+                              const Point<double, N>& other_vel_initial,
+                              int d);
 };
+
+// TODO call 1d version
+template <int N>
+void PhysicsObject<N>::HalfElasticCollision(
+    double other_mass_kg,
+    const Point<double, N>& other_vel_initial) {
+  velocity = velocity * (mass_kg - other_mass_kg) +
+             other_vel_initial * 2. * other_mass_kg;
+  velocity /= (mass_kg + other_mass_kg);
+}
+
+template <int N>
+void PhysicsObject<N>::HalfElasticCollision1D(
+    double other_mass_kg,
+    const Point<double, N>& other_vel_initial,
+    int d) {
+  velocity[d] = velocity[d] * (mass_kg - other_mass_kg) +
+                other_vel_initial[d] * 2. * other_mass_kg;
+  velocity[d] /= (mass_kg + other_mass_kg);
+}
 
 template <int N>
 void PhysicsObject<N>::HalfElasticCollision(
     const PhysicsObject& other,
     const Point<double, N>& other_vel_initial) {
-  velocity = velocity * (mass_kg - other.mass_kg) +
-             other_vel_initial * 2. * other.mass_kg;
-  velocity /= (mass_kg + other.mass_kg);
+  HalfElasticCollision(other.mass_kg, other_vel_initial);
+}
+
+template <int N>
+void PhysicsObject<N>::HalfElasticCollision1D(
+    const PhysicsObject& other,
+    const Point<double, N>& other_vel_initial,
+    int d) {
+  HalfElasticCollision1D(other.mass_kg, other_vel_initial, d);
 }
 
 // static
@@ -50,6 +90,16 @@ void PhysicsObject<N>::ElasticCollision(PhysicsObject<N>* a,
   Point<double, N> vel_a_initial = a->velocity;
   a->HalfElasticCollision(*b, b->velocity);
   b->HalfElasticCollision(*a, vel_a_initial);
+}
+
+// static
+template <int N>
+void PhysicsObject<N>::ElasticCollision1D(PhysicsObject<N>* a,
+                                          PhysicsObject<N>* b,
+                                          int d) {
+  Point<double, N> vel_a_initial = a->velocity;
+  a->HalfElasticCollision1D(*b, b->velocity, d);
+  b->HalfElasticCollision1D(*a, vel_a_initial, d);
 }
 
 template <int N>
@@ -65,7 +115,14 @@ double GetCollisionTime1D(const PhysicsObject<N>& a,
 
   // Positions of edges that could collide.
   int64_t pos_a = a.rect.pos[d] + a.rect.size[d];
+  int64_t pos_aa = a.rect.pos[d];
   int64_t pos_b = b.rect.pos[d];
+  int64_t pos_bb = b.rect.pos[d] + b.rect.size[d];
+  // Use the "close" edges
+  if (std::abs(pos_aa - pos_bb) < std::abs(pos_a - pos_b)) {
+    pos_a = pos_aa;
+    pos_b = pos_bb;
+  }
 
   // TODO this is constant velocity only; update for forces
   int64_t pos_final =
@@ -89,29 +146,31 @@ double GetCollisionTime1D(const PhysicsObject<N>& a,
   return time_final;
 }
 
-// Return the collision time if there's a collision or -1 if the objects never
-// collide.
-template <int N>
-double GetCollisionTime(const PhysicsObject<N>& a,
-                        double a_time_seconds,
-                        const PhysicsObject<N>& b,
-                        double b_time_seconds) {
-  double double_max = std::numeric_limits<double>::max();
-  double collision_time = double_max;
-  for (int i = 0; i < N; ++i) {
-    double maybe_collision_time =
-        GetCollisionTime1D(a, a_time_seconds, b, b_time_seconds, i);
-    if (maybe_collision_time >= 0 && maybe_collision_time < collision_time)
-      collision_time = maybe_collision_time;
+struct CollisionTimeAndDimension {
+  double time;
+  int dimension;
+};
 
-    maybe_collision_time =
-        GetCollisionTime1D(b, b_time_seconds, a, a_time_seconds, i);
-    if (maybe_collision_time >= 0 && maybe_collision_time < collision_time)
-      collision_time = maybe_collision_time;
+// Return the (absolute) collision time if there's a collision or -1 if the
+// objects never collide. Returned value will be greater than both
+// a_time_seconds and b_time_seconds.
+template <int N>
+CollisionTimeAndDimension GetCollisionTime(const PhysicsObject<N>& a,
+                                           double a_time_seconds,
+                                           const PhysicsObject<N>& b,
+                                           double b_time_seconds) {
+  double double_max = std::numeric_limits<double>::max();
+  CollisionTimeAndDimension result{double_max, -1};
+  for (int i = 0; i < N; ++i) {
+    double time = GetCollisionTime1D(a, a_time_seconds, b, b_time_seconds, i);
+    if (time > a_time_seconds && time > b_time_seconds && time < result.time) {
+      result.time = time;
+      result.dimension = i;
+    }
   }
-  if (collision_time == double_max)
-    return -1;
-  return collision_time;
+  if (result.time == double_max)
+    return {-1, -1};
+  return result;
 }
 
 template <int N>
@@ -120,7 +179,7 @@ PhysicsObject<N>::PhysicsObject(const Rect<int64_t, N>& rect, double mass_kg)
 
 template <int N>
 Rect<int64_t, N> PhysicsObject<N>::GetRect() const {
-  return rect;
+  return rect.template ConvertTo<int64_t>();
 }
 
 template <int N>

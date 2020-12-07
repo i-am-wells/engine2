@@ -45,6 +45,11 @@ struct Rect {
   // If *this doesn't overlap with other, the returned width and/or height will
   // be 0.
   Rect GetOverlap(const Rect& other) const;
+
+  // Returns the index of the axis along which *this and other are touching. If
+  // !Touches(other), return -1. If touching in multiple dimensions, returns the
+  // lowest index.
+  int GetTouchingDimension(const Rect& other) const;
 };
 
 // TODO: maybe these should be members of Rect (but with better names)
@@ -120,6 +125,15 @@ bool Rect<Scalar, N>::Touches(const Rect<Scalar, N>& other) const {
     touch_or_overlap_count += (touch || overlap);
   }
   return (touch_only_count > 0) && (touch_or_overlap_count == N);
+}
+
+template <typename Scalar, int N>
+int Rect<Scalar, N>::GetTouchingDimension(const Rect<Scalar, N>& other) const {
+  for (int i = 0; i < N; ++i) {
+    if (rect_internal::PartialTouch(*this, other, i))
+      return i;
+  }
+  return -1;
 }
 
 template <typename Scalar, int N>

@@ -113,6 +113,25 @@ void RectTest::TestGetOverlap() {
   b = {0, 0, 0, 0};
 }
 
+void RectTest::TestGetTouchingDimension() {
+  Rect<> a{0, 0, 10, 10};
+  Rect<> b{10, 0, 10, 10};
+  Rect<> c{10, 10, 5, 10};
+  Rect<> d{100, 100, 1, 1};
+
+  EXPECT_EQ(0, a.GetTouchingDimension(b));
+  EXPECT_EQ(0, b.GetTouchingDimension(a));
+
+  EXPECT_EQ(0, a.GetTouchingDimension(c));
+  EXPECT_EQ(0, c.GetTouchingDimension(a));
+
+  EXPECT_EQ(-1, a.GetTouchingDimension(d));
+  EXPECT_EQ(-1, d.GetTouchingDimension(a));
+
+  EXPECT_EQ(1, b.GetTouchingDimension(c));
+  EXPECT_EQ(1, c.GetTouchingDimension(b));
+}
+
 RectTest::RectTest()
     : TestGroup("RectTest",
                 {
@@ -122,6 +141,7 @@ RectTest::RectTest()
                     std::bind(&RectTest::TestContainsPoint, this),
                     std::bind(&RectTest::TestContainsRect, this),
                     std::bind(&RectTest::TestGetOverlap, this),
+                    std::bind(&RectTest::TestGetTouchingDimension, this),
                 }) {}
 
 }  // namespace test

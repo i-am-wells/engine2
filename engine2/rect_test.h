@@ -14,6 +14,7 @@ class RectTest : public TestGroup {
   void TestContainsPoint();
   void TestContainsRect();
   void TestGetOverlap();
+  void TestGetTouchingDimension();
 
   RectTest();
 };

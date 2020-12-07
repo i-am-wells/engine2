@@ -19,6 +19,7 @@ class PhysicsObjectTest : public TestGroup {
 
   void TestUpdateToTime();
   void TestElasticCollision();
+  void TestAngledElasticCollision();
 
   PhysicsObjectTest();
 };

@@ -5,6 +5,7 @@
 #include "engine2/memory/weak_pointer_test.h"
 #include "engine2/physics_object_test.h"
 #include "engine2/rect_test.h"
+#include "engine2/space_test.h"
 #include "engine2/texture_cache_test.h"
 #include "engine2/vec_test.h"
 
@@ -14,13 +15,14 @@ namespace test {
 void RunAllTests() {
   std::cerr << "\n";
   /* clang-format off */
-  TestGroup::Result result = WeakPointerTest().RunTests() +
-                             ListTest().RunTests() +
+  TestGroup::Result result = ListTest().RunTests() +
+                             PhysicsObjectTest().RunTests() +
                              RectTest().RunTests() +
                              RectSearchTreeTest().RunTests() +
+                             SpaceTest().RunTests() +
                              TextureCacheTest().RunTests() +
-                             PhysicsObjectTest().RunTests() +
-                             VecTest().RunTests();
+                             VecTest().RunTests() +
+                             WeakPointerTest().RunTests();
   /* clang-format on */
   std::cerr << "\nTOTAL: " << result.passed << " passed, " << result.failed
             << " failed\n";
