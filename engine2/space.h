@@ -70,6 +70,8 @@ class Space {
       // Update tree storage
       tree_iterator = tree->Move(std::move(tree_iterator), enclosing_rect);
     }
+
+    void UpdatePositionToTime(double time) { physics->Update(time - Time()); }
   };
 
   struct Collision {
@@ -79,60 +81,32 @@ class Space {
     int dimension;
     bool operator>(const Collision& other) const { return time > other.time; }
     bool IsValid() const {
-      return motion_a->physics->GetRectAfterTime(time - motion_a->Time())
-          .Touches(
-              motion_b->physics->GetRectAfterTime(time - motion_b->Time()));
+      if (!motion_a->physics->GetRectAfterTime(time - motion_a->Time())
+               .Touches(motion_b->physics->GetRectAfterTime(
+                   time - motion_b->Time()))) {
+        return false;
+      }
+
+      if (motion_a->physics->rect.pos[dimension] <
+          motion_b->physics->rect.pos[dimension]) {
+        return motion_a->physics->velocity[dimension] >
+               motion_b->physics->velocity[dimension];
+      }
+      return motion_b->physics->velocity[dimension] >
+             motion_a->physics->velocity[dimension];
+    }
+    void UpdatePositions() {
+      motion_a->UpdatePositionToTime(time);
+      motion_b->UpdatePositionToTime(time);
+    }
+    void UpdateVelocitiesAndRects(RectSearchTree<N + 1, Motion*>* tree,
+                                  double new_time) {
+      PhysicsObject<N>::ElasticCollision1D(motion_a->physics, motion_b->physics,
+                                           dimension);
+      motion_a->UpdateEnclosingRect(tree, time, new_time);
+      motion_b->UpdateEnclosingRect(tree, time, new_time);
     }
   };
-
-  struct MultiCollision {
-    std::vector<Motion*> motions;
-    double time;
-    double mass_sum;
-    Point<double, N> velocity_sum;
-    int dimension;
-
-    MultiCollision(double time, int dimension)
-        : time(time), mass_sum(0.), velocity_sum{}, dimension(dimension) {
-      motions.reserve(2);
-    }
-
-    void Add(Motion* motion) {
-      motions.push_back(motion);
-      mass_sum += motion->physics->mass_kg;
-      velocity_sum += motion->physics->velocity;
-    }
-
-    void Merge(const MultiCollision& other) {
-      for (Motion* other_motion : other.motions) {
-        bool found = false;
-        for (Motion* motion : motions) {
-          if (motion == other_motion) {
-            found = true;
-            break;
-          }
-        }
-        if (!found)
-          Add(other_motion);
-      }
-    }
-  };
-
-  static typename std::vector<MultiCollision>::iterator
-  FindMultiCollisionContainingMotion(std::vector<MultiCollision>* mcs,
-                                     Motion* motion,
-                                     int dimension) {
-    for (auto iter = mcs->begin(); iter != mcs->end(); ++iter) {
-      if ((*iter).dimension != dimension)
-        continue;
-
-      for (Motion* mc_motion : (*iter).motions) {
-        if (mc_motion == motion)
-          return iter;
-      }
-    }
-    return mcs->end();
-  }
 
   using CollisionQueue = std::priority_queue<Collision,
                                              std::vector<Collision>,
@@ -262,101 +236,36 @@ void Space<N, ObjectTypes...>::AdvanceTime(double new_time_seconds) {
   // Process collisions and motion until all objects have reached the end
   // time.
   while (!queue.empty()) {
-    // Collect all collisions happening at the same time
-    std::vector<MultiCollision> multicollisions;
-    double current_mc_time = queue.top().time;
-    do {
-      Collision collision = queue.top();
-
-      // Skip if the collision isn't actually happening.
-      if (!collision.IsValid()) {
-        queue.pop();
-        if (queue.empty() || queue.top().time != current_mc_time)
-          break;
-        continue;
-      }
-
-      auto mc_a = FindMultiCollisionContainingMotion(
-          &multicollisions, collision.motion_a, collision.dimension);
-      auto mc_b = FindMultiCollisionContainingMotion(
-          &multicollisions, collision.motion_b, collision.dimension);
-
-      if (mc_a != multicollisions.end()) {
-        if (mc_b != multicollisions.end()) {
-          // Do nothing if both a and b are included in the same mc already.
-          if (mc_a != mc_b) {
-            // If a and b are in different mcs, merge them.
-            (*mc_a).Merge(*mc_b);
-            multicollisions.erase(mc_b);
-          }
-        } else {
-          (*mc_a).Add(collision.motion_b);
-        }
-      } else {
-        if (mc_b != multicollisions.end()) {
-          (*mc_b).Add(collision.motion_a);
-        } else {
-          // Neither motion is part of a mc so create a new one
-          multicollisions.emplace_back(collision.time, collision.dimension);
-          multicollisions.back().Add(collision.motion_a);
-          multicollisions.back().Add(collision.motion_b);
-        }
-      }
-
+    Collision collision = queue.top();
+    if (!collision.IsValid()) {
       queue.pop();
-    } while (!queue.empty() && queue.top().time == current_mc_time);
-
-    if (multicollisions.empty())
       continue;
+    }
 
     // 1. Update positions to time of collision
-    for (MultiCollision& mc : multicollisions) {
-      for (Motion* motion : mc.motions)
-        motion->physics->Update(mc.time - motion->Time());
-    }
+    collision.UpdatePositions();
 
     // 2. Run handlers
-    for (MultiCollision& mc : multicollisions) {
-      for (auto iter_a = mc.motions.begin(); iter_a != mc.motions.end();
-           ++iter_a) {
-        Motion* motion_a = *iter_a;
-        std::visit(
-            [&mc, motion_a, &iter_a](auto* object_a) {
-              for (auto iter_b = iter_a + 1; iter_b != mc.motions.end();
-                   ++iter_b) {
-                Motion* motion_b = *iter_b;
-                if (motion_a == motion_b)
-                  continue;
-                std::visit(
-                    [&mc, object_a](auto* object_b) {
-                      object_a->OnCollideWith(*object_b, mc.time);
-                      object_b->OnCollideWith(*object_a, mc.time);
-                    },
-                    motion_b->object);
-              }
-            },
-            motion_a->object);
-      }
-    }
+    // TODO: bind handlers to avoid repeated std::visit
+    std::visit(
+        [&collision](auto* object_a) {
+          std::visit(
+              [&collision, object_a](auto* object_b) {
+                object_a->OnCollideWith(*object_b, collision.time);
+                object_b->OnCollideWith(*object_a, collision.time);
+              },
+              collision.motion_b->object);
+        },
+        collision.motion_a->object);
 
     // 3. Update velocities and enclosing rects
-    for (MultiCollision& mc : multicollisions) {
-      
-      for (Motion* motion : mc.motions) {
-        motion->physics->HalfElasticCollision1D(
-            mc.mass_sum - motion->physics->mass_kg,
-            (mc.velocity_sum - motion->physics->velocity) /
-                (mc.motions.size() - 1.),
-            mc.dimension);
-        motion->UpdateEnclosingRect(tree_.get(), mc.time, new_time_seconds);
-      }
-    }
+    collision.UpdateVelocitiesAndRects(tree_.get(), new_time_seconds);
 
     // 4. Find new collisions
-    for (MultiCollision& mc : multicollisions) {
-      for (Motion* motion : mc.motions)
-        FindCollisions(&queue, motion);
-    }
+    FindCollisions(&queue, collision.motion_a);
+    FindCollisions(&queue, collision.motion_b);
+
+    queue.pop();
   }
   time_seconds_ = new_time_seconds;
 
@@ -374,7 +283,7 @@ void Space<N, ObjectTypes...>::AdvanceTime(double new_time_seconds) {
     motion.physics->Update(new_time_seconds - motion.Time());
 
   --advance_time_call_depth_;
-}
+}  // namespace engine2
 
 }  // namespace engine2
 

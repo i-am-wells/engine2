@@ -111,6 +111,15 @@ void PhysicsObjectTest::TestGetCollisionTime() {
   EXPECT_EQ(-1., collision_time_2);
 }
 
+void PhysicsObjectTest::TestGetCollisionTimeNow() {
+  PhysicsObject<2> a(Rect<>{10, 10, 10, 10}, 1);
+  a.velocity = {1, 0};
+  PhysicsObject<2> b(Rect<>{20, 10, 10, 10}, 1);
+  b.velocity = {0, 0};
+
+  EXPECT_EQ(0, GetCollisionTime1D(a, 0, b, 0, 0));
+}
+
 void PhysicsObjectTest::TestElasticCollision() {
   // a and b are already touching
   PhysicsObject a(Rect<>{10, 0, 10, 10}, 1);
@@ -173,6 +182,7 @@ PhysicsObjectTest::PhysicsObjectTest()
               std::bind(&PhysicsObjectTest::TestUpdateVelocityFromForces, this),
               */
               std::bind(&PhysicsObjectTest::TestGetCollisionTime1D, this),
+              std::bind(&PhysicsObjectTest::TestGetCollisionTimeNow, this),
               std::bind(&PhysicsObjectTest::TestGetCollisionTime, this),
               std::bind(&PhysicsObjectTest::TestElasticCollision, this),
               std::bind(&PhysicsObjectTest::TestAngledElasticCollision, this),

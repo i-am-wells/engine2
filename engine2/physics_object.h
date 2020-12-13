@@ -163,7 +163,8 @@ CollisionTimeAndDimension GetCollisionTime(const PhysicsObject<N>& a,
   CollisionTimeAndDimension result{double_max, -1};
   for (int i = 0; i < N; ++i) {
     double time = GetCollisionTime1D(a, a_time_seconds, b, b_time_seconds, i);
-    if (time > a_time_seconds && time > b_time_seconds && time < result.time) {
+    if (time >= a_time_seconds && time >= b_time_seconds &&
+        time < result.time) {
       result.time = time;
       result.dimension = i;
     }

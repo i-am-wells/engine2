@@ -17,6 +17,8 @@ class PhysicsObjectTest : public TestGroup {
   void TestGetCollisionTime1D();
   void TestGetCollisionTime();
 
+  void TestGetCollisionTimeNow();
+
   void TestUpdateToTime();
   void TestElasticCollision();
   void TestAngledElasticCollision();

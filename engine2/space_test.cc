@@ -13,6 +13,8 @@ class ObjectInSpace {
  public:
   ObjectInSpace(int x, int y, int w, int h, double mass)
       : phys({x, y, w, h}, mass) {}
+  ObjectInSpace(int x, int y, int w, int h, double mass, std::string name)
+      : phys({x, y, w, h}, mass), name(name) {}
   void SetVelocity(double vx, double vy) { phys.velocity = {vx, vy}; }
 
   void OnCollideWith(const ObjectInSpace& other, double collision_time) {
@@ -24,6 +26,7 @@ class ObjectInSpace {
 
   int collide_count = 0;
   PhysicsObject<2> phys;
+  std::string name = "";
 };
 
 class Bar;
@@ -227,21 +230,21 @@ void SpaceTest::TestSimultaneousCollide() {
 void SpaceTest::TestTrolleyCollide() {
   Space<2, ObjectInSpace> space(kSpaceRect);
 
-  ObjectInSpace a(100, 100, 5, 5, 1);
+  ObjectInSpace left(80, 100, 10, 10, 1, "left");
+  left.SetVelocity(1, 0);
+  space.Add(&left);
+
+  ObjectInSpace a(100, 100, 5, 5, 1, "a");
   a.SetVelocity(0, 0);
   space.Add(&a);
 
-  ObjectInSpace b(105, 100, 5, 5, 1);
+  ObjectInSpace b(105, 100, 5, 5, 1, "b");
   b.SetVelocity(0, 0);
   space.Add(&b);
 
-  ObjectInSpace c(110, 100, 5, 5, 1);
+  ObjectInSpace c(110, 100, 5, 5, 1, "c");
   c.SetVelocity(0, 0);
   space.Add(&c);
-
-  ObjectInSpace left(80, 100, 10, 10, 1);
-  left.SetVelocity(1, 0);
-  space.Add(&left);
 
   // left collides with (a, b, c) and c breaks away.
   space.AdvanceTime(20);
