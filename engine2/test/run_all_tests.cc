@@ -7,6 +7,7 @@
 #include "engine2/rect_test.h"
 #include "engine2/space_test.h"
 #include "engine2/texture_cache_test.h"
+#include "engine2/time_test.h"
 #include "engine2/vec_test.h"
 
 namespace engine2 {
@@ -21,6 +22,7 @@ void RunAllTests() {
                              RectSearchTreeTest().RunTests() +
                              SpaceTest().RunTests() +
                              TextureCacheTest().RunTests() +
+                             TimeTest().RunTests() +
                              VecTest().RunTests() +
                              WeakPointerTest().RunTests();
   /* clang-format on */
