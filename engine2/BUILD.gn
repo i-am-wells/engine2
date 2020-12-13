@@ -1,6 +1,5 @@
 source_set("engine2") {
   sources = [
-    "arena.h",
     "base/build_string.h",
     "base/list.h",
     "callback_queue.cc",
