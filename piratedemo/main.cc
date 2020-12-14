@@ -2,13 +2,13 @@
 #include <memory>
 #include <thread>
 
-#include "engine2/arena2d.h"
 #include "engine2/camera2d.h"
 #include "engine2/graphics2d.h"
 #include "engine2/impl/basic_graphics2d.h"
 #include "engine2/logic_context.h"
 #include "engine2/physics_object.h"
 #include "engine2/rgba_color.h"
+#include "engine2/space.h"
 #include "engine2/state_mutex.h"
 #include "engine2/texture.h"
 #include "engine2/texture_cache.h"
@@ -16,13 +16,13 @@
 #include "engine2/video_context.h"
 #include "engine2/window.h"
 
-using engine2::Arena2D;
 using engine2::BasicGraphics2D;
 using engine2::Camera2D;
 using engine2::Graphics2D;
 using engine2::PhysicsObject;
 using engine2::Point;
 using engine2::Rect;
+using engine2::Space;
 using engine2::StateMutex;
 using engine2::Texture;
 using engine2::TextureCache;
@@ -40,8 +40,6 @@ class PhysicsSprite : public Camera2D::Visible {
 
   void SetTexture(Texture* texture) { texture_ = texture; }
 
-  void PhysicsUpdate() { physics_.Update(); }
-
   // implementation for Camera2D::Visible
   Rect<> GetRect() override { return physics_.GetRect(); }
   void OnCameraDraw(Camera2D* camera) override {
@@ -49,7 +47,7 @@ class PhysicsSprite : public Camera2D::Visible {
   }
 
  protected:
-  PhysicsObject physics_;
+  PhysicsObject<2> physics_;
   Texture* texture_ = nullptr;
 };
 
@@ -67,18 +65,18 @@ int main(int argc, char** argv) {
   // TODO SDL_Init
 
   Rect<> world_rect{0, 0, 1000, 1000};
-  Point<> screen_size{200, 150};
-  int64_t scale = 4l;
+  Point<int, 2> screen_size{200, 150};
+  int scale = 4;
 
-  Camera2D camera(world_rect, {Point<>{0, 0}, screen_size});
+  // TODO fix
+  Camera2D camera({0, 0, 250, 150}, {0, 0, 250, 150});
   Pirate pirate({10, 10});
   PhysicsSprite background(/*rect=*/{0, 0, 400, 200}, /*mass_kg=*/1);
 
-  // TODO should arena have a position?
-  Arena2D<Camera2D::Visible, Camera2D> arena(world_rect, 1);
-  arena.AddActive(&pirate);
-  arena.AddActive(&background);
-  arena.AddReactive(&camera);
+  Space<2, Pirate> space(world_rect);
+  space.Add(&pirate);
+  space.Add(&background);
+  space.AddObserver(&camera);
 
   camera.Follow(&pirate);
 
@@ -87,9 +85,9 @@ int main(int argc, char** argv) {
   std::thread video_thread([&] {
     auto video_context = VideoContext::Create();
     // TODO handle exceptions?
-    auto window =
-        Window::Create("Pirate Demo", {Point<>{0, 0}, screen_size * scale},
-                       /*sdl_window_flags=*/0);
+    auto window = Window::Create("Pirate Demo",
+                                 {Point<int, 2>{0, 0}, screen_size * scale},
+                                 /*sdl_window_flags=*/0);
     auto graphics = BasicGraphics2D::Create(*window, /*sdl_renderer_flags=*/0);
     graphics->SetScale(scale);
 

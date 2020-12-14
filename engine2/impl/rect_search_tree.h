@@ -27,7 +27,6 @@ template <int N, class Rep>
 class RectSearchTree {
  public:
   using Rect = Rect<int64_t, N>;
-  class Iterator;
   class NearIterator;
   struct NearIterable;
 
@@ -35,8 +34,8 @@ class RectSearchTree {
   // or removed from the tree.
   //
   // Iterator: Visits all objects in the tree.
-  Iterator begin() { return Iterator(this); }
-  Iterator end() { return Iterator(); }
+  NearIterator begin();
+  NearIterator end();
 
   // NearIterator: Tries to skip objects that couldn't touch or overlap |rect|.
   // In the best case, visits only |tree_depth| nodes.
@@ -54,18 +53,18 @@ class RectSearchTree {
 
   // Add an object to the search tree. Returns iterator to the subtree the
   // object was added to.
-  Iterator Insert(const Rect& rect, Rep obj);
+  NearIterator Insert(const Rect& rect, Rep obj);
 
   // Same as Insert(Rect, Rep), but search based on the intersection of rect
   // and rect_.
-  Iterator InsertTrimmed(const Rect& rect, Rep obj);
+  NearIterator InsertTrimmed(const Rect& rect, Rep obj);
 
   // Remove an object from the tree (if present).
-  void Remove(Iterator&& iterator);
+  void Remove(NearIterator&& iterator);
 
   // Update object's position in the tree and return a new iterator. (The new
   // iterator is rooted at the specific subtree the object was added to.)
-  Iterator Move(Iterator&& iterator, Rect dest);
+  NearIterator Move(NearIterator&& iterator, Rect dest);
 
   // Finds the smallest subtree |rect| could belong to.
   RectSearchTree* Find(const Rect& rect);
@@ -138,13 +137,23 @@ class RectSearchTree {
   RectSearchTree(Rect rect);
   RectSearchTree* FindInternal(const Rect& rect);
   RectSearchTree* FindOrNull(const Rect& rect);
-  Iterator InsertLocal(Rep obj);
+  NearIterator InsertLocal(Rep obj);
 
   Rect rect_;
   std::unique_ptr<RectSearchTree> child_a_;
   std::unique_ptr<RectSearchTree> child_b_;
   std::list<Rep> reps_;
 };  // namespace engine2
+
+template <int N, class Rep>
+typename RectSearchTree<N, Rep>::NearIterator RectSearchTree<N, Rep>::begin() {
+  return NearIterator(this, rect_);
+}
+
+template <int N, class Rep>
+typename RectSearchTree<N, Rep>::NearIterator RectSearchTree<N, Rep>::end() {
+  return NearIterator();
+}
 
 template <int N, class Rep>
 RectSearchTree<N, Rep>::Iterator::Iterator(RectSearchTree* start_node) {
@@ -267,42 +276,42 @@ std::unique_ptr<RectSearchTree<N, Rep>> RectSearchTree<N, Rep>::Create(
 }
 
 template <int N, class Rep>
-typename RectSearchTree<N, Rep>::Iterator RectSearchTree<N, Rep>::Insert(
+typename RectSearchTree<N, Rep>::NearIterator RectSearchTree<N, Rep>::Insert(
     const Rect& rect,
     Rep obj) {
   return Find(rect)->InsertLocal(obj);
 }
 
 template <int N, class Rep>
-typename RectSearchTree<N, Rep>::Iterator RectSearchTree<N, Rep>::InsertLocal(
-    Rep obj) {
+typename RectSearchTree<N, Rep>::NearIterator
+RectSearchTree<N, Rep>::InsertLocal(Rep obj) {
   reps_.push_front(obj);
-  return Iterator{this};
+  return NearIterator{this, rect_};
 }
 
 template <int N, class Rep>
-typename RectSearchTree<N, Rep>::Iterator RectSearchTree<N, Rep>::InsertTrimmed(
-    const RectSearchTree<N, Rep>::Rect& rect,
-    Rep obj) {
+typename RectSearchTree<N, Rep>::NearIterator
+RectSearchTree<N, Rep>::InsertTrimmed(const RectSearchTree<N, Rep>::Rect& rect,
+                                      Rep obj) {
   // Trim rect to fit in the tree.
   return Insert(rect.GetOverlap(rect_), obj);
 }
 
 template <int N, class Rep>
-void RectSearchTree<N, Rep>::Remove(Iterator&& iterator) {
+void RectSearchTree<N, Rep>::Remove(NearIterator&& iterator) {
   iterator.Erase();
 }
 
 template <int N, class Rep>
-typename RectSearchTree<N, Rep>::Iterator RectSearchTree<N, Rep>::Move(
-    Iterator&& iterator,
+typename RectSearchTree<N, Rep>::NearIterator RectSearchTree<N, Rep>::Move(
+    NearIterator&& iterator,
     Rect dest) {
   // First try searching below the current node.
   RectSearchTree* subtree = iterator.Subtree()->FindOrNull(dest);
   if (subtree == iterator.Subtree())
     return iterator;
 
-  Iterator new_iterator;
+  NearIterator new_iterator;
   if (subtree) {
     new_iterator = subtree->InsertLocal(*iterator);
   } else {

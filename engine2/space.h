@@ -26,7 +26,7 @@ class Space {
     Iterator& operator++();
     bool operator==(const Iterator& other) const;
 
-    typename std::list<Motion>::iterator list_iterator;
+    typename RectSearchTree<N + 1, Motion*>::NearIterator tree_iterator;
   };
 
   template <class T>
@@ -36,6 +36,12 @@ class Space {
 
   void AdvanceTime(const Time::Delta& delta);
 
+  struct NearView {
+    Iterator begin();
+    Iterator end();
+  };
+  NearView Near(const Rect<int64_t, N>& rect);
+
  private:
   friend class Iterator;
 
@@ -43,7 +49,8 @@ class Space {
     Variant object;
     PhysicsObject<N>* physics;
     Rect<int64_t, N + 1> enclosing_rect{};
-    typename RectSearchTree<N + 1, Motion*>::Iterator tree_iterator;
+    typename RectSearchTree<N + 1, Motion*>::NearIterator tree_iterator;
+    typename std::list<Motion>::iterator list_iterator;
     bool marked_for_removal = false;
 
     Time GetTime() const {
@@ -150,20 +157,20 @@ Space<N, ObjectTypes...>::Space(const Rect<int64_t, N>& rect) {
 template <int N, class... ObjectTypes>
 typename Space<N, ObjectTypes...>::Variant&
 Space<N, ObjectTypes...>::Iterator::operator*() {
-  return (*list_iterator).object;
+  return (*tree_iterator).object;
 }
 
 template <int N, class... ObjectTypes>
 typename Space<N, ObjectTypes...>::Iterator&
 Space<N, ObjectTypes...>::Iterator::operator++() {
-  ++list_iterator;
+  ++tree_iterator;
   return *this;
 }
 
 template <int N, class... ObjectTypes>
 bool Space<N, ObjectTypes...>::Iterator::operator==(
     const Iterator& other) const {
-  return list_iterator == other.list_iterator;
+  return tree_iterator == other.tree_iterator;
 }
 
 template <int N, class... ObjectTypes>
@@ -178,15 +185,17 @@ typename Space<N, ObjectTypes...>::Iterator Space<N, ObjectTypes...>::Add(
   // TODO static assert
   motion.physics = object->physics();
   motion.tree_iterator = tree_->Insert(motion.enclosing_rect, &motion);
-  return Iterator{motions_.begin()};
+  motion.list_iterator = motions_.begin();
+  return Iterator{motion.tree_iterator};
 }
 
 template <int N, class... ObjectTypes>
 void Space<N, ObjectTypes...>::Remove(Iterator iterator) {
+  Motion* motion = *(iterator.tree_iterator);
   if (advance_time_call_depth_ > 0) {
-    (*(iterator.list_iterator)).marked_for_removal = true;
+    motion->marked_for_removal = true;
   } else {
-    RemoveInternal(iterator.list_iterator);
+    RemoveInternal(motion->list_iterator);
   }
 }
 
@@ -288,7 +297,10 @@ void Space<N, ObjectTypes...>::AdvanceTime(const Time::Delta& delta) {
     motion.physics->Update(end_time - motion.GetTime());
 
   --advance_time_call_depth_;
-}  // namespace engine2
+}
+
+// TODO
+// NearView Near(const Rect<int64_t, N>& rect);
 
 }  // namespace engine2
 
