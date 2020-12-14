@@ -2,7 +2,7 @@
 #define ENGINE2_PHYSICS_OBJECT_H_
 
 #include "engine2/rect.h"
-#include "engine2/timing.h"
+#include "engine2/time.h"
 
 namespace engine2 {
 
@@ -12,9 +12,9 @@ struct PhysicsObject {
   PhysicsObject(const Rect<int64_t, N>& rect, double mass_kg);
 
   Rect<int64_t, N> GetRect() const;
-  Rect<int64_t, N> GetRectAfterTime(double elapsed_seconds) const;
+  Rect<int64_t, N> GetRectAfterTime(const Time::Delta& delta) const;
 
-  void Update(double elapsed_seconds);
+  void Update(const Time::Delta& delta);
 
   void ApplyForce(const Point<double, N>& force_vector);
 
@@ -103,15 +103,15 @@ void PhysicsObject<N>::ElasticCollision1D(PhysicsObject<N>* a,
 }
 
 template <int N>
-double GetCollisionTime1D(const PhysicsObject<N>& a,
-                          double t0_a,
-                          const PhysicsObject<N>& b,
-                          double t0_b,
-                          int d) {
+Time GetCollisionTime1D(const PhysicsObject<N>& a,
+                        const Time& t0_a,
+                        const PhysicsObject<N>& b,
+                        const Time& t0_b,
+                        int d) {
   double vel_a = a.velocity[d];
   double vel_b = b.velocity[d];
   if (vel_a == vel_b)
-    return -1;
+    return Time::FromSeconds(-1);
 
   // Positions of edges that could collide.
   int64_t pos_a = a.rect.pos[d] + a.rect.size[d];
@@ -125,15 +125,16 @@ double GetCollisionTime1D(const PhysicsObject<N>& a,
   }
 
   // TODO this is constant velocity only; update for forces
+  Time::Delta t0_ab_diff = t0_a - t0_b;
   int64_t pos_final =
-      (vel_b * (vel_a * (t0_a - t0_b) - pos_a) + vel_a * pos_b) /
+      (vel_b * (vel_a * t0_ab_diff.ToSeconds() - pos_a) + vel_a * pos_b) /
       (vel_a - vel_b);
 
-  double time_final;
+  Time time_final;
   if (!vel_a)
-    time_final = ((pos_final - pos_b) / vel_b) + t0_b;
+    time_final = Time::Delta::FromSeconds((pos_final - pos_b) / vel_b) + t0_b;
   else
-    time_final = ((pos_final - pos_a) / vel_a) + t0_a;
+    time_final = Time::Delta::FromSeconds((pos_final - pos_a) / vel_a) + t0_a;
 
   // Check whether there's actually a collision at time_final
   // TODO store this somewhere?
@@ -141,13 +142,13 @@ double GetCollisionTime1D(const PhysicsObject<N>& a,
   Rect<int64_t, N> next_rect_b = b.GetRectAfterTime(time_final - t0_b);
 
   if (!next_rect_a.Touches(next_rect_b))
-    return -1;
+    return Time::FromSeconds(-1);
 
   return time_final;
 }
 
 struct CollisionTimeAndDimension {
-  double time;
+  Time time;
   int dimension;
 };
 
@@ -156,21 +157,20 @@ struct CollisionTimeAndDimension {
 // a_time_seconds and b_time_seconds.
 template <int N>
 CollisionTimeAndDimension GetCollisionTime(const PhysicsObject<N>& a,
-                                           double a_time_seconds,
+                                           const Time& a_time,
                                            const PhysicsObject<N>& b,
-                                           double b_time_seconds) {
-  double double_max = std::numeric_limits<double>::max();
-  CollisionTimeAndDimension result{double_max, -1};
+                                           const Time& b_time) {
+  Time time_max = Time::FromMicroseconds(std::numeric_limits<int64_t>::max());
+  CollisionTimeAndDimension result{time_max, -1};
   for (int i = 0; i < N; ++i) {
-    double time = GetCollisionTime1D(a, a_time_seconds, b, b_time_seconds, i);
-    if (time >= a_time_seconds && time >= b_time_seconds &&
-        time < result.time) {
+    Time time = GetCollisionTime1D(a, a_time, b, b_time, i);
+    if (time >= a_time && time >= b_time && time < result.time) {
       result.time = time;
       result.dimension = i;
     }
   }
-  if (result.time == double_max)
-    return {-1, -1};
+  if (result.time == time_max)
+    return {Time::FromSeconds(-1), -1};
   return result;
 }
 
@@ -185,10 +185,10 @@ Rect<int64_t, N> PhysicsObject<N>::GetRect() const {
 
 template <int N>
 Rect<int64_t, N> PhysicsObject<N>::GetRectAfterTime(
-    double elapsed_seconds) const {
+    const Time::Delta& delta) const {
   Rect<int64_t, N> result;
   for (int i = 0; i < N; ++i) {
-    result.pos[i] = rect.pos[i] + elapsed_seconds * velocity[i];
+    result.pos[i] = rect.pos[i] + delta.ToSeconds() * velocity[i];
     // TODO include forces, constant accel. etc
 
     // for now, size doesn't change with time
@@ -197,33 +197,10 @@ Rect<int64_t, N> PhysicsObject<N>::GetRectAfterTime(
   return result;
 }
 
-/*
-// TODO separate constant accel. and velocity; just update position here
 template <int N>
-void PhysicsObject<N>::Update() {
-  // TODO this should be a parameter
-  double time = Timing::GetTicks() / 1000;
-  double elapsed_seconds = (time > time_seconds) ? (time - time_seconds) : 1;
-
-  // F = ma
-  Point<double, N> acceleration = forces_sum / mass_kg;
-  // Clear forces
-  forces_sum = Point<double, N>();
-
-  // v = at + v0
-  velocity += acceleration * elapsed_seconds;
-
-  // p = vt + p0
-  rect.pos += velocity * elapsed_seconds;
-
-  time_seconds = time;
-}
-*/
-
-template <int N>
-void PhysicsObject<N>::Update(double elapsed_seconds) {
+void PhysicsObject<N>::Update(const Time::Delta& delta) {
   // TODO what about acceleration?
-  rect.pos += velocity * elapsed_seconds;
+  rect.pos += velocity * delta.ToSeconds();
 }
 
 template <int N>

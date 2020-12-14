@@ -16,10 +16,17 @@ class Time {
       return Delta(microseconds);
     }
 
+    constexpr Delta() : micros_(0) {}
+
     double ToSeconds() const;
     int64_t ToMicroseconds() const { return micros_; }
 
     bool operator==(const Delta& other) const;
+    bool operator<(const Delta& other) const;
+    bool operator<=(const Delta& other) const;
+    bool operator>(const Delta& other) const;
+    bool operator>=(const Delta& other) const;
+
     Delta& operator-=(const Delta& other);
     Delta operator-(const Delta& other) const;
     Delta& operator+=(const Delta& other);
@@ -36,6 +43,8 @@ class Time {
     int64_t micros_;
   };
 
+  constexpr Time() : micros_(0) {}
+
   static constexpr Time FromSeconds(double seconds) {
     return Time(SecondsToMicros(seconds));
   }
@@ -47,6 +56,10 @@ class Time {
   int64_t ToMicroseconds() const { return micros_; }
 
   bool operator==(const Time& other) const;
+  bool operator<(const Time& other) const;
+  bool operator<=(const Time& other) const;
+  bool operator>(const Time& other) const;
+  bool operator>=(const Time& other) const;
 
   Time& operator-=(const Delta& delta);
   Delta operator-(const Time& other) const;

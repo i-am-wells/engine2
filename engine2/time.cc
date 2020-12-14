@@ -10,6 +10,22 @@ bool Time::Delta::operator==(const Delta& other) const {
   return micros_ == other.micros_;
 }
 
+bool Time::Delta::operator<(const Delta& other) const {
+  return micros_ < other.micros_;
+}
+
+bool Time::Delta::operator>(const Delta& other) const {
+  return micros_ > other.micros_;
+}
+
+bool Time::Delta::operator<=(const Delta& other) const {
+  return micros_ <= other.micros_;
+}
+
+bool Time::Delta::operator>=(const Delta& other) const {
+  return micros_ >= other.micros_;
+}
+
 Time::Delta& Time::Delta::operator-=(const Delta& other) {
   micros_ -= other.micros_;
   return *this;
@@ -56,6 +72,22 @@ double Time::ToSeconds() const {
 
 bool Time::operator==(const Time& other) const {
   return micros_ == other.micros_;
+}
+
+bool Time::operator<(const Time& other) const {
+  return micros_ < other.micros_;
+}
+
+bool Time::operator>(const Time& other) const {
+  return micros_ > other.micros_;
+}
+
+bool Time::operator<=(const Time& other) const {
+  return micros_ <= other.micros_;
+}
+
+bool Time::operator>=(const Time& other) const {
+  return micros_ >= other.micros_;
 }
 
 Time& Time::operator-=(const Delta& delta) {

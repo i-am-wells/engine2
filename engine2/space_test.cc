@@ -17,9 +17,7 @@ class ObjectInSpace {
       : phys({x, y, w, h}, mass), name(name) {}
   void SetVelocity(double vx, double vy) { phys.velocity = {vx, vy}; }
 
-  void OnCollideWith(const ObjectInSpace& other, double collision_time) {
-    ++collide_count;
-  }
+  void OnCollideWith(const ObjectInSpace& other) { ++collide_count; }
 
   // for Space
   PhysicsObject<2>* physics() { return &phys; }
@@ -37,8 +35,8 @@ class Foo : public ObjectInSpace {
 
   Foo(int x, int y, int w, int h, double mass)
       : ObjectInSpace(x, y, w, h, mass) {}
-  void OnCollideWith(const Foo& other, double time) { ++foo_count; }
-  void OnCollideWith(const Bar& other, double time) { ++bar_count; }
+  void OnCollideWith(const Foo& other) { ++foo_count; }
+  void OnCollideWith(const Bar& other) { ++bar_count; }
 };
 
 class Bar : public ObjectInSpace {
@@ -48,8 +46,8 @@ class Bar : public ObjectInSpace {
 
   Bar(int x, int y, int w, int h, double mass)
       : ObjectInSpace(x, y, w, h, mass) {}
-  void OnCollideWith(const Foo& other, double time) { ++foo_count; }
-  void OnCollideWith(const Bar& other, double time) { ++bar_count; }
+  void OnCollideWith(const Foo& other) { ++foo_count; }
+  void OnCollideWith(const Bar& other) { ++bar_count; }
 };
 
 }  // namespace
@@ -61,11 +59,11 @@ void SpaceTest::TestAdvanceTimeSingle() {
   a.SetVelocity(1, 2);
   space.Add(&a);
 
-  space.AdvanceTime(10);
+  space.AdvanceTime(Time::Delta::FromSeconds(10));
   EXPECT_EQ(110, a.phys.rect.x());
   EXPECT_EQ(120, a.phys.rect.y());
 
-  space.AdvanceTime(20);
+  space.AdvanceTime(Time::Delta::FromSeconds(10));
   EXPECT_EQ(120, a.phys.rect.x());
   EXPECT_EQ(140, a.phys.rect.y());
 }
@@ -81,7 +79,7 @@ void SpaceTest::TestAdvanceTimeMultiple() {
   b.SetVelocity(1, 0);
   space.Add(&b);
 
-  space.AdvanceTime(10);
+  space.AdvanceTime(Time::Delta::FromSeconds(10));
 
   EXPECT_EQ(110, a.phys.rect.x());
   EXPECT_EQ(120, a.phys.rect.y());
@@ -102,7 +100,7 @@ void SpaceTest::TestRemove() {
 
   space.Remove(b_iter);
 
-  space.AdvanceTime(10);
+  space.AdvanceTime(Time::Delta::FromSeconds(10));
 
   EXPECT_EQ(110, a.phys.rect.x());
   EXPECT_EQ(120, a.phys.rect.y());
@@ -127,7 +125,7 @@ void SpaceTest::TestSimpleCollide() {
   // +-+    +-+
   // a and b collide at t=10. a should stop moving and b should end with
   // v={1,0}.
-  space.AdvanceTime(20);
+  space.AdvanceTime(Time::Delta::FromSeconds(20));
 
   EXPECT_EQ(1, a.collide_count);
   EXPECT_EQ(1, b.collide_count);
@@ -143,7 +141,7 @@ void SpaceTest::TestSimpleCollide() {
   EXPECT_EQ(0., b.phys.velocity.y());
 
   // a and b shouldn't collide again.
-  space.AdvanceTime(40);
+  space.AdvanceTime(Time::Delta::FromSeconds(20));
 
   EXPECT_EQ(1, a.collide_count);
   EXPECT_EQ(1, b.collide_count);
@@ -176,7 +174,7 @@ void SpaceTest::TestChainedCollide() {
   // t=20: ...        b.x = 130, b hits c
   // t=30: ...        ...        c.x = 150
 
-  space.AdvanceTime(30);
+  space.AdvanceTime(Time::Delta::FromSeconds(30));
 
   EXPECT_EQ(1, a.collide_count);
   EXPECT_EQ(2, b.collide_count);
@@ -215,7 +213,7 @@ void SpaceTest::TestSimultaneousCollide() {
 
   // left and right should both collide with center at t=10 and return to their
   // original positions (with reversed velocity). center should stay put.
-  space.AdvanceTime(20);
+  space.AdvanceTime(Time::Delta::FromSeconds(20));
 
   EXPECT_EQ(100, center.phys.rect.x());
   EXPECT_EQ(0, center.phys.velocity.x());
@@ -247,7 +245,7 @@ void SpaceTest::TestTrolleyCollide() {
   space.Add(&c);
 
   // left collides with (a, b, c) and c breaks away.
-  space.AdvanceTime(20);
+  space.AdvanceTime(Time::Delta::FromSeconds(20));
 
   EXPECT_EQ(90, left.phys.rect.x());
   EXPECT_EQ(0., left.phys.velocity.x());

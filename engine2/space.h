@@ -3,12 +3,12 @@
 
 #include <list>
 #include <queue>
-#include <random>
 #include <variant>
 #include <vector>
 
 #include "engine2/impl/rect_search_tree.h"
 #include "engine2/physics_object.h"
+#include "engine2/time.h"
 
 namespace engine2 {
 
@@ -34,8 +34,7 @@ class Space {
 
   void Remove(Iterator iterator);
 
-  // TODO instead use time delta??
-  void AdvanceTime(double new_time_seconds);
+  void AdvanceTime(const Time::Delta& delta);
 
  private:
   friend class Iterator;
@@ -47,13 +46,16 @@ class Space {
     typename RectSearchTree<N + 1, Motion*>::Iterator tree_iterator;
     bool marked_for_removal = false;
 
-    double Time() const { return enclosing_rect.pos[N] / 1000.; }
+    Time GetTime() const {
+      return Time::FromMicroseconds(enclosing_rect.pos[N]);
+    }
 
     void UpdateEnclosingRect(RectSearchTree<N + 1, Motion*>* tree,
-                             double start_time,
-                             double finish_time) {
+                             const Time& start_time,
+                             const Time& finish_time) {
       Rect<int64_t, N> start_rect = physics->GetRect();
-      Rect<int64_t, N> finish_rect = physics->GetRectAfterTime(finish_time);
+      Rect<int64_t, N> finish_rect =
+          physics->GetRectAfterTime(finish_time - start_time);
       for (int i = 0; i < N; ++i) {
         enclosing_rect.pos[i] = std::min(start_rect.pos[i], finish_rect.pos[i]);
         enclosing_rect.size[i] =
@@ -62,28 +64,28 @@ class Space {
             enclosing_rect.pos[i];
       }
 
-      // TODO offset by reference time which is set at start of update?
-      // TODO time units??
-      enclosing_rect.pos[N] = start_time * 1000;
-      enclosing_rect.size[N] = (finish_time - start_time) * 1000;
+      enclosing_rect.pos[N] = start_time.ToMicroseconds();
+      enclosing_rect.size[N] = (finish_time - start_time).ToMicroseconds();
 
       // Update tree storage
       tree_iterator = tree->Move(std::move(tree_iterator), enclosing_rect);
     }
 
-    void UpdatePositionToTime(double time) { physics->Update(time - Time()); }
+    void UpdatePositionToTime(const Time& time) {
+      physics->Update(time - GetTime());
+    }
   };
 
   struct Collision {
     Motion* motion_a;
     Motion* motion_b;
-    double time;
+    Time time;
     int dimension;
     bool operator>(const Collision& other) const { return time > other.time; }
     bool IsValid() const {
-      if (!motion_a->physics->GetRectAfterTime(time - motion_a->Time())
+      if (!motion_a->physics->GetRectAfterTime(time - motion_a->GetTime())
                .Touches(motion_b->physics->GetRectAfterTime(
-                   time - motion_b->Time()))) {
+                   time - motion_b->GetTime()))) {
         return false;
       }
 
@@ -100,7 +102,7 @@ class Space {
       motion_b->UpdatePositionToTime(time);
     }
     void UpdateVelocitiesAndRects(RectSearchTree<N + 1, Motion*>* tree,
-                                  double new_time) {
+                                  Time new_time) {
       PhysicsObject<N>::ElasticCollision1D(motion_a->physics, motion_b->physics,
                                            dimension);
       motion_a->UpdateEnclosingRect(tree, time, new_time);
@@ -125,7 +127,7 @@ class Space {
   int advance_time_call_depth_ = 0;
 
   // TODO set in constructor
-  double time_seconds_ = 0.;
+  Time time_ = Time::FromSeconds(0);
 };
 
 template <int N, class... ObjectTypes>
@@ -136,9 +138,10 @@ Space<N, ObjectTypes...>::Space(const Rect<int64_t, N>& rect) {
     rect_with_time.size[i] = rect.size[i];
   }
 
-  // TODO time scale is temporary
+  // The "time" dimension is represented as microseconds since the beginning of
+  // an update.
   rect_with_time.pos[N] = 0;
-  rect_with_time.size[N] = 1'000'000;
+  rect_with_time.size[N] = std::numeric_limits<int64_t>::max();
 
   // TODO want custom breakdown?
   tree_ = RectSearchTree<N + 1, Motion*>::Create(rect_with_time, N * 2);
@@ -197,10 +200,10 @@ void Space<N, ObjectTypes...>::FindCollisions(CollisionQueue* queue,
     // If there's a collision, calculate dt and enqueue, otherwise skip
     // TODO time unit?
     auto [ab_collision_time, dimension] =
-        GetCollisionTime(*(motion_a->physics), motion_a->Time(),
-                         *(motion_b->physics), motion_b->Time());
+        GetCollisionTime(*(motion_a->physics), motion_a->GetTime(),
+                         *(motion_b->physics), motion_b->GetTime());
 
-    if (ab_collision_time < 0)
+    if (ab_collision_time < Time())
       continue;
 
     queue->push({motion_a, motion_b, ab_collision_time, dimension});
@@ -209,7 +212,11 @@ void Space<N, ObjectTypes...>::FindCollisions(CollisionQueue* queue,
 
 // TODO collect requirements for objects
 template <int N, class... ObjectTypes>
-void Space<N, ObjectTypes...>::AdvanceTime(double new_time_seconds) {
+void Space<N, ObjectTypes...>::AdvanceTime(const Time::Delta& delta) {
+  Time start_time = Time::FromMicroseconds(0);
+  Time end_time = start_time + delta;
+
+  // TODO use or remove
   ++advance_time_call_depth_;
   // TODO use custom breakdown for search tree
 
@@ -225,7 +232,7 @@ void Space<N, ObjectTypes...>::AdvanceTime(double new_time_seconds) {
       break;
 
     Motion& motion = *motion_iterator;
-    motion.UpdateEnclosingRect(tree_.get(), time_seconds_, new_time_seconds);
+    motion.UpdateEnclosingRect(tree_.get(), start_time, end_time);
   }
 
   // Find first collisions and enqueue by earliest time.
@@ -246,20 +253,19 @@ void Space<N, ObjectTypes...>::AdvanceTime(double new_time_seconds) {
     collision.UpdatePositions();
 
     // 2. Run handlers
-    // TODO: bind handlers to avoid repeated std::visit
     std::visit(
         [&collision](auto* object_a) {
           std::visit(
               [&collision, object_a](auto* object_b) {
-                object_a->OnCollideWith(*object_b, collision.time);
-                object_b->OnCollideWith(*object_a, collision.time);
+                object_a->OnCollideWith(*object_b);
+                object_b->OnCollideWith(*object_a);
               },
               collision.motion_b->object);
         },
         collision.motion_a->object);
 
     // 3. Update velocities and enclosing rects
-    collision.UpdateVelocitiesAndRects(tree_.get(), new_time_seconds);
+    collision.UpdateVelocitiesAndRects(tree_.get(), end_time);
 
     // 4. Find new collisions
     FindCollisions(&queue, collision.motion_a);
@@ -267,7 +273,6 @@ void Space<N, ObjectTypes...>::AdvanceTime(double new_time_seconds) {
 
     queue.pop();
   }
-  time_seconds_ = new_time_seconds;
 
   // Handle any removals that happened during collision handling
   auto iterator = motions_.begin();
@@ -280,7 +285,7 @@ void Space<N, ObjectTypes...>::AdvanceTime(double new_time_seconds) {
 
   // Update objects to final positions
   for (Motion& motion : motions_)
-    motion.physics->Update(new_time_seconds - motion.Time());
+    motion.physics->Update(end_time - motion.GetTime());
 
   --advance_time_call_depth_;
 }  // namespace engine2
