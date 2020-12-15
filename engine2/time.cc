@@ -1,5 +1,7 @@
 #include "engine2/time.h"
 
+#include <SDL2/SDL_timer.h>
+
 namespace engine2 {
 
 double Time::Delta::ToSeconds() const {
@@ -110,6 +112,11 @@ Time& Time::operator+=(const Delta& delta) {
 
 Time Time::operator+(const Delta& delta) const {
   return Time(micros_) += delta;
+}
+
+// static
+Time Time::Now() {
+  return Time(1000 * SDL_GetTicks());
 }
 
 }  // namespace engine2

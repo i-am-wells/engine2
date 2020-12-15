@@ -19,6 +19,13 @@ struct Vec {
   Scalar& a() { return value[3]; }
   const Scalar& a() const { return value[3]; }
 
+  static Vec Ones() {
+    Vec result;
+    for (int i = 0; i < N; ++i)
+      result[i] = 1;
+    return result;
+  }
+
   template <typename OtherScalar>
   Vec<OtherScalar, N> ConvertTo() const {
     Vec<OtherScalar, N> result;

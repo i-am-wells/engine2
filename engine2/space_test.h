@@ -13,6 +13,8 @@ class SpaceTest : public TestGroup {
   // TODO test self-remove
   void TestRemove();
 
+  void TestNear();
+
   void TestSimpleCollide();
   void TestChainedCollide();
   void TestSimultaneousCollide();

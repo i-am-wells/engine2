@@ -48,8 +48,10 @@ class RectSearchTree {
   };
 
   // Create a new tree of depth |tree_depth| spanning |rect|.
-  static std::unique_ptr<RectSearchTree> Create(const Rect& rect,
-                                                int tree_depth);
+  static std::unique_ptr<RectSearchTree> Create(
+      const Rect& rect,
+      int tree_depth,
+      const Point<double, N>& breakdown_scale = Point<double, N>::Ones());
 
   // Add an object to the search tree. Returns iterator to the subtree the
   // object was added to.
@@ -234,7 +236,8 @@ void RectSearchTree<N, Rep>::Iterator::Advance() {
 template <int N, class Rep>
 std::unique_ptr<RectSearchTree<N, Rep>> RectSearchTree<N, Rep>::Create(
     const Rect& rect,
-    int tree_depth) {
+    int tree_depth,
+    const Point<double, N>& breakdown_scale) {
   if (tree_depth == 0)
     return nullptr;
 
@@ -245,9 +248,10 @@ std::unique_ptr<RectSearchTree<N, Rep>> RectSearchTree<N, Rep>::Create(
   int longest_dimension = 0;
   int64_t longest_dimension_length = 0;
   for (int i = 0; i < N; ++i) {
-    if (rect.size[i] > longest_dimension_length) {
+    int64_t length = rect.size[i] / breakdown_scale[i];
+    if (length > longest_dimension_length) {
       longest_dimension = i;
-      longest_dimension_length = rect.size[i];
+      longest_dimension_length = length;
     }
   }
 

@@ -7,6 +7,15 @@ namespace engine2 {
 
 class Time {
  public:
+  enum class Unit {
+    kMicroseconds,
+    kMilliseconds,
+    kSeconds,
+    kMinutes,
+    kHours,
+    kDays
+  };
+
   class Delta {
    public:
     static constexpr Delta FromSeconds(double seconds) {
@@ -51,6 +60,8 @@ class Time {
   static constexpr Time FromMicroseconds(int64_t microseconds) {
     return Time(microseconds);
   }
+
+  static Time Now();
 
   double ToSeconds() const;
   int64_t ToMicroseconds() const { return micros_; }
