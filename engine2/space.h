@@ -225,8 +225,10 @@ template <int N, class... ObjectTypes>
 void Space<N, ObjectTypes...>::FindCollisions(CollisionQueue* queue,
                                               Motion* motion_a) {
   for (Motion* motion_b : tree_->Near(motion_a->enclosing_rect)) {
-    if (motion_a == motion_b)
+    if (motion_a == motion_b ||
+        !motion_a->enclosing_rect.Overlaps(motion_b->enclosing_rect)) {
       continue;
+    }
 
     // If there's a collision, calculate dt and enqueue, otherwise skip
     // TODO time unit?

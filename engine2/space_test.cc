@@ -313,6 +313,21 @@ void SpaceTest::TestMultipleDispatchCollide() {
   EXPECT_EQ(1, bar_b.bar_count);
 }
 
+void SpaceTest::TestFarFutureNoCollide() {
+  Space<2, ObjectInSpace> space(kSpaceRect);
+
+  ObjectInSpace a(100, 100, 10, 10, 1);
+  a.SetVelocity(1000, 0);
+  space.Add(&a);
+
+  ObjectInSpace b(500, 100, 10, 10, 1);
+  b.SetVelocity(0, 0);
+  space.Add(&b);
+
+  space.AdvanceTime(Time::Delta::FromSeconds(.001));
+  EXPECT_EQ(0, a.collide_count);
+}
+
 SpaceTest::SpaceTest()
     : TestGroup("SpaceTest",
                 {
@@ -324,6 +339,7 @@ SpaceTest::SpaceTest()
                     std::bind(&SpaceTest::TestChainedCollide, this),
                     std::bind(&SpaceTest::TestSimultaneousCollide, this),
                     std::bind(&SpaceTest::TestTrolleyCollide, this),
+                    std::bind(&SpaceTest::TestFarFutureNoCollide, this),
                     std::bind(&SpaceTest::TestMultipleDispatchCollide, this),
                 }) {}
 
