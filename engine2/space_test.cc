@@ -17,7 +17,10 @@ class ObjectInSpace {
       : phys({x, y, w, h}, mass), name(name) {}
   void SetVelocity(double vx, double vy) { phys.velocity = {vx, vy}; }
 
-  void OnCollideWith(const ObjectInSpace& other) { ++collide_count; }
+  CollisionOutcome OnCollideWith(const ObjectInSpace& other) {
+    ++collide_count;
+    return collision_outcome;
+  }
 
   // for Space
   PhysicsObject<2>* physics() { return &phys; }
@@ -25,6 +28,7 @@ class ObjectInSpace {
   int collide_count = 0;
   PhysicsObject<2> phys;
   std::string name = "";
+  CollisionOutcome collision_outcome = CollisionOutcome::kBounceOff;
 };
 
 class Bar;
@@ -35,8 +39,14 @@ class Foo : public ObjectInSpace {
 
   Foo(int x, int y, int w, int h, double mass)
       : ObjectInSpace(x, y, w, h, mass) {}
-  void OnCollideWith(const Foo& other) { ++foo_count; }
-  void OnCollideWith(const Bar& other) { ++bar_count; }
+  CollisionOutcome OnCollideWith(const Foo& other) {
+    ++foo_count;
+    return collision_outcome;
+  }
+  CollisionOutcome OnCollideWith(const Bar& other) {
+    ++bar_count;
+    return collision_outcome;
+  }
 };
 
 class Bar : public ObjectInSpace {
@@ -46,8 +56,14 @@ class Bar : public ObjectInSpace {
 
   Bar(int x, int y, int w, int h, double mass)
       : ObjectInSpace(x, y, w, h, mass) {}
-  void OnCollideWith(const Foo& other) { ++foo_count; }
-  void OnCollideWith(const Bar& other) { ++bar_count; }
+  CollisionOutcome OnCollideWith(const Foo& other) {
+    ++foo_count;
+    return collision_outcome;
+  }
+  CollisionOutcome OnCollideWith(const Bar& other) {
+    ++bar_count;
+    return collision_outcome;
+  }
 };
 
 }  // namespace

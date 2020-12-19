@@ -23,6 +23,10 @@ class PhysicsObjectTest : public TestGroup {
   void TestElasticCollision();
   void TestAngledElasticCollision();
 
+  void TestNoChange();
+  void TestBounceOff();
+  void TestStopDead();
+
   PhysicsObjectTest();
 };
 

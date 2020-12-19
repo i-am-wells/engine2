@@ -141,6 +141,61 @@ void PhysicsObjectTest::TestUpdateToTime() {
   EXPECT_EQ(20, a.rect.y());
 }
 
+void PhysicsObjectTest::TestNoChange() {
+  PhysicsObject a(Rect<>{0, 0, 10, 10}, 1);
+  a.velocity = {12, 34};
+  PhysicsObject b(Rect<>{10, 0, 10, 10}, 1);
+  b.velocity = {-56, -78};
+
+  a.CollideWith(b, b.velocity, 0, CollisionOutcome::kNoChange);
+  EXPECT_EQ(12, a.velocity.x());
+  EXPECT_EQ(34, a.velocity.y());
+  EXPECT_EQ(-56, b.velocity.x());
+  EXPECT_EQ(-78, b.velocity.y());
+
+  b.CollideWith(a, a.velocity, 0, CollisionOutcome::kNoChange);
+  EXPECT_EQ(12, a.velocity.x());
+  EXPECT_EQ(34, a.velocity.y());
+  EXPECT_EQ(-56, b.velocity.x());
+  EXPECT_EQ(-78, b.velocity.y());
+}
+
+void PhysicsObjectTest::TestBounceOff() {
+  PhysicsObject a(Rect<>{10, 0, 10, 10}, 1);
+  a.velocity = {10, 0};
+  PhysicsObject b(Rect<>{20, 0, 10, 10}, 1);
+  b.velocity = {0, 0};
+
+  Point<double, 2> initial_velocity_a = a.velocity;
+
+  a.CollideWith(b, b.velocity, 0, CollisionOutcome::kBounceOff);
+  EXPECT_EQ(0, a.velocity.x());
+  EXPECT_EQ(0, a.velocity.y());
+
+  b.CollideWith(a, initial_velocity_a, 0, CollisionOutcome::kBounceOff);
+  EXPECT_EQ(10, b.velocity.x());
+  EXPECT_EQ(0, b.velocity.y());
+}
+
+void PhysicsObjectTest::TestStopDead() {
+  PhysicsObject a(Rect<>{10, 0, 10, 10}, 1000);
+  a.velocity = {10, 0};
+  PhysicsObject b(Rect<>{20, 0, 10, 10}, 1);
+  b.velocity = {0, 0};
+
+  Point<double, 2> initial_velocity_a = a.velocity;
+
+  // In bounce mode, a's much greater mass would mean it would keep moving in
+  // the same direction after colliding, but in stop-dead-mode it stops.
+  a.CollideWith(b, b.velocity, 0, CollisionOutcome::kStopDead);
+  EXPECT_EQ(0, a.velocity.x());
+  EXPECT_EQ(0, a.velocity.y());
+
+  b.CollideWith(a, initial_velocity_a, 0, CollisionOutcome::kStopDead);
+  EXPECT_EQ(0, b.velocity.x());
+  EXPECT_EQ(0, b.velocity.y());
+}
+
 PhysicsObjectTest::PhysicsObjectTest()
     : TestGroup(
           "PhysicsObjectTest",
@@ -159,6 +214,9 @@ PhysicsObjectTest::PhysicsObjectTest()
               std::bind(&PhysicsObjectTest::TestElasticCollision, this),
               std::bind(&PhysicsObjectTest::TestAngledElasticCollision, this),
               std::bind(&PhysicsObjectTest::TestUpdateToTime, this),
+              std::bind(&PhysicsObjectTest::TestNoChange, this),
+              std::bind(&PhysicsObjectTest::TestBounceOff, this),
+              std::bind(&PhysicsObjectTest::TestStopDead, this),
           }) {}
 
 }  // namespace test

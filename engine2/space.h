@@ -55,6 +55,8 @@ class Space {
     typename std::list<Motion>::iterator list_iterator;
     bool marked_for_removal = false;
 
+    std::unordered_set<Motion*> pushing;
+
     Time GetTime() const {
       return Time::FromMicroseconds(enclosing_rect.pos[N]);
     }
@@ -111,9 +113,16 @@ class Space {
       motion_b->UpdatePositionToTime(time);
     }
     void UpdateVelocitiesAndRects(RectSearchTree<N + 1, Motion*>* tree,
-                                  Time new_time) {
-      PhysicsObject<N>::ElasticCollision1D(motion_a->physics, motion_b->physics,
-                                           dimension);
+                                  Time new_time,
+                                  CollisionOutcome outcome_a,
+                                  CollisionOutcome outcome_b) {
+      Point<double, N> initial_velocity_a = motion_a->physics->velocity;
+      motion_a->physics->CollideWith(*(motion_b->physics),
+                                     motion_b->physics->velocity, dimension,
+                                     outcome_a);
+      motion_b->physics->CollideWith(*(motion_a->physics), initial_velocity_a,
+                                     dimension, outcome_b);
+
       motion_a->UpdateEnclosingRect(tree, time, new_time);
       motion_b->UpdateEnclosingRect(tree, time, new_time);
     }
@@ -266,6 +275,7 @@ void Space<N, ObjectTypes...>::AdvanceTime(const Time::Delta& delta) {
 
     Motion& motion = *motion_iterator;
     motion.UpdateEnclosingRect(tree_.get(), start_time, end_time);
+    // motion.physics->velocity = motion.physics->target_velocity;
   }
 
   // Find first collisions and enqueue by earliest time.
@@ -286,19 +296,23 @@ void Space<N, ObjectTypes...>::AdvanceTime(const Time::Delta& delta) {
     collision.UpdatePositions();
 
     // 2. Run handlers
+    struct {
+      CollisionOutcome a, b;
+    } outcomes;
     std::visit(
-        [&collision](auto* object_a) {
+        [&collision, &outcomes](auto* object_a) {
           std::visit(
-              [&collision, object_a](auto* object_b) {
-                object_a->OnCollideWith(*object_b);
-                object_b->OnCollideWith(*object_a);
+              [&collision, &outcomes, object_a](auto* object_b) {
+                outcomes.a = object_a->OnCollideWith(*object_b);
+                outcomes.b = object_b->OnCollideWith(*object_a);
               },
               collision.motion_b->object);
         },
         collision.motion_a->object);
 
     // 3. Update velocities and enclosing rects
-    collision.UpdateVelocitiesAndRects(tree_.get(), end_time);
+    collision.UpdateVelocitiesAndRects(tree_.get(), end_time, outcomes.a,
+                                       outcomes.b);
 
     // 4. Find new collisions
     FindCollisions(&queue, collision.motion_a);

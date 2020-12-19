@@ -6,6 +6,15 @@
 
 namespace engine2 {
 
+enum class CollisionOutcome {
+  kNoChange,
+  kManual,
+  kBounceOff,
+  kStopDead,
+  // TODO implement
+  // kStick,
+};
+
 template <int N>
 struct PhysicsObject {
  public:
@@ -17,6 +26,11 @@ struct PhysicsObject {
   void Update(const Time::Delta& delta);
 
   void ApplyForce(const Point<double, N>& force_vector);
+
+  void CollideWith(const PhysicsObject& other,
+                   const Point<double, N>& other_initial_velocity,
+                   int dimension,
+                   CollisionOutcome outcome);
 
   void HalfElasticCollision(double other_mass_kg,
                             const Point<double, N>& other_vel_initial);
@@ -32,6 +46,21 @@ struct PhysicsObject {
 
   Rect<double, N> rect;
   double mass_kg;
+
+  // current thoughts:
+  // - target_velocity needs to exist. Most games have the player move at full
+  // speed immediately and players will expect it.
+  //
+  // responsibilities of Space:
+  //  - have Rect, contain Objects
+  //  - enable operations on some or all objects
+  //
+  // responsibilities of objects:
+  //  - change state with:
+  //    - passing time
+  //    - interactions with other objects
+  //    - Hand of God (direct manipulation by creator)
+  //
 
   Point<double, N> velocity{};
   // TODO support constant acceleration?
@@ -206,6 +235,31 @@ void PhysicsObject<N>::Update(const Time::Delta& delta) {
 template <int N>
 void PhysicsObject<N>::ApplyForce(const Point<double, N>& force_vector) {
   forces_sum += force_vector;
+}
+
+template <int N>
+void PhysicsObject<N>::CollideWith(
+    const PhysicsObject& other,
+    const Point<double, N>& other_initial_velocity,
+    int dimension,
+    CollisionOutcome outcome) {
+  switch (outcome) {
+    case CollisionOutcome::kNoChange:
+    case CollisionOutcome::kManual:
+      break;
+
+    case CollisionOutcome::kStopDead:
+      velocity[dimension] = 0;
+      break;
+
+    case CollisionOutcome::kBounceOff:
+      HalfElasticCollision1D(other, other_initial_velocity, dimension);
+      break;
+
+      // TODO: implement
+      // case CollisionOutcome::kStick:
+      //  break;
+  }
 }
 
 }  // namespace engine2

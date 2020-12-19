@@ -19,10 +19,9 @@ class SpaceTest : public TestGroup {
   void TestChainedCollide();
   void TestSimultaneousCollide();
   void TestTrolleyCollide();
-
   void TestFarFutureNoCollide();
-
   void TestMultipleDispatchCollide();
+
   SpaceTest();
 };
 
