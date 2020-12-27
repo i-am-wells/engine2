@@ -6,31 +6,14 @@
 
 namespace engine2 {
 
-enum class CollisionOutcome {
-  kNoChange,
-  kManual,
-  kBounceOff,
-  kStopDead,
-  // TODO implement
-  // kStick,
-};
-
 template <int N>
 struct PhysicsObject {
  public:
-  PhysicsObject(const Rect<int64_t, N>& rect, double mass_kg);
-
-  Rect<int64_t, N> GetRect() const;
-  Rect<int64_t, N> GetRectAfterTime(const Time::Delta& delta) const;
+  PhysicsObject(double mass_kg);
 
   void Update(const Time::Delta& delta);
 
   void ApplyForce(const Point<double, N>& force_vector);
-
-  void CollideWith(const PhysicsObject& other,
-                   const Point<double, N>& other_initial_velocity,
-                   int dimension,
-                   CollisionOutcome outcome);
 
   void HalfElasticCollision(double other_mass_kg,
                             const Point<double, N>& other_vel_initial);
@@ -44,7 +27,6 @@ struct PhysicsObject {
                                  PhysicsObject<N>* b,
                                  int d);
 
-  Rect<double, N> rect;
   double mass_kg;
 
   // current thoughts:
@@ -68,7 +50,6 @@ struct PhysicsObject {
   // Point<double> acceleration = {0, 0};
   Point<double, N> forces_sum{};
 
- private:
   void HalfElasticCollision(const PhysicsObject& other,
                             const Point<double, N>& other_vel_initial);
 
@@ -132,134 +113,16 @@ void PhysicsObject<N>::ElasticCollision1D(PhysicsObject<N>* a,
 }
 
 template <int N>
-Time GetCollisionTime1D(const PhysicsObject<N>& a,
-                        const Time& t0_a,
-                        const PhysicsObject<N>& b,
-                        const Time& t0_b,
-                        int d) {
-  double vel_a = a.velocity[d];
-  double vel_b = b.velocity[d];
-  if (vel_a == vel_b)
-    return Time::FromSeconds(-1);
-
-  // Positions of edges that could collide.
-  int64_t pos_a = a.rect.pos[d] + a.rect.size[d];
-  int64_t pos_aa = a.rect.pos[d];
-  int64_t pos_b = b.rect.pos[d];
-  int64_t pos_bb = b.rect.pos[d] + b.rect.size[d];
-  // Use the "close" edges
-  if (std::abs(pos_aa - pos_bb) < std::abs(pos_a - pos_b)) {
-    pos_a = pos_aa;
-    pos_b = pos_bb;
-  }
-
-  // TODO this is constant velocity only; update for forces
-  Time::Delta t0_ab_diff = t0_a - t0_b;
-  int64_t pos_final =
-      (vel_b * (vel_a * t0_ab_diff.ToSeconds() - pos_a) + vel_a * pos_b) /
-      (vel_a - vel_b);
-
-  Time time_final;
-  if (!vel_a)
-    time_final = Time::Delta::FromSeconds((pos_final - pos_b) / vel_b) + t0_b;
-  else
-    time_final = Time::Delta::FromSeconds((pos_final - pos_a) / vel_a) + t0_a;
-
-  // Check whether there's actually a collision at time_final
-  // TODO store this somewhere?
-  Rect<int64_t, N> next_rect_a = a.GetRectAfterTime(time_final - t0_a);
-  Rect<int64_t, N> next_rect_b = b.GetRectAfterTime(time_final - t0_b);
-
-  if (!next_rect_a.Touches(next_rect_b))
-    return Time::FromSeconds(-1);
-
-  return time_final;
-}
-
-struct CollisionTimeAndDimension {
-  Time time;
-  int dimension;
-};
-
-// Return the (absolute) collision time if there's a collision or -1 if the
-// objects never collide. Returned value will be greater than both
-// a_time_seconds and b_time_seconds.
-template <int N>
-CollisionTimeAndDimension GetCollisionTime(const PhysicsObject<N>& a,
-                                           const Time& a_time,
-                                           const PhysicsObject<N>& b,
-                                           const Time& b_time) {
-  Time time_max = Time::FromMicroseconds(std::numeric_limits<int64_t>::max());
-  CollisionTimeAndDimension result{time_max, -1};
-  for (int i = 0; i < N; ++i) {
-    Time time = GetCollisionTime1D(a, a_time, b, b_time, i);
-    if (time >= a_time && time >= b_time && time < result.time) {
-      result.time = time;
-      result.dimension = i;
-    }
-  }
-  if (result.time == time_max)
-    return {Time::FromSeconds(-1), -1};
-  return result;
-}
-
-template <int N>
-PhysicsObject<N>::PhysicsObject(const Rect<int64_t, N>& rect, double mass_kg)
-    : rect(rect.template ConvertTo<double>()), mass_kg(mass_kg) {}
-
-template <int N>
-Rect<int64_t, N> PhysicsObject<N>::GetRect() const {
-  return rect.template ConvertTo<int64_t>();
-}
-
-template <int N>
-Rect<int64_t, N> PhysicsObject<N>::GetRectAfterTime(
-    const Time::Delta& delta) const {
-  Rect<int64_t, N> result;
-  for (int i = 0; i < N; ++i) {
-    result.pos[i] = rect.pos[i] + delta.ToSeconds() * velocity[i];
-    // TODO include forces, constant accel. etc
-
-    // for now, size doesn't change with time
-    result.size[i] = rect.size[i];
-  }
-  return result;
-}
+PhysicsObject<N>::PhysicsObject(double mass_kg) : mass_kg(mass_kg) {}
 
 template <int N>
 void PhysicsObject<N>::Update(const Time::Delta& delta) {
-  // TODO what about acceleration?
-  rect.pos += velocity * delta.ToSeconds();
+  // TODO implement
 }
 
 template <int N>
 void PhysicsObject<N>::ApplyForce(const Point<double, N>& force_vector) {
   forces_sum += force_vector;
-}
-
-template <int N>
-void PhysicsObject<N>::CollideWith(
-    const PhysicsObject& other,
-    const Point<double, N>& other_initial_velocity,
-    int dimension,
-    CollisionOutcome outcome) {
-  switch (outcome) {
-    case CollisionOutcome::kNoChange:
-    case CollisionOutcome::kManual:
-      break;
-
-    case CollisionOutcome::kStopDead:
-      velocity[dimension] = 0;
-      break;
-
-    case CollisionOutcome::kBounceOff:
-      HalfElasticCollision1D(other, other_initial_velocity, dimension);
-      break;
-
-      // TODO: implement
-      // case CollisionOutcome::kStick:
-      //  break;
-  }
 }
 
 }  // namespace engine2

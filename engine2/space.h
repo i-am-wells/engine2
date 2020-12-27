@@ -3,11 +3,13 @@
 
 #include <list>
 #include <queue>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
+#include "engine2/get_collision_time.h"
 #include "engine2/impl/rect_search_tree.h"
-#include "engine2/physics_object.h"
+#include "engine2/object.h"
 #include "engine2/time.h"
 
 namespace engine2 {
@@ -31,7 +33,7 @@ class Space {
   };
 
   template <class T>
-  Iterator Add(T* object);
+  Iterator Add(T* obj);
 
   void Remove(Iterator iterator);
 
@@ -48,14 +50,12 @@ class Space {
   friend class Iterator;
 
   struct Motion {
-    Variant object;
-    PhysicsObject<N>* physics;
+    Variant variant;
+    Object<N>* object;
     Rect<int64_t, N + 1> enclosing_rect{};
     typename RectSearchTree<N + 1, Motion*>::NearIterator tree_iterator;
     typename std::list<Motion>::iterator list_iterator;
     bool marked_for_removal = false;
-
-    std::unordered_set<Motion*> pushing;
 
     Time GetTime() const {
       return Time::FromMicroseconds(enclosing_rect.pos[N]);
@@ -64,9 +64,11 @@ class Space {
     void UpdateEnclosingRect(RectSearchTree<N + 1, Motion*>* tree,
                              const Time& start_time,
                              const Time& finish_time) {
-      Rect<int64_t, N> start_rect = physics->GetRect();
+      Rect<int64_t, N> start_rect =
+          object->GetRect().template ConvertTo<int64_t>();
       Rect<int64_t, N> finish_rect =
-          physics->GetRectAfterTime(finish_time - start_time);
+          object->GetRectAfterTime(finish_time - start_time)
+              .template ConvertTo<int64_t>();
       for (int i = 0; i < N; ++i) {
         enclosing_rect.pos[i] = std::min(start_rect.pos[i], finish_rect.pos[i]);
         enclosing_rect.size[i] =
@@ -83,7 +85,7 @@ class Space {
     }
 
     void UpdatePositionToTime(const Time& time) {
-      physics->Update(time - GetTime());
+      object->Update(time - GetTime());
     }
   };
 
@@ -94,37 +96,41 @@ class Space {
     int dimension;
     bool operator>(const Collision& other) const { return time > other.time; }
     bool IsValid() const {
-      if (!motion_a->physics->GetRectAfterTime(time - motion_a->GetTime())
-               .Touches(motion_b->physics->GetRectAfterTime(
-                   time - motion_b->GetTime()))) {
+      // TODO: rather than converting to int, fix Touches()
+      Rect<int64_t, N> rect_a1 =
+          motion_a->object->GetRectAfterTime(time - motion_a->GetTime())
+              .template ConvertTo<int64_t>();
+      Rect<int64_t, N> rect_b1 =
+          motion_b->object->GetRectAfterTime(time - motion_b->GetTime())
+              .template ConvertTo<int64_t>();
+      if (!rect_a1.Touches(rect_b1))
         return false;
-      }
 
-      if (motion_a->physics->rect.pos[dimension] <
-          motion_b->physics->rect.pos[dimension]) {
-        return motion_a->physics->velocity[dimension] >
-               motion_b->physics->velocity[dimension];
-      }
-      return motion_b->physics->velocity[dimension] >
-             motion_a->physics->velocity[dimension];
+      const Rect<double, N>& rect_a0 = motion_a->object->GetRect();
+      const Rect<double, N>& rect_b0 = motion_b->object->GetRect();
+
+      double va = motion_a->object->GetVelocity()[dimension];
+      double vb = motion_b->object->GetVelocity()[dimension];
+
+      if (rect_a0.pos[dimension] < rect_b0.pos[dimension])
+        return va > vb;
+      return vb > va;
     }
     void UpdatePositions() {
       motion_a->UpdatePositionToTime(time);
       motion_b->UpdatePositionToTime(time);
     }
-    void UpdateVelocitiesAndRects(RectSearchTree<N + 1, Motion*>* tree,
-                                  Time new_time,
-                                  CollisionOutcome outcome_a,
-                                  CollisionOutcome outcome_b) {
-      Point<double, N> initial_velocity_a = motion_a->physics->velocity;
-      motion_a->physics->CollideWith(*(motion_b->physics),
-                                     motion_b->physics->velocity, dimension,
-                                     outcome_a);
-      motion_b->physics->CollideWith(*(motion_a->physics), initial_velocity_a,
-                                     dimension, outcome_b);
-
+    void UpdateEnclosingRects(RectSearchTree<N + 1, Motion*>* tree,
+                              Time new_time) {
       motion_a->UpdateEnclosingRect(tree, time, new_time);
       motion_b->UpdateEnclosingRect(tree, time, new_time);
+    }
+
+    template <class A, class B>
+    void Collide(A* a, B* b) {
+      Vec<double, N> initial_velocity_a = a->GetVelocity();
+      a->OnCollideWith(*b, b->GetVelocity(), dimension);
+      b->OnCollideWith(*a, initial_velocity_a, dimension);
     }
   };
 
@@ -174,7 +180,7 @@ Space<N, ObjectTypes...>::Space(const Rect<int64_t, N>& rect) {
 template <int N, class... ObjectTypes>
 typename Space<N, ObjectTypes...>::Variant&
 Space<N, ObjectTypes...>::Iterator::operator*() {
-  return (*tree_iterator)->object;
+  return (*tree_iterator)->variant;
 }
 
 template <int N, class... ObjectTypes>
@@ -199,21 +205,25 @@ bool Space<N, ObjectTypes...>::Iterator::operator!=(
 template <int N, class... ObjectTypes>
 template <class T>
 typename Space<N, ObjectTypes...>::Iterator Space<N, ObjectTypes...>::Add(
-    T* object) {
+    T* obj) {
+  static_assert(
+      std::is_base_of<Object<N>, T>::value,
+      "All objects being added to Space<N> must inherit from Object<N>.");
+
   motions_.emplace_front();
   Motion& motion = *(motions_.begin());
 
-  motion.object = object;
-
-  // TODO static assert
-  motion.physics = object->physics();
-
-  // TODO set enclosing rect here! consider Near() case
+  // Store obj as std::variant<all_object_types> for type-specific interactions
+  motion.variant = obj;
+  // Store Object* pointer since Object methods aren't directly usable from the
+  // std::variant
+  motion.object = obj;
 
   motion.tree_iterator = tree_->Insert(motion.enclosing_rect, &motion);
   motion.list_iterator = motions_.begin();
 
-  // ???
+  // Set enclosing rect to span a non-zero amount of time so
+  // lookups/overlaps/Near()/etc. work correctly immediately after Add().
   motion.UpdateEnclosingRect(tree_.get(), Time::FromMicroseconds(0),
                              Time::FromMicroseconds(1));
 
@@ -239,11 +249,11 @@ void Space<N, ObjectTypes...>::FindCollisions(CollisionQueue* queue,
       continue;
     }
 
+    // TODO: call GetCollisionTime with specific types if custom implementation
     // If there's a collision, calculate dt and enqueue, otherwise skip
-    // TODO time unit?
     auto [ab_collision_time, dimension] =
-        GetCollisionTime(*(motion_a->physics), motion_a->GetTime(),
-                         *(motion_b->physics), motion_b->GetTime());
+        GetCollisionTime(*(motion_a->object), motion_a->GetTime(),
+                         *(motion_b->object), motion_b->GetTime());
 
     if (ab_collision_time < Time())
       continue;
@@ -275,7 +285,6 @@ void Space<N, ObjectTypes...>::AdvanceTime(const Time::Delta& delta) {
 
     Motion& motion = *motion_iterator;
     motion.UpdateEnclosingRect(tree_.get(), start_time, end_time);
-    // motion.physics->velocity = motion.physics->target_velocity;
   }
 
   // Find first collisions and enqueue by earliest time.
@@ -295,26 +304,19 @@ void Space<N, ObjectTypes...>::AdvanceTime(const Time::Delta& delta) {
     // 1. Update positions to time of collision
     collision.UpdatePositions();
 
-    // 2. Run handlers
-    struct {
-      CollisionOutcome a, b;
-    } outcomes;
+    // 2. Look up types and handle collision
     std::visit(
-        [&collision, &outcomes](auto* object_a) {
+        [&collision](auto* object_a) {
           std::visit(
-              [&collision, &outcomes, object_a](auto* object_b) {
-                outcomes.a = object_a->OnCollideWith(*object_b);
-                outcomes.b = object_b->OnCollideWith(*object_a);
+              [&collision, object_a](auto* object_b) {
+                collision.Collide(object_a, object_b);
               },
-              collision.motion_b->object);
+              collision.motion_b->variant);
         },
-        collision.motion_a->object);
+        collision.motion_a->variant);
+    collision.UpdateEnclosingRects(tree_.get(), end_time);
 
-    // 3. Update velocities and enclosing rects
-    collision.UpdateVelocitiesAndRects(tree_.get(), end_time, outcomes.a,
-                                       outcomes.b);
-
-    // 4. Find new collisions
+    // 3. Find new collisions
     FindCollisions(&queue, collision.motion_a);
     FindCollisions(&queue, collision.motion_b);
 
@@ -332,7 +334,7 @@ void Space<N, ObjectTypes...>::AdvanceTime(const Time::Delta& delta) {
 
   // Update objects to final positions
   for (Motion& motion : motions_)
-    motion.physics->Update(end_time - motion.GetTime());
+    motion.object->Update(end_time - motion.GetTime());
 
   --advance_time_call_depth_;
 }

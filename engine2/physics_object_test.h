@@ -14,18 +14,16 @@ class PhysicsObjectTest : public TestGroup {
   void TestUpdatePositionFromVelocity();
   void TestUpdateVelocityFromForces();
 
+  /* TODO: move to RectObjectTest
   void TestGetCollisionTime1D();
   void TestGetCollisionTime();
 
   void TestGetCollisionTimeNow();
+  */
 
   void TestUpdateToTime();
   void TestElasticCollision();
   void TestAngledElasticCollision();
-
-  void TestNoChange();
-  void TestBounceOff();
-  void TestStopDead();
 
   PhysicsObjectTest();
 };
