@@ -34,20 +34,22 @@ class BasicGraphics2D : public Graphics2D {
   Graphics2D* SetScale(float scale) override;
   Graphics2D* SetScale(float x_scale, float y_scale) override;
   Graphics2D* SetLogicalSize(int width, int height) override;
-  Rect<> GetLogicalSize() override;
-  Rect<> GetSize() override;
+  Rect<int, 2> GetLogicalSize() override;
+  Rect<int, 2> GetSize() override;
 
   // Drawing methods
-  Graphics2D* DrawPoint(const Point<>& p) override;
-  Graphics2D* DrawLine(const Point<>& p0, const Point<>& p1) override;
-  Graphics2D* DrawRect(const Rect<>& rect) override;
-  Graphics2D* FillRect(const Rect<>& rect) override;
+  Graphics2D* DrawPoint(const Point<int, 2>& p) override;
+  Graphics2D* DrawLine(const Point<int, 2>& p0,
+                       const Point<int, 2>& p1) override;
+  Graphics2D* DrawRect(const Rect<int, 2>& rect) override;
+  Graphics2D* FillRect(const Rect<int, 2>& rect) override;
 
   Graphics2D* DrawTexture(const Texture& texture) override;
-  Graphics2D* DrawTexture(const Texture& texture, const Rect<>& dest) override;
   Graphics2D* DrawTexture(const Texture& texture,
-                          const Rect<>& src,
-                          const Rect<>& dest) override;
+                          const Rect<int, 2>& dest) override;
+  Graphics2D* DrawTexture(const Texture& texture,
+                          const Rect<int, 2>& src,
+                          const Rect<int, 2>& dest) override;
 
   Graphics2D* Clear() override;
   Graphics2D* Present() override;

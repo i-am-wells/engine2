@@ -11,27 +11,28 @@ Graphics2D* TestGraphics2D::SetLogicalSize(int width, int height) {
   return this;
 }
 
-Rect<> TestGraphics2D::GetLogicalSize() {
+Rect<int, 2> TestGraphics2D::GetLogicalSize() {
   return {0, 0, 0, 0};
 }
 
-Rect<> TestGraphics2D::GetSize() {
+Rect<int, 2> TestGraphics2D::GetSize() {
   return {0, 0, 0, 0};
 }
 
-Graphics2D* TestGraphics2D::DrawPoint(const Point<>& p) {
+Graphics2D* TestGraphics2D::DrawPoint(const Point<int, 2>& p) {
   return this;
 }
 
-Graphics2D* TestGraphics2D::DrawLine(const Point<>& p0, const Point<>& p1) {
+Graphics2D* TestGraphics2D::DrawLine(const Point<int, 2>& p0,
+                                     const Point<int, 2>& p1) {
   return this;
 }
 
-Graphics2D* TestGraphics2D::DrawRect(const Rect<>& rect) {
+Graphics2D* TestGraphics2D::DrawRect(const Rect<int, 2>& rect) {
   return this;
 }
 
-Graphics2D* TestGraphics2D::FillRect(const Rect<>& rect) {
+Graphics2D* TestGraphics2D::FillRect(const Rect<int, 2>& rect) {
   return this;
 }
 
@@ -40,13 +41,13 @@ Graphics2D* TestGraphics2D::DrawTexture(const Texture& texture) {
 }
 
 Graphics2D* TestGraphics2D::DrawTexture(const Texture& texture,
-                                        const Rect<>& dest) {
+                                        const Rect<int, 2>& dest) {
   return this;
 }
 
 Graphics2D* TestGraphics2D::DrawTexture(const Texture& texture,
-                                        const Rect<>& src,
-                                        const Rect<>& dest) {
+                                        const Rect<int, 2>& src,
+                                        const Rect<int, 2>& dest) {
   return this;
 }
 

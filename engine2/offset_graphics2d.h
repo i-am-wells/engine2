@@ -7,26 +7,28 @@ namespace engine2 {
 
 class OffsetGraphics2D : public Graphics2D {
  public:
-  OffsetGraphics2D(Graphics2D* graphics, Point<>* offset);
+  OffsetGraphics2D(Graphics2D* graphics, Point<int, 2>* offset);
   ~OffsetGraphics2D() override = default;
   void SetUnderlyingGraphics2D(Graphics2D* graphics) { graphics_ = graphics; }
 
   Graphics2D* SetScale(float scale) override;
   Graphics2D* SetScale(float x_scale, float y_scale) override;
   Graphics2D* SetLogicalSize(int width, int height) override;
-  Rect<> GetLogicalSize() override;
-  Rect<> GetSize() override;
+  Rect<int, 2> GetLogicalSize() override;
+  Rect<int, 2> GetSize() override;
 
-  Graphics2D* DrawPoint(const Point<>& p) override;
-  Graphics2D* DrawLine(const Point<>& p0, const Point<>& p1) override;
-  Graphics2D* DrawRect(const Rect<>& rect) override;
-  Graphics2D* FillRect(const Rect<>& rect) override;
+  Graphics2D* DrawPoint(const Point<int, 2>& p) override;
+  Graphics2D* DrawLine(const Point<int, 2>& p0,
+                       const Point<int, 2>& p1) override;
+  Graphics2D* DrawRect(const Rect<int, 2>& rect) override;
+  Graphics2D* FillRect(const Rect<int, 2>& rect) override;
 
   Graphics2D* DrawTexture(const Texture& texture) override;
-  Graphics2D* DrawTexture(const Texture& texture, const Rect<>& dest) override;
   Graphics2D* DrawTexture(const Texture& texture,
-                          const Rect<>& src,
-                          const Rect<>& dest) override;
+                          const Rect<int, 2>& dest) override;
+  Graphics2D* DrawTexture(const Texture& texture,
+                          const Rect<int, 2>& src,
+                          const Rect<int, 2>& dest) override;
 
   Graphics2D* Clear() override;
   Graphics2D* Present() override;
@@ -37,10 +39,10 @@ class OffsetGraphics2D : public Graphics2D {
   SDL_Renderer* renderer() const override { return graphics_->renderer(); }
 
  private:
-  Point<> OffsetPoint(const Point<>& point) const;
-  Rect<> OffsetRect(const Rect<>& rect) const;
+  Point<int, 2> OffsetPoint(const Point<int, 2>& point) const;
+  Rect<int, 2> OffsetRect(const Rect<int, 2>& rect) const;
   Graphics2D* graphics_;
-  Point<>* offset_;
+  Point<int, 2>* offset_;
 };
 
 }  // namespace engine2
