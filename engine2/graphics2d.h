@@ -20,22 +20,21 @@ class Graphics2D {
   virtual Graphics2D* SetScale(float scale) = 0;
   virtual Graphics2D* SetScale(float x_scale, float y_scale) = 0;
   virtual Graphics2D* SetLogicalSize(int width, int height) = 0;
-  virtual Rect<int, 2> GetLogicalSize() = 0;
-  virtual Rect<int, 2> GetSize() = 0;
+  virtual Rect<> GetLogicalSize() = 0;
+  virtual Rect<> GetSize() = 0;
 
   // Drawing methods
-  virtual Graphics2D* DrawPoint(const Point<int, 2>& p) = 0;
-  virtual Graphics2D* DrawLine(const Point<int, 2>& p0,
-                               const Point<int, 2>& p1) = 0;
-  virtual Graphics2D* DrawRect(const Rect<int, 2>& rect) = 0;
-  virtual Graphics2D* FillRect(const Rect<int, 2>& rect) = 0;
+  virtual Graphics2D* DrawPoint(const Point<>& p) = 0;
+  virtual Graphics2D* DrawLine(const Point<>& p0, const Point<>& p1) = 0;
+  virtual Graphics2D* DrawRect(const Rect<>& rect) = 0;
+  virtual Graphics2D* FillRect(const Rect<>& rect) = 0;
 
   virtual Graphics2D* DrawTexture(const Texture& texture) = 0;
   virtual Graphics2D* DrawTexture(const Texture& texture,
-                                  const Rect<int, 2>& dest) = 0;
+                                  const Rect<>& dest) = 0;
   virtual Graphics2D* DrawTexture(const Texture& texture,
-                                  const Rect<int, 2>& src,
-                                  const Rect<int, 2>& dest) = 0;
+                                  const Rect<>& src,
+                                  const Rect<>& dest) = 0;
 
   virtual Graphics2D* Clear() = 0;
   virtual Graphics2D* Present() = 0;

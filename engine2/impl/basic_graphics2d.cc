@@ -50,24 +50,23 @@ Graphics2D* BasicGraphics2D::SetScale(float x_scale, float y_scale) {
   return this;
 }
 
-Graphics2D* BasicGraphics2D::DrawPoint(const Point<int, 2>& p) {
+Graphics2D* BasicGraphics2D::DrawPoint(const Point<>& p) {
   SDL_RenderDrawPoint(renderer_, p.x(), p.y());
   return this;
 }
 
-Graphics2D* BasicGraphics2D::DrawLine(const Point<int, 2>& p0,
-                                      const Point<int, 2>& p1) {
+Graphics2D* BasicGraphics2D::DrawLine(const Point<>& p0, const Point<>& p1) {
   SDL_RenderDrawLine(renderer_, p0.x(), p0.y(), p1.x(), p1.y());
   return this;
 }
 
-Graphics2D* BasicGraphics2D::DrawRect(const Rect<int, 2>& rect) {
+Graphics2D* BasicGraphics2D::DrawRect(const Rect<>& rect) {
   SDL_Rect sdl_rect = ToSDLRect(rect);
   SDL_RenderDrawRect(renderer_, &sdl_rect);
   return this;
 }
 
-Graphics2D* BasicGraphics2D::FillRect(const Rect<int, 2>& rect) {
+Graphics2D* BasicGraphics2D::FillRect(const Rect<>& rect) {
   SDL_Rect sdl_rect = ToSDLRect(rect);
   SDL_RenderFillRect(renderer_, &sdl_rect);
   return this;
@@ -99,13 +98,13 @@ Graphics2D* BasicGraphics2D::SetLogicalSize(int width, int height) {
   return this;
 }
 
-Rect<int, 2> BasicGraphics2D::GetLogicalSize() {
+Rect<> BasicGraphics2D::GetLogicalSize() {
   int w, h;
   SDL_RenderGetLogicalSize(renderer_, &w, &h);
   return {0, 0, w, h};
 }
 
-Rect<int, 2> BasicGraphics2D::GetSize() {
+Rect<> BasicGraphics2D::GetSize() {
   int w, h;
   SDL_GetRendererOutputSize(renderer_, &w, &h);
   return {0, 0, w, h};
@@ -117,15 +116,15 @@ Graphics2D* BasicGraphics2D::DrawTexture(const Texture& texture) {
 }
 
 Graphics2D* BasicGraphics2D::DrawTexture(const Texture& texture,
-                                         const Rect<int, 2>& dest) {
+                                         const Rect<>& dest) {
   SDL_Rect sdl_dest = ToSDLRect(dest);
   SDL_RenderCopy(renderer_, texture.texture_, nullptr, &sdl_dest);
   return this;
 }
 
 Graphics2D* BasicGraphics2D::DrawTexture(const Texture& texture,
-                                         const Rect<int, 2>& src,
-                                         const Rect<int, 2>& dest) {
+                                         const Rect<>& src,
+                                         const Rect<>& dest) {
   SDL_Rect sdl_src = ToSDLRect(src);
   SDL_Rect sdl_dest = ToSDLRect(dest);
   SDL_RenderCopy(renderer_, texture.texture_, &sdl_src, &sdl_dest);

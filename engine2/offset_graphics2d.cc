@@ -2,7 +2,7 @@
 
 namespace engine2 {
 
-OffsetGraphics2D::OffsetGraphics2D(Graphics2D* graphics, Point<int, 2>* offset)
+OffsetGraphics2D::OffsetGraphics2D(Graphics2D* graphics, Point<>* offset)
     : graphics_(graphics), offset_(offset) {}
 
 Graphics2D* OffsetGraphics2D::SetScale(float scale) {
@@ -20,31 +20,30 @@ Graphics2D* OffsetGraphics2D::SetLogicalSize(int width, int height) {
   return this;
 }
 
-Rect<int, 2> OffsetGraphics2D::GetLogicalSize() {
+Rect<> OffsetGraphics2D::GetLogicalSize() {
   return graphics_->GetLogicalSize();
 }
 
-Rect<int, 2> OffsetGraphics2D::GetSize() {
+Rect<> OffsetGraphics2D::GetSize() {
   return graphics_->GetSize();
 }
 
-Graphics2D* OffsetGraphics2D::DrawPoint(const Point<int, 2>& p) {
+Graphics2D* OffsetGraphics2D::DrawPoint(const Point<>& p) {
   graphics_->DrawPoint(OffsetPoint(p));
   return this;
 }
 
-Graphics2D* OffsetGraphics2D::DrawLine(const Point<int, 2>& p0,
-                                       const Point<int, 2>& p1) {
+Graphics2D* OffsetGraphics2D::DrawLine(const Point<>& p0, const Point<>& p1) {
   graphics_->DrawLine(OffsetPoint(p0), OffsetPoint(p1));
   return this;
 }
 
-Graphics2D* OffsetGraphics2D::DrawRect(const Rect<int, 2>& rect) {
+Graphics2D* OffsetGraphics2D::DrawRect(const Rect<>& rect) {
   graphics_->DrawRect(OffsetRect(rect));
   return this;
 }
 
-Graphics2D* OffsetGraphics2D::FillRect(const Rect<int, 2>& rect) {
+Graphics2D* OffsetGraphics2D::FillRect(const Rect<>& rect) {
   graphics_->FillRect(OffsetRect(rect));
   return this;
 }
@@ -55,14 +54,14 @@ Graphics2D* OffsetGraphics2D::DrawTexture(const Texture& texture) {
 }
 
 Graphics2D* OffsetGraphics2D::DrawTexture(const Texture& texture,
-                                          const Rect<int, 2>& dest) {
+                                          const Rect<>& dest) {
   graphics_->DrawTexture(texture, OffsetRect(dest));
   return this;
 }
 
 Graphics2D* OffsetGraphics2D::DrawTexture(const Texture& texture,
-                                          const Rect<int, 2>& src,
-                                          const Rect<int, 2>& dest) {
+                                          const Rect<>& src,
+                                          const Rect<>& dest) {
   graphics_->DrawTexture(texture, src, OffsetRect(dest));
   return this;
 }
@@ -86,11 +85,11 @@ RgbaColor OffsetGraphics2D::GetDrawColor() {
   return graphics_->GetDrawColor();
 }
 
-Point<int, 2> OffsetGraphics2D::OffsetPoint(const Point<int, 2>& point) const {
+Point<> OffsetGraphics2D::OffsetPoint(const Point<>& point) const {
   return point - *offset_;
 }
 
-Rect<int, 2> OffsetGraphics2D::OffsetRect(const Rect<int, 2>& rect) const {
+Rect<> OffsetGraphics2D::OffsetRect(const Rect<>& rect) const {
   return {OffsetPoint(rect.pos), rect.size};
 }
 
