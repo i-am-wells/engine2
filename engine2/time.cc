@@ -68,6 +68,15 @@ Time::Delta Time::Delta::operator/(double factor) const {
   return Delta(micros_) /= factor;
 }
 
+Time::Delta& Time::Delta::operator%=(const Delta& other) {
+  micros_ %= other.micros_;
+  return *this;
+}
+
+Time::Delta Time::Delta::operator%(const Delta& other) const {
+  return Delta(micros_) %= other;
+}
+
 double Time::ToSeconds() const {
   return MicrosToSeconds(micros_);
 }

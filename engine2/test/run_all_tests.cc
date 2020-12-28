@@ -6,6 +6,7 @@
 #include "engine2/physics_object_test.h"
 #include "engine2/rect_test.h"
 #include "engine2/space_test.h"
+#include "engine2/sprite_test.h"
 #include "engine2/texture_cache_test.h"
 #include "engine2/time_test.h"
 #include "engine2/vec_test.h"
@@ -21,6 +22,7 @@ void RunAllTests() {
                              RectTest().RunTests() +
                              RectSearchTreeTest().RunTests() +
                              SpaceTest().RunTests() +
+                             SpriteTest().RunTests() + 
                              TextureCacheTest().RunTests() +
                              TimeTest().RunTests() +
                              VecTest().RunTests() +

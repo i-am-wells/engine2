@@ -47,6 +47,9 @@ class Time {
     Delta& operator/=(double denom);
     Delta operator/(double denom) const;
 
+    Delta& operator%=(const Delta& other);
+    Delta operator%(const Delta& other) const;
+
    private:
     constexpr Delta(int64_t micros) : micros_(micros) {}
     int64_t micros_;
