@@ -4,6 +4,9 @@
 #include <cstdint>
 
 namespace engine2 {
+namespace test {
+class TestClock;
+}
 
 class Time {
  public:
@@ -95,6 +98,9 @@ class Time {
   }
 
   int64_t micros_;
+
+  friend class test::TestClock;
+  static Time* now_override_;
 };
 
 }  // namespace engine2

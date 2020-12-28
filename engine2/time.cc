@@ -4,6 +4,8 @@
 
 namespace engine2 {
 
+Time* Time::now_override_ = nullptr;
+
 double Time::Delta::ToSeconds() const {
   return MicrosToSeconds(micros_);
 }
@@ -125,6 +127,8 @@ Time Time::operator+(const Delta& delta) const {
 
 // static
 Time Time::Now() {
+  if (now_override_)
+    return *now_override_;
   return Time(1000 * SDL_GetTicks());
 }
 

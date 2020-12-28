@@ -9,7 +9,9 @@ namespace test {
 class SpriteTest : public TestGroup {
  public:
   void TestCreateStatic();
-
+  void TestDraw();
+  void TestOffsetDraw();
+  void TestUpdate();
   SpriteTest();
 };
 

@@ -37,6 +37,10 @@ struct Rect {
             size.template ConvertTo<OtherScalar>()};
   }
 
+  bool operator==(const Rect& other) const {
+    return pos == other.pos && size == other.size;
+  }
+
   bool Touches(const Rect& other) const;
   bool Overlaps(const Rect& other) const;
   bool Contains(const Point<Scalar, N>& point) const;

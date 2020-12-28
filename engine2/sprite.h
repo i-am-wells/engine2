@@ -13,20 +13,20 @@ class Sprite {
  public:
   // Create a Sprite with a single frame. Convenient for non-animated sprites.
   Sprite(Texture* texture,
-         const Rect<int, 2>& source_rect,
-         Point<int, 2> dest_offset = {},
+         const Rect<int64_t, 2>& source_rect,
+         Point<int64_t, 2> dest_offset = {},
          Time::Delta duration = Time::Delta::FromMicroseconds(0));
 
   // Create a Sprite with space for frame_count frames reserved.
   Sprite(Texture* texture, int frame_count = 1);
 
-  void Draw(Graphics2D* graphics, const Point<int, 2>& dest);
+  void Draw(Graphics2D* graphics, const Point<int64_t, 2>& dest);
 
   void Update(const Time& time);
 
   struct AnimationFrame {
-    Rect<int, 2> source_rect;
-    Point<int, 2> dest_offset;
+    Rect<int64_t, 2> source_rect;
+    Point<int64_t, 2> dest_offset;
     Time::Delta duration;
   };
 

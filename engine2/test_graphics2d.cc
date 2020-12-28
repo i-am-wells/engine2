@@ -7,6 +7,10 @@ Graphics2D* TestGraphics2D::SetScale(float x_scale, float y_scale) {
   return this;
 }
 
+Graphics2D* TestGraphics2D::SetScale(float scale) {
+  return this;
+}
+
 Graphics2D* TestGraphics2D::SetLogicalSize(int width, int height) {
   return this;
 }
@@ -47,6 +51,7 @@ Graphics2D* TestGraphics2D::DrawTexture(const Texture& texture,
 Graphics2D* TestGraphics2D::DrawTexture(const Texture& texture,
                                         const Rect<>& src,
                                         const Rect<>& dest) {
+  draw_texture_dest = dest;
   return this;
 }
 

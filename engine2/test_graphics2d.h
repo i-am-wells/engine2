@@ -9,10 +9,13 @@ namespace test {
 class TestGraphics2D : public Graphics2D {
  public:
   ~TestGraphics2D() override = default;
+
   Graphics2D* SetScale(float x_scale, float y_scale) override;
+  Graphics2D* SetScale(float scale) override;
   Graphics2D* SetLogicalSize(int width, int height) override;
   Rect<> GetLogicalSize() override;
   Rect<> GetSize() override;
+
   Graphics2D* DrawPoint(const Point<>& p) override;
   Graphics2D* DrawLine(const Point<>& p0, const Point<>& p1) override;
   Graphics2D* DrawRect(const Rect<>& rect) override;
@@ -30,6 +33,8 @@ class TestGraphics2D : public Graphics2D {
   RgbaColor GetDrawColor() override;
 
   SDL_Renderer* renderer() const override;
+
+  Rect<int64_t, 2> draw_texture_dest;
 };
 
 }  // namespace test

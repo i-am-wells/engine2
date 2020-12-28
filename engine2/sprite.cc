@@ -3,16 +3,18 @@
 namespace engine2 {
 
 Sprite::Sprite(Texture* texture,
-               const Rect<int, 2>& source_rect,
-               Point<int, 2> dest_offset,
+               const Rect<int64_t, 2>& source_rect,
+               Point<int64_t, 2> dest_offset,
                Time::Delta duration)
-    : texture_(texture) {}
+    : texture_(texture) {
+  AddFrame({source_rect, dest_offset, duration});
+}
 
 Sprite::Sprite(Texture* texture, int frame_count) : texture_(texture) {
   frames_.reserve(frame_count);
 }
 
-void Sprite::Draw(Graphics2D* graphics, const Point<int, 2>& dest) {
+void Sprite::Draw(Graphics2D* graphics, const Point<int64_t, 2>& dest) {
   AnimationFrame& frame = CurrentFrame();
   graphics->DrawTexture(
       *texture_, frame.source_rect,
@@ -20,6 +22,9 @@ void Sprite::Draw(Graphics2D* graphics, const Point<int, 2>& dest) {
 }
 
 void Sprite::Update(const Time& time) {
+  if (time <= last_update_time_)
+    return;
+
   Time::Delta elapsed = (time - last_update_time_) % cycle_duration_;
   elapsed += time_since_frame_start_;
 

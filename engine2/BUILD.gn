@@ -46,6 +46,8 @@ source_set("engine2") {
 
 source_set("test_support") {
   sources = [
+    "test_clock.cc",
+    "test_clock.h",
     "test_graphics2d.cc",
     "test_graphics2d.h",
   ]
