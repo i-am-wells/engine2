@@ -34,7 +34,9 @@ class TestGraphics2D : public Graphics2D {
 
   SDL_Renderer* renderer() const override;
 
+  // Things to check after calls
   Rect<int64_t, 2> draw_texture_dest;
+  Texture* draw_texture_texture;
 };
 
 }  // namespace test

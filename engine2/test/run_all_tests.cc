@@ -8,6 +8,7 @@
 #include "engine2/space_test.h"
 #include "engine2/sprite_test.h"
 #include "engine2/texture_cache_test.h"
+#include "engine2/tile_map_test.h"
 #include "engine2/time_test.h"
 #include "engine2/vec_test.h"
 
@@ -24,6 +25,7 @@ void RunAllTests() {
                              SpaceTest().RunTests() +
                              SpriteTest().RunTests() + 
                              TextureCacheTest().RunTests() +
+                             TileMapTest().RunTests() +
                              TimeTest().RunTests() +
                              VecTest().RunTests() +
                              WeakPointerTest().RunTests();

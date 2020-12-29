@@ -45,6 +45,7 @@ Graphics2D* TestGraphics2D::DrawTexture(const Texture& texture) {
 
 Graphics2D* TestGraphics2D::DrawTexture(const Texture& texture,
                                         const Rect<>& dest) {
+  draw_texture_dest = dest;
   return this;
 }
 
