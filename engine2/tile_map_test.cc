@@ -67,13 +67,17 @@ void TileMapTest::TestDraw() {
   TestSprite sprite1 = CreateSprite(&texture1);
   TestTexture texture2(2);
   TestSprite sprite2 = CreateSprite(&texture2);
+  TestTexture texture3(3);
+  TestSprite sprite3 = CreateSprite(&texture3);
 
-  int sprite_1_idx = map.AddSprite(&sprite1);
-  ASSERT_EQ(0, sprite_1_idx);
-  int sprite_2_idx = map.AddSprite(&sprite2);
-  ASSERT_EQ(1, sprite_2_idx);
-  map.SetTile({0, 1}, 0);
-  map.SetTile({0, 2}, 1);
+  auto [ref1, index1] = map.AddTileStack();
+  (*ref1).tiles.push_back({&sprite1, Time::Delta::FromSeconds(0)});
+  auto [ref2, index2] = map.AddTileStack();
+  (*ref2).tiles.push_back({&sprite2, Time::Delta::FromSeconds(0)});
+  (*ref2).tiles.push_back({&sprite3, Time::Delta::FromSeconds(0)});
+
+  map.SetTileStackAtGridPosition({0, 1}, index1);
+  map.SetTileStackAtGridPosition({0, 2}, index2);
 
   map.Draw(&camera);
 
@@ -83,6 +87,8 @@ void TileMapTest::TestDraw() {
 
   EXPECT_EQ(1, sprite2.draw_calls.size());
   EXPECT_EQ(1, sprite2.CountDraws(dest_point_2));
+  EXPECT_EQ(1, sprite3.draw_calls.size());
+  EXPECT_EQ(1, sprite3.CountDraws(dest_point_2));
 }
 
 TileMapTest::TileMapTest()

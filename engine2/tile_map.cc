@@ -13,10 +13,10 @@ TileMap::TileMap(const Vec<int, 2>& tile_size,
       grid_size_(grid_size) {
   world_rect_ = Rect<int64_t, 2>{position_in_world, grid_size * tile_size_};
   size_t num_tiles = grid_size.x() * grid_size.y();
-  tiles_ = std::make_unique<Tile[]>(num_tiles);
+  grid_ = std::make_unique<uint16_t[]>(num_tiles);
 
   if (empty_initialize)
-    std::memset(tiles_.get(), 0, num_tiles);
+    std::memset(grid_.get(), 0, num_tiles * sizeof(uint16_t));
 }
 
 void TileMap::Draw(Camera2D* camera) {
@@ -29,38 +29,58 @@ void TileMap::Draw(Camera2D* camera) {
     for (int64_t x = 0; x <= camera_world_rect.w(); x += tile_size_.x()) {
       draw_point.x() = x + camera_world_rect.x();
 
-      Point<int64_t, 2> grid_point =
-          (draw_point - world_rect_.pos) / tile_size_;
-
-      Tile& tile = GetTile(grid_point);
-      sprites_[tile.sprite_index]->Draw(camera->InWorldCoords(), draw_point);
+      GetTileStackAtWorldPosition(draw_point)
+          .Draw(camera->InWorldCoords(), draw_point);
     }
   }
 }
 
-int TileMap::AddSprite(Sprite* sprite) {
-  sprites_.push_back(sprite);
-  return sprites_.size() - 1;
+void TileMap::TileStack::Draw(Graphics2D* graphics,
+                              const Point<int64_t, 2>& dest) {
+  for (Tile& tile : tiles)
+    tile.sprite->Draw(graphics, dest);
 }
 
-void TileMap::SetTile(const Point<int64_t, 2>& tile_location,
-                      int sprite_index) {
-  if (!PositionInMap(tile_location))
-    return;
-  GetTile(tile_location).sprite_index = sprite_index;
+std::pair<TileMap::TileStackReference, int> TileMap::AddTileStack() {
+  tile_stacks_.push_front({});
+  tile_stack_refs_.push_back(tile_stacks_.begin());
+  return {tile_stacks_.begin(), tile_stack_refs_.size() - 1};
 }
 
-TileMap::Tile& TileMap::GetTile(const Point<int64_t, 2>& grid_position) {
-  return tiles_[grid_position.y() * grid_size_.x() + grid_position.x()];
+void TileMap::SetTileStackAtGridPosition(const Point<int64_t, 2>& grid_position,
+                                         int tile_stack_index) {
+  grid_[grid_position.y() * grid_size_.x() + grid_position.x()] =
+      tile_stack_index;
+}
+
+void TileMap::SetTileStackAtWorldPosition(
+    const Point<int64_t, 2>& world_position,
+    int tile_stack_index) {
+  SetTileStackAtGridPosition(WorldToGrid(world_position), tile_stack_index);
+}
+
+TileMap::TileStack& TileMap::GetTileStackAtGridPosition(
+    const Point<int64_t, 2>& grid_position) {
+  return *(tile_stack_refs_[grid_[grid_position.y() * grid_size_.x() +
+                                  grid_position.x()]]);
+}
+
+TileMap::TileStack& TileMap::GetTileStackAtWorldPosition(
+    const Point<int64_t, 2>& world_position) {
+  return GetTileStackAtGridPosition(WorldToGrid(world_position));
 }
 
 bool TileMap::PositionInMap(const Point<int64_t, 2>& grid_position) const {
-  // TODO N dimensions?
   for (int i = 0; i < 2; ++i) {
     if (grid_position[i] < 0 || grid_position[i] >= grid_size_[i])
       return false;
   }
   return true;
+}
+
+Point<int64_t, 2> TileMap::WorldToGrid(
+    const Point<int64_t, 2>& world_pos) const {
+  return (world_pos - world_rect_.pos) / tile_size_;
 }
 
 }  // namespace engine2
