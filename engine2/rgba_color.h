@@ -12,6 +12,7 @@ static constexpr uint8_t kTransparent = SDL_ALPHA_TRANSPARENT;
 
 struct RgbaColor {
   uint8_t r, g, b, a;
+  SDL_Color ToSDLColor() const;
 };
 
 }  // namespace engine2
