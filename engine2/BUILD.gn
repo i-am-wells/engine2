@@ -10,6 +10,8 @@ source_set("engine2") {
     "font.cc",
     "font.h",
     "get_collision_time.h",
+    "init.cc",
+    "init.h",
     "logic_context.cc",
     "logic_context.h",
     "graphics2d.h",
@@ -43,7 +45,6 @@ source_set("engine2") {
     "video_context.h",
     "window.h",
     "window.cc",
-    # TODO io_thread.cc
   ]
   deps = [
     "//engine2/impl:impl"
