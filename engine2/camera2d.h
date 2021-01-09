@@ -30,6 +30,9 @@ class Camera2D {
     virtual bool operator<(Visible& other);
   };
 
+  void SetWorldPosition(const Point<int64_t, 2>& position);
+  void Move(const Vec<int64_t, 2>& distance);
+
   // Remain centered on |object|.
   void Follow(Visible* object);
 

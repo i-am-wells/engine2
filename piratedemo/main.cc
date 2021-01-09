@@ -6,8 +6,10 @@
 #include <SDL2/SDL_image.h>
 
 #include "engine2/camera2d.h"
+#include "engine2/font.h"
 #include "engine2/graphics2d.h"
 #include "engine2/impl/basic_graphics2d.h"
+#include "engine2/init.h"
 #include "engine2/logic_context.h"
 #include "engine2/physics_object.h"
 #include "engine2/rect_object.h"
@@ -17,6 +19,8 @@
 #include "engine2/texture.h"
 #include "engine2/texture_cache.h"
 #include "engine2/timing.h"
+#include "engine2/ui/list_view.h"
+#include "engine2/ui/text_view.h"
 #include "engine2/video_context.h"
 #include "engine2/window.h"
 
@@ -93,8 +97,6 @@ class Cannonball : public SpriteObject {
     std::cerr << "cannonball -> cannonball\n";
   }
 };
-
-Texture* background = nullptr;
 
 int main(int argc, char** argv) {
   if (!(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == 0) ||

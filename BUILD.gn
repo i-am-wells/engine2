@@ -2,7 +2,7 @@ import("//build/sdl2.gni")
 
 executable("piratedemo") {
   sources = ["piratedemo/main.cc"]
-  deps = ["//engine2:engine2"]
+  deps = ["//engine2:engine2", "//engine2/ui:ui"]
   cflags = sdl2_cflags
   ldflags = sdl2_ldflags
 }

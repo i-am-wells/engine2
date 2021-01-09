@@ -1,0 +1,10 @@
+source_set("ui") {
+  sources = [
+    "view.h",
+    "list_view.cc",
+    "list_view.h",
+    "text_view.cc",
+    "text_view.h",
+  ]
+  deps = ["//engine2:engine2"]
+}

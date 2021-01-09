@@ -20,6 +20,14 @@ void Camera2D::SetGraphics(Graphics2D* graphics) {
   view_graphics_.SetUnderlyingGraphics2D(graphics);
 }
 
+void Camera2D::SetWorldPosition(const Point<int64_t, 2>& position) {
+  world_rect_.pos = position;
+}
+
+void Camera2D::Move(const Vec<int64_t, 2>& distance) {
+  world_rect_.pos += distance;
+}
+
 void Camera2D::Follow(Visible* object) {
   follow_object_ = object;
 }

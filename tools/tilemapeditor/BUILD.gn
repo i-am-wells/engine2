@@ -1,0 +1,8 @@
+import("//build/sdl2.gni")
+
+executable("tilemapeditor") {
+  sources = ["main.cc"]
+  deps = ["//engine2:engine2", "//engine2/ui:ui"]
+  cflags = sdl2_cflags
+  ldflags = sdl2_ldflags
+}
