@@ -57,6 +57,18 @@ class Space {
     typename std::list<Motion>::iterator list_iterator;
     bool marked_for_removal = false;
 
+    Motion* last_collision = nullptr;
+    Time last_collision_time = Time();
+
+    void SetLastCollision(Motion* other, Time time) {
+      last_collision = other;
+      last_collision_time = time;
+    }
+
+    bool AlreadyCollided(Motion* other, Time time) const {
+      return other == last_collision && time == last_collision_time;
+    }
+
     Time GetTime() const {
       return Time::FromMicroseconds(enclosing_rect.pos[N]);
     }
@@ -131,6 +143,9 @@ class Space {
       Vec<double, N> initial_velocity_a = a->GetVelocity();
       a->OnCollideWith(*b, b->GetVelocity(), dimension);
       b->OnCollideWith(*a, initial_velocity_a, dimension);
+
+      motion_a->SetLastCollision(motion_b, time);
+      motion_b->SetLastCollision(motion_a, time);
     }
   };
 
@@ -258,6 +273,11 @@ void Space<N, ObjectTypes...>::FindCollisions(CollisionQueue* queue,
     if (ab_collision_time < Time())
       continue;
 
+    if (motion_a->AlreadyCollided(motion_b, ab_collision_time) ||
+        motion_b->AlreadyCollided(motion_a, ab_collision_time)) {
+      continue;
+    }
+
     queue->push({motion_a, motion_b, ab_collision_time, dimension});
   }
 }
@@ -309,6 +329,7 @@ void Space<N, ObjectTypes...>::AdvanceTime(const Time::Delta& delta) {
         [&collision](auto* object_a) {
           std::visit(
               [&collision, object_a](auto* object_b) {
+                // this is where velocities may be updated
                 collision.Collide(object_a, object_b);
               },
               collision.motion_b->variant);
