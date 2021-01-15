@@ -27,11 +27,11 @@ class EveryFrameClauseImpl : public VideoContext::EveryFrameClause {
 
 VideoContextImpl::VideoContextImpl() {
   // TODO throw exception
-  SDL_VideoInit(nullptr);
+  // SDL_VideoInit(nullptr);
 }
 
 VideoContextImpl::~VideoContextImpl() {
-  SDL_VideoQuit();
+  // SDL_VideoQuit();
 }
 
 std::unique_ptr<VideoContext::EveryFrameClause> VideoContextImpl::EveryFrame() {

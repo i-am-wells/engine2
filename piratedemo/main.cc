@@ -2,6 +2,9 @@
 #include <memory>
 #include <thread>
 
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+
 #include "engine2/camera2d.h"
 #include "engine2/graphics2d.h"
 #include "engine2/impl/basic_graphics2d.h"
@@ -17,22 +20,7 @@
 #include "engine2/video_context.h"
 #include "engine2/window.h"
 
-using engine2::BasicGraphics2D;
-using engine2::Camera2D;
-using engine2::Graphics2D;
-using engine2::PhysicsObject;
-using engine2::Point;
-using engine2::Rect;
-using engine2::RectObject;
-using engine2::Space;
-using engine2::StateMutex;
-using engine2::Texture;
-using engine2::TextureCache;
-using engine2::Time;
-using engine2::Timing;
-using engine2::Vec;
-using engine2::VideoContext;
-using engine2::Window;
+using namespace engine2;
 
 static constexpr char kPirateTexturePath[] = "piratedemo/pirate0.png";
 static constexpr char kBackgroundTexturePath[] =
@@ -72,14 +60,6 @@ class Pirate : public SpriteObject {
   void UpdateVelocity() { physics_.velocity = target_velocity; }
 
   // TODO rename: OnTouch()
-  //
-  // How to avoid repetitive calls?
-  // if a and b collide (C1), and the very next collision (C2) is a->b or b->a,
-  // skip (C2)
-  //
-  // or
-  //
-  // if a and b collide at time 1, a and b can't collide again at time 1
   void OnCollideWith(const Pirate& other,
                      const Vec<double, 2>& other_velocity,
                      int dimension) {
@@ -91,7 +71,6 @@ class Pirate : public SpriteObject {
                      const Vec<double, 2>& other_velocity,
                      int dimension) {
     std::cerr << "pirate -> cannonball\n";
-    // physics_.velocity[dimension] = 0;
   }
 
  private:
@@ -118,107 +97,108 @@ class Cannonball : public SpriteObject {
 Texture* background = nullptr;
 
 int main(int argc, char** argv) {
+  if (!(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == 0) ||
+      !(IMG_Init(IMG_INIT_PNG) == IMG_INIT_PNG)) {
+    std::cerr << "failed to init SDL: " << SDL_GetError() << "\n";
+    return 1;
+  }
+
+  // Some details about the world
   Rect<> world_rect{0, 0, 1000, 1000};
   Point<int, 2> screen_size{200, 150};
   int scale = 8;
 
-  // TODO fix
-  Camera2D camera({0, 0, 250, 150}, {0, 0, 250, 150});
-  Pirate pirate({10, 100});
+  auto window =
+      Window::Create("Pirate Demo", {Point<int, 2>{0, 0}, screen_size * scale},
+                     /*sdl_window_flags=*/0);
+  auto graphics = BasicGraphics2D::Create(*window, /*sdl_renderer_flags=*/0);
+  graphics->SetScale(scale);
 
+  // Objects and camera
+  Camera2D camera({0, 0, 250, 150}, {0, 0, 250, 150}, graphics.get());
+  Pirate pirate({10, 100});
   Cannonball cannonball({100, 100});
 
+  camera.Follow(&pirate);
+
+  // Create space and add everything
   Space<2, Pirate, Cannonball> space(world_rect);
   space.Add(&pirate);
   space.Add(&cannonball);
 
-  camera.Follow(&pirate);
+  TextureCache texture_cache(graphics.get());
+
+  // Load sprites
+  pirate.SetTexture(texture_cache.Get(kPirateTexturePath));
+  background = texture_cache.Get(kBackgroundTexturePath);
+  cannonball.SetTexture(texture_cache.Get(kCannonballTexturePath));
+
+  auto video_context = VideoContext::Create();
+  video_context->EveryFrame()
+      ->OnReadState([&] {
+        for (auto& variant : space.Near(camera.GetRect())) {
+          std::visit(
+              [&camera](auto* object) {
+                if (camera.GetRect().Overlaps(object->GetRect()))
+                  camera.OnOverlap(object);
+              },
+              variant);
+        }
+      })
+      ->OnDraw([&] {
+        graphics->SetDrawColor({255, 255, 255, engine2::kOpaque})->Clear();
+        auto bg_size = background->GetSize();
+        camera.InWorldCoords()->DrawTexture(*background, bg_size);
+        camera.Draw();
+        graphics->Present();
+      });
 
   StateMutex state_mutex;
+  std::thread control_thread([&] {
+    auto context = engine2::LogicContext::Create();
 
-  std::thread video_thread([&] {
-    auto video_context = VideoContext::Create();
-    // TODO handle exceptions?
-    auto window = Window::Create("Pirate Demo",
-                                 {Point<int, 2>{0, 0}, screen_size * scale},
-                                 /*sdl_window_flags=*/0);
-    auto graphics = BasicGraphics2D::Create(*window, /*sdl_renderer_flags=*/0);
-    graphics->SetScale(scale);
+    Time last_update_time = Time::Now();
+    int frame_count = 0;
+    context->EveryFrame()->Run([&] {
+      ++frame_count;
+      Time new_time = Time::Now();
+      space.AdvanceTime(new_time - last_update_time);
+      last_update_time = new_time;
 
-    TextureCache texture_cache(graphics.get());
-    camera.SetGraphics(graphics.get());
+      // Pirate may have run into something and stopped.
+      pirate.UpdateVelocity();
+    });
 
-    // Load sprites
-    pirate.SetTexture(texture_cache.Get(kPirateTexturePath));
-    background = texture_cache.Get(kBackgroundTexturePath);
-    cannonball.SetTexture(texture_cache.Get(kCannonballTexturePath));
+    context->EnableKeyRepeat(false);
 
-    video_context->EveryFrame()
-        ->OnReadState([&] {
-          for (auto& variant : space.Near(camera.GetRect())) {
-            std::visit(
-                [&camera](auto* object) {
-                  if (camera.GetRect().Overlaps(object->GetRect()))
-                    camera.OnOverlap(object);
-                },
-                variant);
-          }
-        })
-        ->OnDraw([&] {
-          graphics->SetDrawColor({255, 255, 255, engine2::kOpaque})->Clear();
-          auto bg_size = background->GetSize();
-          camera.InWorldCoords()->DrawTexture(*background, bg_size);
-          camera.Draw();
-          graphics->Present();
-        });
+    /* clang-format off */
+    context->OnKey("Escape")
+      ->Pressed([&] { context->Stop(); });
 
-    video_context->Run(&state_mutex);
+    context->OnKey("w")
+      ->Pressed([&] { pirate.Move({0, -1}); })
+      ->Released([&] { pirate.Move({0, 1}); });
+    
+    context->OnKey("a")
+      ->Pressed([&] { pirate.Move({-1, 0}); })
+      ->Released([&] { pirate.Move({1, 0}); });
+
+    context->OnKey("s")
+      ->Pressed([&] { pirate.Move({0, 1}); })
+      ->Released([&] { pirate.Move({0, -1}); });
+
+    context->OnKey("d")
+      ->Pressed([&] { pirate.Move({1, 0}); })
+      ->Released([&] { pirate.Move({-1, 0}); });
+    /* clang-format on */
+
+    context->Run(&state_mutex);
+    state_mutex.SendSignal(state_mutex.Lock(), StateMutex::Signal::kQuit);
   });
+  video_context->Run(&state_mutex);
 
-  auto context = engine2::LogicContext::Create();
-
-  Time last_update_time = Time::Now();
-  int frame_count = 0;
-  context->EveryFrame()->Run([&] {
-    ++frame_count;
-    Time new_time = Time::Now();
-    space.AdvanceTime(new_time - last_update_time);
-    last_update_time = new_time;
-
-    // Pirate may have run into something and stopped.
-    pirate.UpdateVelocity();
-  });
-
-  context->EnableKeyRepeat(false);
-
-  /* clang-format off */
-  context->OnKey("Escape")
-    ->Pressed([&] { context->Stop(); });
-
-  context->OnKey("w")
-    ->Pressed([&] { pirate.Move({0, -1}); })
-    ->Released([&] { pirate.Move({0, 1}); });
-  
-  context->OnKey("a")
-    ->Pressed([&] { pirate.Move({-1, 0}); })
-    ->Released([&] { pirate.Move({1, 0}); });
-
-  context->OnKey("s")
-    ->Pressed([&] { pirate.Move({0, 1}); })
-    ->Released([&] { pirate.Move({0, -1}); });
-
-  context->OnKey("d")
-    ->Pressed([&] { pirate.Move({1, 0}); })
-    ->Released([&] { pirate.Move({-1, 0}); });
-  /* clang-format on */
-
-  context->Run(&state_mutex);
-
-  // TODO SDL_Quit
-
-  // Signal video thread to quit
-  // TODO maybe this should be built in to LogicContext
-  state_mutex.SendSignal(state_mutex.Lock(), StateMutex::Signal::kQuit);
-  video_thread.join();
+  control_thread.join();
+  IMG_Quit();
+  SDL_Quit();
   return 0;
 }
