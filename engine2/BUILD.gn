@@ -13,6 +13,8 @@ source_set("engine2") {
     "event_handler_impl.h",
     "font.cc",
     "font.h",
+    "frame_loop.cc",
+    "frame_loop.h",
     "get_collision_time.h",
     "init.cc",
     "init.h",
