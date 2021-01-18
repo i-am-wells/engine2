@@ -1,17 +1,17 @@
-#ifndef ENGINE2_IMPL_EVENT_HANDLERS_IMPL_H_
-#define ENGINE2_IMPL_EVENT_HANDLERS_IMPL_H_
+#ifndef ENGINE2_EVENT_HANDLER_IMPL_H_
+#define ENGINE2_EVENT_HANDLER_IMPL_H_
 
 #include <functional>
 #include <unordered_map>
 
-#include "engine2/impl/event_handlers.h"
+#include "engine2/event_handler.h"
 #include "engine2/types.h"
 
 namespace engine2 {
 
 class LogicContextImpl;
 
-class EventHandlersImpl : public EventHandlers {
+class EventHandlerImpl : public EventHandler {
  public:
   // TODO add all events here
   void OnQuit(const SDL_QuitEvent& event) override;
@@ -31,4 +31,4 @@ class EventHandlersImpl : public EventHandlers {
 
 }  // namespace engine2
 
-#endif  // ENGINE2_IMPL_EVENT_HANDLERS_IMPL_H_
+#endif  // ENGINE2_EVENT_HANDLER_IMPL_H_

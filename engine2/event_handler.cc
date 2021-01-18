@@ -1,4 +1,4 @@
-#include "engine2/impl/event_handlers.h"
+#include "engine2/event_handler.h"
 
 #include <SDL2/SDL_events.h>
 
@@ -6,11 +6,11 @@
 
 namespace engine2 {
 
-void EventHandlers::OnQuit(const SDL_QuitEvent& event) {
+void EventHandler::OnQuit(const SDL_QuitEvent& event) {
   std::exit(0);
 }
 
-void EventHandlers::OnWindowEvent(const SDL_WindowEvent& event) {
+void EventHandler::OnWindowEvent(const SDL_WindowEvent& event) {
   switch (event.type) {
     case SDL_WINDOWEVENT_SHOWN:
       OnWindowShown(event);
@@ -63,7 +63,7 @@ void EventHandlers::OnWindowEvent(const SDL_WindowEvent& event) {
   }
 }
 
-void EventHandlers::HandleEvent(const SDL_Event& event) {
+void EventHandler::HandleEvent(const SDL_Event& event) {
   switch (event.type) {
     case SDL_QUIT:
       OnQuit(event.quit);

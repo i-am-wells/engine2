@@ -1,11 +1,11 @@
-#ifndef ENGINE2_IMPL_EVENT_HANDLERS_H_
-#define ENGINE2_IMPL_EVENT_HANDLERS_H_
+#ifndef ENGINE2_IMPL_EVENT_HANDLER_H_
+#define ENGINE2_IMPL_EVENT_HANDLER_H_
 
 #include <SDL2/SDL_events.h>
 
 namespace engine2 {
 
-class EventHandlers {
+class EventHandler {
  public:
   void HandleEvent(const SDL_Event& event);
 
@@ -101,4 +101,4 @@ class EventHandlers {
 
 }  // namespace engine2
 
-#endif  // ENGINE2_IMPL_EVENT_HANDLERS_H_
+#endif  // ENGINE2_IMPL_EVENT_HANDLER_H_

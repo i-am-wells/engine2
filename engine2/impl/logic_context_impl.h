@@ -7,7 +7,7 @@
 #include <SDL2/SDL_events.h>
 
 #include "engine2/callback_queue.h"
-#include "engine2/impl/event_handlers_impl.h"
+#include "engine2/event_handler_impl.h"
 #include "engine2/logic_context.h"
 #include "engine2/memory/weak_pointer.h"
 #include "engine2/timing.h"
@@ -52,7 +52,7 @@ class LogicContextImpl : public LogicContext {
   std::vector<CallbackWithId> every_frame_callbacks_;
   uint32_t next_every_frame_callback_id_ = 0;
   CallbackQueue callback_queue_;
-  EventHandlersImpl event_handlers_;
+  EventHandlerImpl event_handlers_;
   // TODO make configurable
   Timing::FramerateRegulator framerate_regulator_{60};
   bool running_ = false;

@@ -1,4 +1,4 @@
-#include "engine2/impl/event_handlers_impl.h"
+#include "engine2/event_handler_impl.h"
 
 namespace engine2 {
 namespace {
@@ -18,20 +18,20 @@ void CallIfPresent(const std::unordered_map<SDL_Keycode, KeyboardCallback>& map,
 
 }  // namespace
 
-void EventHandlersImpl::OnQuit(const SDL_QuitEvent& event) {
+void EventHandlerImpl::OnQuit(const SDL_QuitEvent& event) {
   if (quit_callback_)
     quit_callback_(event);
   else
-    EventHandlers::OnQuit(event);
+    EventHandler::OnQuit(event);
 }
 
-void EventHandlersImpl::OnKeyDown(const SDL_KeyboardEvent& event) {
+void EventHandlerImpl::OnKeyDown(const SDL_KeyboardEvent& event) {
   if (event.repeat && !enable_key_repeat_)
     return;
   CallIfPresent(key_down_, event);
 }
 
-void EventHandlersImpl::OnKeyUp(const SDL_KeyboardEvent& event) {
+void EventHandlerImpl::OnKeyUp(const SDL_KeyboardEvent& event) {
   CallIfPresent(key_up_, event);
 }
 
