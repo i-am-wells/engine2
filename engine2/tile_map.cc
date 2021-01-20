@@ -20,17 +20,22 @@ TileMap::TileMap(const Vec<int, 2>& tile_size,
 }
 
 void TileMap::Draw(Camera2D* camera) {
-  Rect<int64_t, 2> camera_world_rect = camera->GetRect();
-  Point<int64_t, 2> draw_point;
+  Draw(camera->InWorldCoords(), camera->GetRect());
+}
 
-  for (int64_t y = 0; y <= camera_world_rect.h(); y += tile_size_.y()) {
-    draw_point.y() = y + camera_world_rect.y();
+void TileMap::Draw(Graphics2D* graphics, const Rect<int64_t, 2>& world_rect) {
+  Point<int64_t, 2> draw_point{};
 
-    for (int64_t x = 0; x <= camera_world_rect.w(); x += tile_size_.x()) {
-      draw_point.x() = x + camera_world_rect.x();
+  for (int64_t y = 0; y <= world_rect.h(); y += tile_size_.y()) {
+    draw_point.y() = y + world_rect.y();
 
-      GetTileStackAtWorldPosition(draw_point)
-          .Draw(camera->InWorldCoords(), draw_point);
+    for (int64_t x = 0; x <= world_rect.w(); x += tile_size_.x()) {
+      draw_point.x() = x + world_rect.x();
+
+      if (!world_rect_.Contains(draw_point))
+        continue;
+
+      GetTileStackAtWorldPosition(draw_point).Draw(graphics, draw_point);
     }
   }
 }
@@ -45,6 +50,11 @@ std::pair<TileMap::TileStackReference, int> TileMap::AddTileStack() {
   tile_stacks_.push_front({});
   tile_stack_refs_.push_back(tile_stacks_.begin());
   return {tile_stacks_.begin(), tile_stack_refs_.size() - 1};
+}
+
+void TileMap::AddTileStacks(const std::vector<TileStack>& stacks) {
+  for (const TileStack& stack : stacks)
+    *(AddTileStack().first) = stack;
 }
 
 void TileMap::SetTileStackAtGridPosition(const Point<int64_t, 2>& grid_position,

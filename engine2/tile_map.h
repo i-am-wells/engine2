@@ -18,11 +18,12 @@ class TileMap {
           const Point<int64_t, 2>& position_in_world,
           bool empty_initialize = false);
 
+  void Draw(Graphics2D* graphics, const Rect<int64_t, 2>& world_rect);
   void Draw(Camera2D* camera);
 
   struct Tile {
     Sprite* sprite;
-    Time::Delta animation_offset;
+    Time::Delta animation_offset{};
   };
 
   struct TileStack {
@@ -34,6 +35,7 @@ class TileMap {
 
   // Create a new TileStack that can be referenced by grid cells.
   std::pair<TileStackReference, int> AddTileStack();
+  void AddTileStacks(const std::vector<TileStack>& stacks);
   // Remove a TileStack.
   void RemoveTileStack(TileStackReference ref);
 
