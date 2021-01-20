@@ -1,5 +1,12 @@
 import("//build/sdl2.gni")
 
+group("all") {
+  deps = [
+    ":piratedemo",
+    "//tools/tilemapeditor:tilemapeditor",
+  ]
+}
+
 executable("piratedemo") {
   sources = ["piratedemo/main.cc"]
   deps = ["//engine2:engine2", "//engine2/ui:ui"]
@@ -14,4 +21,3 @@ executable("test") {
   ldflags = sdl2_ldflags
   testonly = true
 }
-
