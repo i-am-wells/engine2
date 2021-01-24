@@ -44,22 +44,6 @@ void ListView::Draw() const {
     child->Draw();
 }
 
-void ListView::OnMouseEnter(const SDL_MouseMotionEvent& event) {
-  View* child = FindChild({event.x, event.y});
-  if (!child)
-    return;
-
-  child->OnMouseEnter(event);
-}
-
-void ListView::OnMouseLeave(const SDL_MouseMotionEvent& event) {
-  View* child = FindChild({event.x - event.xrel, event.y - event.yrel});
-  if (!child)
-    return;
-
-  child->OnMouseLeave(event);
-}
-
 void ListView::OnMouseDown(const SDL_MouseButtonEvent& event) {
   View* child = FindChild({event.x, event.y});
   if (!child)
@@ -74,6 +58,16 @@ void ListView::OnMouseUp(const SDL_MouseButtonEvent& event) {
     return;
 
   child->OnMouseUp(event);
+}
+
+void ListView::OnMouseMotion(const SDL_MouseMotionEvent& event) {
+  View* child = FindChild({event.x, event.y});
+  if (child)
+    child->OnMouseMotion(event);
+
+  child = FindChild({event.x + event.xrel, event.y + event.yrel});
+  if (child)
+    child->OnMouseMotion(event);
 }
 
 View* ListView::FindChild(const Point<int, 2>& point) {

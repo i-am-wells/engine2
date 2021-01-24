@@ -23,10 +23,9 @@ class ListView : public View {
 
   virtual void Draw() const;
 
-  virtual void OnMouseEnter(const SDL_MouseMotionEvent& event);
-  virtual void OnMouseLeave(const SDL_MouseMotionEvent& event);
   virtual void OnMouseDown(const SDL_MouseButtonEvent& event);
   virtual void OnMouseUp(const SDL_MouseButtonEvent& event);
+  virtual void OnMouseMotion(const SDL_MouseMotionEvent& event);
 
  private:
   void ChangeSize(const Point<int, 2>& child_size);

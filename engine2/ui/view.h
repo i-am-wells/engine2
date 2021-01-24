@@ -15,10 +15,9 @@ class View {
 
   virtual void Draw() const = 0;
 
-  virtual void OnMouseEnter(const SDL_MouseMotionEvent& event) {}
-  virtual void OnMouseLeave(const SDL_MouseMotionEvent& event) {}
   virtual void OnMouseDown(const SDL_MouseButtonEvent& event) {}
   virtual void OnMouseUp(const SDL_MouseButtonEvent& event) {}
+  virtual void OnMouseMotion(const SDL_MouseMotionEvent& event) {}
 };
 
 }  // namespace ui
