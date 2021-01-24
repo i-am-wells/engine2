@@ -5,6 +5,8 @@ executable("tilemapeditor") {
     "editor.cc",
     "editor.h",
     "main.cc",
+    "sidebar_view.cc",
+    "sidebar_view.h",
   ]
   deps = [
     "//engine2:engine2",

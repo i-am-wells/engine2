@@ -2,11 +2,13 @@
 #define TOOLS_TILEMAPEDITOR_EDITOR_H_
 
 #include "engine2/event_handler.h"
+#include "engine2/font.h"
 #include "engine2/frame_loop.h"
 #include "engine2/graphics2d.h"
 #include "engine2/tile_map.h"
 #include "engine2/timing.h"
 #include "engine2/window.h"
+#include "tools/tilemapeditor/sidebar_view.h"
 
 namespace tilemapeditor {
 
@@ -14,6 +16,7 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
  public:
   Editor(engine2::Window* window,
          engine2::Graphics2D* graphics,
+         engine2::Font* font,
          engine2::TileMap* map);
 
   // FrameLoop
@@ -41,6 +44,8 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::TileMap* map_;
   engine2::Rect<> window_size_;
   engine2::Timing::FramerateRegulator framerate_regulator_{60};
+
+  SidebarView sidebar_;
 
   engine2::Rect<> window_in_world_;
   engine2::Vec<int64_t, 2> viewport_velocity_{};

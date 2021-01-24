@@ -24,22 +24,38 @@ void PrintSDLError(const std::string& message) {
 }
 
 void LoadMapAndRun() {
-  auto window =
-      Window::Create("tilemap editor", {0, 0, 1600, 1200}, /*flags=*/0);
+  SDL_Rect display_bounds;
+  if (SDL_GetDisplayUsableBounds(0, &display_bounds) != 0)
+    return PrintSDLError("failed to get display bounds");
+
+  constexpr int kWindowFlags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
+  auto window = Window::Create("tilemap editor",
+                               {SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                display_bounds.w, display_bounds.h},
+                               kWindowFlags);
   if (!window)
     return PrintSDLError("failed to create window");
 
-  auto graphics = BasicGraphics2D::Create(*window, /*flags=*/0);
+  constexpr int kRenderFlags = SDL_RENDERER_ACCELERATED;
+  auto graphics = BasicGraphics2D::Create(*window, kRenderFlags);
   if (!graphics)
     return PrintSDLError("failed to create renderer");
 
-  graphics->SetLogicalSize(400, 300);
+  window->Maximize();
+  Vec<int64_t, 2> logical_size = graphics->GetSize().size / 4l;
+  std::cerr << "logical size: " << logical_size.x() << " " << logical_size.y()
+            << "\n";
+  graphics->SetLogicalSize(logical_size.x(), logical_size.y());
 
   // TODO try to load example tile images here
   auto texture =
       Texture::LoadFromImage(*graphics, "tools/tilemapeditor/tiles.png");
   if (!texture)
     return PrintSDLError("failed to load image");
+
+  auto font = Font::Load("tools/tilemapeditor/ter-u12b.otb", 12);
+  if (!font)
+    return PrintSDLError("failed to load font");
 
   // Create sprites
   Sprite white_sprite(texture.get(), {0, 0, 16, 16});
@@ -69,7 +85,7 @@ void LoadMapAndRun() {
       map.SetTileStackAtGridPosition(point, rand() % 4);
   }
 
-  tilemapeditor::Editor(window.get(), graphics.get(), &map).Run();
+  tilemapeditor::Editor(window.get(), graphics.get(), font.get(), &map).Run();
 }
 
 }  // namespace

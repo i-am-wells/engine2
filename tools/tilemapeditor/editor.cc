@@ -1,6 +1,7 @@
 #include "tools/tilemapeditor/editor.h"
 #include "engine2/rgba_color.h"
 
+using engine2::Font;
 using engine2::Graphics2D;
 using engine2::kOpaque;
 using engine2::Point;
@@ -14,6 +15,7 @@ namespace tilemapeditor {
 namespace {
 
 static constexpr RgbaColor kBlack{0, 0, 0, kOpaque};
+static constexpr RgbaColor kDarkGray{64, 64, 64, kOpaque};
 static constexpr RgbaColor kWhite{255, 255, 255, kOpaque};
 static constexpr RgbaColor kRed{255, 0, 0, kOpaque};
 static constexpr RgbaColor kGreen{0, 255, 0, kOpaque};
@@ -27,22 +29,25 @@ static constexpr int64_t kSpeed = 2;
 
 }  // namespace
 
-Editor::Editor(Window* window, Graphics2D* graphics, TileMap* map)
+Editor::Editor(Window* window, Graphics2D* graphics, Font* font, TileMap* map)
     : FrameLoop(/*event_handler=*/this),
       window_(window),
       graphics_(graphics),
       world_graphics_(graphics_, &(window_in_world_.pos)),
-      map_(map) {
+      map_(map),
+      sidebar_(Rect<int, 2>{0, 0, 100, 300}, graphics, font) {
   window_in_world_.pos = {};
   window_in_world_.size = graphics_->GetLogicalSize().size;
 }
 
 void Editor::EveryFrame() {
-  graphics_->Clear();
+  graphics_->SetDrawColor(kDarkGray)->Clear();
   map_->Draw(graphics_, window_in_world_);
   DrawMapGrid();
   DrawSelectionHighlight();
   DrawCursorHighlight();
+
+  sidebar_.Draw();
 
   window_in_world_.pos += viewport_velocity_;
 
@@ -98,17 +103,25 @@ void Editor::OnKeyUp(const SDL_KeyboardEvent& event) {
 }
 
 void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
-  // TODO try to pass to UI; if it isn't on any UI, pass to map
-  SetCursorGridPosition({event.x, event.y});
-  map_->SetTileStackAtGridPosition(last_cursor_map_position_, 3);
+  if (sidebar_.Contains({event.x, event.y})) {
+    sidebar_.OnMouseButtonDown(event);
+  } else {
+    SetCursorGridPosition({event.x, event.y});
+    map_->SetTileStackAtGridPosition(last_cursor_map_position_, 3);
+  }
 }
 
 void Editor::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {
-  // TODO try to pass to UI; if it isn't on any UI, pass to map
+  if (sidebar_.Contains({event.x, event.y})) {
+    sidebar_.OnMouseButtonUp(event);
+  }
 }
 
 void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
-  // TODO try to pass to UI; if it isn't on any UI, pass to map
+  if (sidebar_.Contains({event.x, event.y})) {
+    sidebar_.OnMouseMotion(event);
+  }
+
   SetCursorGridPosition({event.x, event.y});
 }
 
