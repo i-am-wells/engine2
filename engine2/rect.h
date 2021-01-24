@@ -54,6 +54,13 @@ struct Rect {
   // !Touches(other), return -1. If touching in multiple dimensions, returns the
   // lowest index.
   int GetTouchingDimension(const Rect& other) const;
+
+  Rect& operator*=(const Vec<Scalar, N>& vec) {
+    pos *= vec;
+    size *= vec;
+    return *this;
+  }
+  Rect operator*(const Vec<Scalar, N>& vec) const { return Rect(*this) *= vec; }
 };
 
 // TODO: maybe these should be members of Rect (but with better names)
