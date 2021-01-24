@@ -24,18 +24,18 @@ void TileMap::Draw(Camera2D* camera) {
 }
 
 void TileMap::Draw(Graphics2D* graphics, const Rect<int64_t, 2>& world_rect) {
-  Point<int64_t, 2> draw_point{};
+  Point<> draw_offset = world_rect.pos % tile_size_;
+  Point<> draw_point;
 
-  for (int64_t y = 0; y <= world_rect.h(); y += tile_size_.y()) {
-    draw_point.y() = y + world_rect.y();
-
-    for (int64_t x = 0; x <= world_rect.w(); x += tile_size_.x()) {
-      draw_point.x() = x + world_rect.x();
-
-      if (!world_rect_.Contains(draw_point))
+  for (draw_point.y() = -draw_offset.y(); draw_point.y() <= world_rect.h();
+       draw_point.y() += tile_size_.y()) {
+    for (draw_point.x() = -draw_offset.x(); draw_point.x() <= world_rect.w();
+         draw_point.x() += tile_size_.x()) {
+      Point<> world_point = draw_point + world_rect.pos;
+      if (!world_rect_.Contains(world_point))
         continue;
 
-      GetTileStackAtWorldPosition(draw_point).Draw(graphics, draw_point);
+      GetTileStackAtWorldPosition(world_point).Draw(graphics, draw_point);
     }
   }
 }
