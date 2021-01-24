@@ -15,8 +15,8 @@ class View {
 
   virtual void Draw() const = 0;
 
-  virtual void OnMouseDown(const SDL_MouseButtonEvent& event) {}
-  virtual void OnMouseUp(const SDL_MouseButtonEvent& event) {}
+  virtual void OnMouseButtonDown(const SDL_MouseButtonEvent& event) {}
+  virtual void OnMouseButtonUp(const SDL_MouseButtonEvent& event) {}
   virtual void OnMouseMotion(const SDL_MouseMotionEvent& event) {}
 };
 

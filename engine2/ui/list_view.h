@@ -3,12 +3,12 @@
 
 #include <vector>
 
-#include "engine2/ui/view.h"
+#include "engine2/ui/container_view.h"
 
 namespace engine2 {
 namespace ui {
 
-class ListView : public View {
+class ListView : public ContainerView {
  public:
   enum class Direction { kHorizontal, kVertical };
 
@@ -18,14 +18,8 @@ class ListView : public View {
   void RemoveChild(int index);
 
   // View implementation
-  virtual void SetPosition(const Point<int, 2>& position);
-  virtual Rect<int, 2> GetRect() const;
-
-  virtual void Draw() const;
-
-  virtual void OnMouseDown(const SDL_MouseButtonEvent& event);
-  virtual void OnMouseUp(const SDL_MouseButtonEvent& event);
-  virtual void OnMouseMotion(const SDL_MouseMotionEvent& event);
+  void SetPosition(const Point<int, 2>& position) override;
+  Rect<int, 2> GetRect() const override;
 
  private:
   void ChangeSize(const Point<int, 2>& child_size);
@@ -33,8 +27,6 @@ class ListView : public View {
   void UpdateChildPositions(int start_index);
 
   Direction direction_;
-  Rect<int, 2> rect_;
-  std::vector<View*> children_;
 };
 
 }  // namespace ui
