@@ -24,6 +24,12 @@ class Window {
   explicit Window(SDL_Window* sdl_window);
   ~Window();
 
+  Vec<int, 2> GetSize() const;
+  Vec<int, 2> GetMaximumSize() const;
+  Vec<int, 2> GetMinimumSize() const;
+
+  void Maximize();
+
  private:
   friend class BasicGraphics2D;
   SDL_Window* window_;

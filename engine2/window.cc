@@ -20,4 +20,26 @@ Window::~Window() {
     SDL_DestroyWindow(window_);
 }
 
+Vec<int, 2> Window::GetSize() const {
+  int x, y;
+  SDL_GetWindowSize(window_, &x, &y);
+  return {x, y};
+}
+
+Vec<int, 2> Window::GetMaximumSize() const {
+  int x, y;
+  SDL_GetWindowMaximumSize(window_, &x, &y);
+  return {x, y};
+}
+
+Vec<int, 2> Window::GetMinimumSize() const {
+  int x, y;
+  SDL_GetWindowMinimumSize(window_, &x, &y);
+  return {x, y};
+}
+
+void Window::Maximize() {
+  SDL_MaximizeWindow(window_);
+}
+
 }  // namespace engine2
