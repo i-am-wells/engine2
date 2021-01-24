@@ -1,55 +1,166 @@
 #include "tools/tilemapeditor/editor.h"
+#include "engine2/rgba_color.h"
 
 using engine2::Graphics2D;
+using engine2::kOpaque;
+using engine2::Point;
+using engine2::Rect;
+using engine2::RgbaColor;
 using engine2::TileMap;
+using engine2::Vec;
+using engine2::Window;
 
 namespace tilemapeditor {
+namespace {
 
-Editor::Editor(std::unique_ptr<Graphics2D> graphics, TileMap* map)
+static constexpr RgbaColor kBlack{0, 0, 0, kOpaque};
+static constexpr RgbaColor kWhite{255, 255, 255, kOpaque};
+static constexpr RgbaColor kRed{255, 0, 0, kOpaque};
+static constexpr RgbaColor kGreen{0, 255, 0, kOpaque};
+
+static constexpr Vec<int64_t, 2> kNorth{0, -1};
+static constexpr Vec<int64_t, 2> kSouth{0, 1};
+static constexpr Vec<int64_t, 2> kEast{1, 0};
+static constexpr Vec<int64_t, 2> kWest{-1, 0};
+
+static constexpr int64_t kSpeed = 2;
+
+}  // namespace
+
+Editor::Editor(Window* window, Graphics2D* graphics, TileMap* map)
     : FrameLoop(/*event_handler=*/this),
-      graphics_(std::move(graphics)),
-      map_(map) {}
+      window_(window),
+      graphics_(graphics),
+      world_graphics_(graphics_, &(window_in_world_.pos)),
+      map_(map) {
+  window_in_world_.pos = {};
+  window_in_world_.size = graphics_->GetLogicalSize().size;
+}
 
 void Editor::EveryFrame() {
   graphics_->Clear();
-  map_->Draw(graphics_.get(), {0, 0, 800, 600});
+  map_->Draw(graphics_, window_in_world_);
+  DrawMapGrid();
+  DrawSelectionHighlight();
+  DrawCursorHighlight();
+
+  window_in_world_.pos += viewport_velocity_;
+
   graphics_->Present();
-  // TODO delay for framerate?
+  framerate_regulator_.Wait();
 }
 
 void Editor::OnKeyDown(const SDL_KeyboardEvent& event) {
+  if (event.repeat)
+    return;
+
   switch (event.keysym.sym) {
     case SDLK_w:
-      // TODO up
+      viewport_velocity_ += kNorth * kSpeed;
       break;
     case SDLK_a:
+      viewport_velocity_ += kWest * kSpeed;
       break;
     case SDLK_s:
+      viewport_velocity_ += kSouth * kSpeed;
       break;
     case SDLK_d:
+      viewport_velocity_ += kEast * kSpeed;
+      break;
+    case SDLK_ESCAPE:
+      Stop();
       break;
     default:
+      break;
   }
 }
 
 void Editor::OnKeyUp(const SDL_KeyboardEvent& event) {
+  if (event.repeat)
+    return;
+
   switch (event.keysym.sym) {
     case SDLK_w:
-      // TODO up
+      viewport_velocity_ -= kNorth * kSpeed;
       break;
     case SDLK_a:
+      viewport_velocity_ -= kWest * kSpeed;
       break;
     case SDLK_s:
+      viewport_velocity_ -= kSouth * kSpeed;
       break;
     case SDLK_d:
+      viewport_velocity_ -= kEast * kSpeed;
       break;
     default:
+      break;
   }
 }
 
-void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {}
-void Editor::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {}
-void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {}
-void Editor::OnMouseWheel(const SDL_MouseWheelEvent& event) {}
+void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
+  // TODO try to pass to UI; if it isn't on any UI, pass to map
+  SetCursorGridPosition({event.x, event.y});
+  map_->SetTileStackAtGridPosition(last_cursor_map_position_, 3);
+}
+
+void Editor::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {
+  // TODO try to pass to UI; if it isn't on any UI, pass to map
+}
+
+void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
+  // TODO try to pass to UI; if it isn't on any UI, pass to map
+  SetCursorGridPosition({event.x, event.y});
+}
+
+void Editor::OnMouseWheel(const SDL_MouseWheelEvent& event) {
+  // TODO try to pass to UI; if it isn't on any UI, pass to map
+}
+
+void Editor::DrawMapGrid() {
+  Vec<int64_t, 2> grid_size_pixels_ = grid_size_tiles_ * tile_size_;
+  Vec<int64_t, 2> phase = window_in_world_.pos % grid_size_pixels_;
+  graphics_->SetDrawColor(kGreen);
+
+  // Draw vertical lines
+  for (int64_t x = window_in_world_.x() - phase.x();
+       x < window_in_world_.x() + window_in_world_.w();
+       x += grid_size_pixels_.x()) {
+    if (x == 0)
+      graphics_->SetDrawColor(kRed);
+
+    world_graphics_.DrawLine({x, window_in_world_.y()},
+                             {x, window_in_world_.y() + window_in_world_.h()});
+    if (x == 0)
+      graphics_->SetDrawColor(kGreen);
+  }
+
+  // Draw horizontal lines
+  for (int64_t y = window_in_world_.y() - phase.y();
+       y < window_in_world_.y() + window_in_world_.h();
+       y += grid_size_pixels_.y()) {
+    if (y == 0)
+      graphics_->SetDrawColor(kRed);
+
+    world_graphics_.DrawLine({window_in_world_.x(), y},
+                             {window_in_world_.x() + window_in_world_.w(), y});
+    if (y == 0)
+      graphics_->SetDrawColor(kGreen);
+  }
+}
+
+void Editor::DrawCursorHighlight() {
+  graphics_->SetDrawColor(kGreen);
+  world_graphics_.DrawRect(
+      {last_cursor_map_position_ * tile_size_, tile_size_});
+}
+
+void Editor::DrawSelectionHighlight() {
+  graphics_->SetDrawColor(kGreen);
+  world_graphics_.DrawRect(map_selection_ * tile_size_);
+}
+
+void Editor::SetCursorGridPosition(const Point<>& screen_pos) {
+  last_cursor_map_position_ = (screen_pos + window_in_world_.pos) / tile_size_;
+}
 
 }  // namespace tilemapeditor

@@ -69,7 +69,7 @@ void LoadMapAndRun() {
       map.SetTileStackAtGridPosition(point, rand() % 4);
   }
 
-  tilemapeditor::Editor(std::move(graphics), &map).Run();
+  tilemapeditor::Editor(window.get(), graphics.get(), &map).Run();
 }
 
 }  // namespace

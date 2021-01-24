@@ -5,12 +5,16 @@
 #include "engine2/frame_loop.h"
 #include "engine2/graphics2d.h"
 #include "engine2/tile_map.h"
+#include "engine2/timing.h"
+#include "engine2/window.h"
 
 namespace tilemapeditor {
 
 class Editor : public engine2::FrameLoop, public engine2::EventHandler {
  public:
-  Editor(std::unique_ptr<engine2::Graphics2D> graphics, engine2::TileMap* map);
+  Editor(engine2::Window* window,
+         engine2::Graphics2D* graphics,
+         engine2::TileMap* map);
 
   // FrameLoop
   void EveryFrame() override;
@@ -25,8 +29,25 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   void OnMouseWheel(const SDL_MouseWheelEvent& event) override;
 
  private:
-  std::unique_ptr<engine2::Graphics2D> graphics_;
+  void DrawMapGrid();
+  void DrawCursorHighlight();
+  void DrawSelectionHighlight();
+
+  void SetCursorGridPosition(const engine2::Point<>& screen_pos);
+
+  engine2::Window* window_;
+  engine2::Graphics2D* graphics_;
+  engine2::OffsetGraphics2D world_graphics_;
   engine2::TileMap* map_;
+  engine2::Rect<> window_size_;
+  engine2::Timing::FramerateRegulator framerate_regulator_{60};
+
+  engine2::Rect<> window_in_world_;
+  engine2::Vec<int64_t, 2> viewport_velocity_{};
+  engine2::Vec<int64_t, 2> tile_size_{16, 16};
+  engine2::Vec<int64_t, 2> grid_size_tiles_{10, 10};  // save
+  engine2::Point<> last_cursor_map_position_{};
+  engine2::Rect<> map_selection_{};
 };
 
 }  // namespace tilemapeditor
