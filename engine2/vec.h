@@ -102,6 +102,14 @@ struct Vec {
     };
     return *this;
   }
+
+  Vec& operator%=(const Vec& other) {
+    for (int i = 0; i < N; ++i)
+      value[i] %= other.value[i];
+    return *this;
+  }
+
+  Vec operator%(const Vec& other) const { return Vec(*this) %= other; }
 };
 
 template <typename Scalar, int N>
