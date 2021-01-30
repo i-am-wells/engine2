@@ -13,59 +13,57 @@ namespace engine2 {
 
 class TileMap {
  public:
+  static constexpr int kAllLayers = -1;
+
   TileMap(const Vec<int, 2>& tile_size,
           const Vec<int64_t, 2>& grid_size,
+          int layer_count,
           const Point<int64_t, 2>& position_in_world,
           bool empty_initialize = false);
 
-  void Draw(Graphics2D* graphics, const Rect<int64_t, 2>& world_rect);
-  void Draw(Camera2D* camera);
+  void Draw(Graphics2D* graphics,
+            const Rect<int64_t, 2>& world_rect,
+            int layer = kAllLayers);
+  void Draw(Camera2D* camera, int layer = kAllLayers);
 
   struct Tile {
     Sprite* sprite;
     Time::Delta animation_offset{};
   };
 
-  struct TileStack {
-    std::vector<Tile> tiles;
-    void Draw(Graphics2D* graphics, const Point<int64_t, 2>& dest);
-  };
+  // We create a special type for points on the grid to make it harder to
+  // accidentally pass a point in the world to a function that expects tile grid
+  // coordinates.
+  struct GridPoint : public Point<> {};
 
-  using TileStackReference = std::list<TileStack>::iterator;
+  // Convert a point in the world to tile grid coordinates.
+  GridPoint WorldToGrid(const Point<>& world_point) const;
 
-  // Create a new TileStack that can be referenced by grid cells.
-  std::pair<TileStackReference, int> AddTileStack();
-  void AddTileStacks(const std::vector<TileStack>& stacks);
-  // Remove a TileStack.
-  void RemoveTileStack(TileStackReference ref);
+  // Returns nullptr if point/layer are out of bounds.
+  Tile* GetTile(const GridPoint& point, int layer);
+  Tile* GetTileByIndex(uint16_t tile_index);
 
-  // Returns a the TileStack at the specified world position.
-  TileStack& GetTileStackAtWorldPosition(
-      const Point<int64_t, 2>& tile_location);
+  uint16_t GetTileIndex(const GridPoint& point, int layer) const;
+  void SetTileIndex(const GridPoint& point, int layer, uint16_t tile_index);
 
-  // Set a grid cell to be drawn with the TileStack corresponding to
-  // |tile_stack_index|.
-  void SetTileStackAtGridPosition(const Point<int64_t, 2>& grid_position,
-                                  int tile_stack_index);
-  void SetTileStackAtWorldPosition(const Point<int64_t, 2>& world_position,
-                                   int tile_stack_index);
+  // Add a tile to the map's set of tiles and return the index.
+  uint16_t AddTile(const Tile& tile);
+  void AddTiles(const std::vector<Tile>& tiles);
 
  private:
-  TileStack& GetTileStackAtGridPosition(const Point<int64_t, 2>& grid_position);
-  bool PositionInMap(const Point<int64_t, 2>& grid_position) const;
+  bool PositionInMap(const GridPoint& grid_position) const;
 
-  Point<int64_t, 2> WorldToGrid(const Point<int64_t, 2>& world_pos) const;
+  uint64_t GridIndex(const GridPoint& grid_point, int layer) const;
 
   Vec<int64_t, 2> tile_size_;
   Vec<int64_t, 2> grid_size_;
   Rect<int64_t, 2> world_rect_;
+  int layer_count_;
 
-  std::list<TileStack> tile_stacks_;
+  // Storage for tiles.
+  std::vector<Tile> tiles_;
 
-  // Points to tile_stacks_.
-  std::vector<TileStackReference> tile_stack_refs_;
-
-  // Points to tile_refs_.
+  // Stores indices of tiles.
   std::unique_ptr<uint16_t[]> grid_;
 };
 

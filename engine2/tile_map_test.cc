@@ -42,15 +42,6 @@ class TestSprite : public Sprite {
   }
 };
 
-TileMap CreateTileMap() {
-  return TileMap(kTileSize, kGridSize, kPositionInWorld);
-}
-
-TileMap CreateInitializedTileMap() {
-  return TileMap(kTileSize, kGridSize, kPositionInWorld,
-                 /*empty_initialize=*/true);
-}
-
 TestSprite CreateSprite(Texture* texture) {
   return TestSprite(texture, /*frame_count=*/0);
 }
@@ -61,7 +52,7 @@ void TileMapTest::TestDraw() {
   TestGraphics2D graphics;
   Camera2D camera(Rect<int64_t, 2>{-100, -100, 300, 200},
                   Rect<int64_t, 2>{0, 0, 300, 200}, &graphics);
-  TileMap map = CreateTileMap();
+  TileMap map(kTileSize, kGridSize, /*layer_count=*/1, kPositionInWorld);
 
   TestTexture texture1(1);
   TestSprite sprite1 = CreateSprite(&texture1);
@@ -70,25 +61,25 @@ void TileMapTest::TestDraw() {
   TestTexture texture3(3);
   TestSprite sprite3 = CreateSprite(&texture3);
 
-  auto [ref1, index1] = map.AddTileStack();
-  (*ref1).tiles.push_back({&sprite1, Time::Delta::FromSeconds(0)});
-  auto [ref2, index2] = map.AddTileStack();
-  (*ref2).tiles.push_back({&sprite2, Time::Delta::FromSeconds(0)});
-  (*ref2).tiles.push_back({&sprite3, Time::Delta::FromSeconds(0)});
+  map.AddTiles({
+      {&sprite1},
+      {&sprite2},
+      {&sprite3},
+  });
 
-  map.SetTileStackAtGridPosition({0, 1}, index1);
-  map.SetTileStackAtGridPosition({0, 2}, index2);
+  TileMap::GridPoint grid_point{0, 1};
+  map.SetTileIndex(grid_point, /*layer=*/0, /*tile_index=*/1);
+  ++grid_point.y();
+  map.SetTileIndex(grid_point, /*layer=*/0, /*tile_index=*/2);
 
   map.Draw(&camera);
 
-  Point<> dest_point_2 = kPositionInWorld;
-  dest_point_2.x() += 0 * kTileSize.x();
-  dest_point_2.y() += 2 * kTileSize.y();
+  Point<> stride{0, kTileSize.y()};
 
   EXPECT_EQ(1, sprite2.draw_calls.size());
-  EXPECT_EQ(1, sprite2.CountDraws(dest_point_2));
+  EXPECT_EQ(1, sprite2.CountDraws(kPositionInWorld + stride));
   EXPECT_EQ(1, sprite3.draw_calls.size());
-  EXPECT_EQ(1, sprite3.CountDraws(dest_point_2));
+  EXPECT_EQ(1, sprite3.CountDraws(kPositionInWorld + (stride * 2l)));
 }
 
 TileMapTest::TileMapTest()
