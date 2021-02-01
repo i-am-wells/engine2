@@ -3,15 +3,8 @@
 namespace engine2 {
 namespace ui {
 
-ContainerView::ContainerView(const Rect<int, 2>& rect, std::vector<View*> views)
-    : rect_(rect), views_(std::move(views)) {}
-
-void ContainerView::SetPosition(const Point<int, 2>& position) {
-  rect_.pos = position;
-}
-
 void ContainerView::Draw() const {
-  for (View* view : views_)
+  for (View* view : children_)
     view->Draw();
 }
 
@@ -38,11 +31,11 @@ void ContainerView::OnMouseMotion(const SDL_MouseMotionEvent& event) {
 }
 
 bool ContainerView::Contains(const Point<int, 2>& point) const {
-  return rect_.Contains(point);
+  return GetRect().Contains(point);
 }
 
-View* ContainerView::FindChild(const Point<int, 2>& point) {
-  for (View* view : views_) {
+HierarchyView* ContainerView::FindChild(const Point<int, 2>& point) {
+  for (HierarchyView* view : children_) {
     if (view->GetRect().Contains(point))
       return view;
   }

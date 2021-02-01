@@ -11,14 +11,14 @@ using engine2::TileMap;
 using engine2::Vec;
 using engine2::Window;
 
+using engine2::kBlack;
+using engine2::kDarkGray;
+using engine2::kGray;
+using engine2::kGreen;
+using engine2::kRed;
+
 namespace tilemapeditor {
 namespace {
-
-static constexpr RgbaColor kBlack{0, 0, 0, kOpaque};
-static constexpr RgbaColor kDarkGray{64, 64, 64, kOpaque};
-static constexpr RgbaColor kWhite{255, 255, 255, kOpaque};
-static constexpr RgbaColor kRed{255, 0, 0, kOpaque};
-static constexpr RgbaColor kGreen{0, 255, 0, kOpaque};
 
 static constexpr Vec<int64_t, 2> kNorth{0, -1};
 static constexpr Vec<int64_t, 2> kSouth{0, 1};
@@ -33,9 +33,10 @@ Editor::Editor(Window* window, Graphics2D* graphics, Font* font, TileMap* map)
     : FrameLoop(/*event_handler=*/this),
       window_(window),
       graphics_(graphics),
+      font_(font),
       world_graphics_(graphics_, &(window_in_world_.pos)),
       map_(map),
-      sidebar_(Rect<int, 2>{0, 0, 100, 300}, graphics, font) {
+      sidebar_(this) {
   window_in_world_.pos = {};
   window_in_world_.size = graphics_->GetLogicalSize().size;
 }
@@ -107,7 +108,7 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
     sidebar_.OnMouseButtonDown(event);
   } else {
     SetCursorGridPosition({event.x, event.y});
-    map_->SetTileStackAtGridPosition(last_cursor_map_position_, 3);
+    map_->SetTileIndex(last_cursor_map_position_, 1, 4);
   }
 }
 
@@ -173,7 +174,8 @@ void Editor::DrawSelectionHighlight() {
 }
 
 void Editor::SetCursorGridPosition(const Point<>& screen_pos) {
-  last_cursor_map_position_ = (screen_pos + window_in_world_.pos) / tile_size_;
+  Point<> map_pos = (screen_pos + window_in_world_.pos) / tile_size_;
+  last_cursor_map_position_ = {map_pos.x(), map_pos.y()};
 }
 
 }  // namespace tilemapeditor

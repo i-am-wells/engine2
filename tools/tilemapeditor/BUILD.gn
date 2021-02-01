@@ -4,9 +4,13 @@ executable("tilemapeditor") {
   sources = [
     "editor.cc",
     "editor.h",
+    "layer_picker.cc",
+    "layer_picker.h",
     "main.cc",
     "sidebar_view.cc",
     "sidebar_view.h",
+    "tile_picker.cc",
+    "tile_picker.h",
   ]
   deps = [
     "//engine2:engine2",

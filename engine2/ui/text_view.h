@@ -2,23 +2,19 @@
 #define ENGINE2_UI_TEXT_VIEW_H_
 
 #include "engine2/font.h"
-#include "engine2/ui/view.h"
+#include "engine2/ui/hierarchy_view.h"
 
 namespace engine2 {
 namespace ui {
 
-class TextView : public View {
+class TextView : public HierarchyView {
  public:
   TextView(Graphics2D* graphics,
            Font* font,
            const std::string& text,
            RgbaColor color);
 
-  // View implementation
-  virtual void SetPosition(const Point<int, 2>& position);
-  virtual Rect<int, 2> GetRect() const;
-
-  virtual void Draw() const;
+  void Draw() const override;
 
  protected:
   void RenderText(const std::string& text);
@@ -27,7 +23,7 @@ class TextView : public View {
   Font* font_;
   RgbaColor color_;
   std::unique_ptr<Texture> texture_;
-  Rect<int, 2> rect_;
+  Vec<int, 2> texture_size_{};
 };
 
 }  // namespace ui

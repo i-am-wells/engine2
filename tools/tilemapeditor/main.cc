@@ -28,7 +28,8 @@ void LoadMapAndRun() {
   if (SDL_GetDisplayUsableBounds(0, &display_bounds) != 0)
     return PrintSDLError("failed to get display bounds");
 
-  constexpr int kWindowFlags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
+  constexpr int kWindowFlags =
+      SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE;
   auto window = Window::Create("tilemap editor",
                                {SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                 display_bounds.w, display_bounds.h},
@@ -41,10 +42,7 @@ void LoadMapAndRun() {
   if (!graphics)
     return PrintSDLError("failed to create renderer");
 
-  window->Maximize();
   Vec<int64_t, 2> logical_size = graphics->GetSize().size / 4l;
-  std::cerr << "logical size: " << logical_size.x() << " " << logical_size.y()
-            << "\n";
   graphics->SetLogicalSize(logical_size.x(), logical_size.y());
 
   // TODO try to load example tile images here
@@ -66,23 +64,24 @@ void LoadMapAndRun() {
   // Create a tile map
   TileMap map(/*tile_size=*/Vec<int, 2>{16, 16},
               /*grid_size=*/Vec<int64_t, 2>{50, 50},
+              /*layer_count=*/2,
               /*position_in_world=*/Point<>{});
 
-  map.AddTileStacks({
-      TileMap::TileStack{{TileMap::Tile{&white_sprite}}},
-      TileMap::TileStack{{TileMap::Tile{&black_sprite}}},
-      TileMap::TileStack{{TileMap::Tile{&lines_sprite}}},
-      TileMap::TileStack{{
-          TileMap::Tile{&lines_sprite},
-          TileMap::Tile{&scribble_sprite},
-      }},
+  map.AddTiles({
+      {nullptr},
+      {&white_sprite},
+      {&lines_sprite},
+      {&black_sprite},
+      {&scribble_sprite},
   });
 
   // Set grid randomly
-  Point<> point;
+  TileMap::GridPoint point;
   for (point.y() = 0; point.y() < 50; ++point.y()) {
-    for (point.x() = 0; point.x() < 50; ++point.x())
-      map.SetTileStackAtGridPosition(point, rand() % 4);
+    for (point.x() = 0; point.x() < 50; ++point.x()) {
+      map.SetTileIndex(point, /*layer=*/0, (rand() % 4) + 1);
+      map.SetTileIndex(point, 1, 0);
+    }
   }
 
   tilemapeditor::Editor(window.get(), graphics.get(), font.get(), &map).Run();

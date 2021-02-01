@@ -12,19 +12,18 @@ class ListView : public ContainerView {
  public:
   enum class Direction { kHorizontal, kVertical };
 
-  ListView(Direction direction);
+  // Need padding passed in to set initial size, and lookup of GetPadding() on a
+  // child class won't work in a constructor.
+  ListView(Direction direction, const Vec<int, 2>& padding = {});
 
-  void AddChild(View* child);
+  void AddChildren(const std::vector<HierarchyView*>& children);
+  void AddChild(HierarchyView* child);
   void RemoveChild(int index);
 
-  // View implementation
-  void SetPosition(const Point<int, 2>& position) override;
-  Rect<int, 2> GetRect() const override;
-
  private:
-  void ChangeSize(const Point<int, 2>& child_size);
-  View* FindChild(const Point<int, 2>& point);
-  void UpdateChildPositions(int start_index);
+  void SetInitialSize(const Vec<int, 2>& padding);
+  void Relayout();
+  void AddChildInternal(HierarchyView* child);
 
   Direction direction_;
 };

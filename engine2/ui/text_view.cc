@@ -11,23 +11,25 @@ TextView::TextView(Graphics2D* graphics,
   RenderText(text);
 }
 
-void TextView::SetPosition(const Point<int, 2>& position) {
-  rect_.pos = position;
-}
-
-Rect<int, 2> TextView::GetRect() const {
-  return rect_;
-}
-
 void TextView::Draw() const {
+  Rect<int, 2> draw_rect{GetAbsolutePosition() + GetPadding(), texture_size_};
   if (texture_)
-    graphics_->DrawTexture(*texture_, rect_.template ConvertTo<int64_t>());
+    graphics_->DrawTexture(*texture_, draw_rect.template ConvertTo<int64_t>());
 }
 
 void TextView::RenderText(const std::string& text) {
   texture_ = font_->Render(graphics_, text, color_);
-  if (texture_)
-    rect_ = {rect_.pos, texture_->GetSize().size.template ConvertTo<int>()};
+
+  // Re-rendering text may change view size.
+  if (texture_) {
+    texture_size_ = texture_->GetSize().size.template ConvertTo<int>();
+    size_ = texture_size_ + (GetPadding() * 2);
+  } else {
+    size_ = {};
+    texture_size_ = {};
+  }
+
+  OnSizeChanged();
 }
 
 }  // namespace ui
