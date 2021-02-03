@@ -20,6 +20,10 @@ class ListView : public ContainerView {
   void AddChild(HierarchyView* child);
   void RemoveChild(int index);
 
+  void InsertChild(HierarchyView* child, int index);
+
+  void Clear();
+
  private:
   void SetInitialSize(const Vec<int, 2>& padding);
   void Relayout();

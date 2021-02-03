@@ -2,6 +2,8 @@ source_set("ui") {
   sources = [
     "container_view.cc",
     "container_view.h",
+    "drop_down_list_view.cc",
+    "drop_down_list_view.h",
     "hierarchy_view.cc",
     "hierarchy_view.h",
     "list_view.cc",

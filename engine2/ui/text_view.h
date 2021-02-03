@@ -12,18 +12,24 @@ class TextView : public HierarchyView {
   TextView(Graphics2D* graphics,
            Font* font,
            const std::string& text,
-           RgbaColor color);
+           RgbaColor color,
+           const Vec<int, 2>& padding = {});
 
   void Draw() const override;
 
+  std::string GetText() const;
+
  protected:
   void RenderText(const std::string& text);
+  void RenderText(const std::string& text, const Vec<int, 2>& padding);
 
   Graphics2D* graphics_;
   Font* font_;
   RgbaColor color_;
   std::unique_ptr<Texture> texture_;
   Vec<int, 2> texture_size_{};
+
+  std::string text_;
 };
 
 }  // namespace ui

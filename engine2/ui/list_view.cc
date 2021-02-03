@@ -22,19 +22,39 @@ void ListView::Relayout() {
 }
 
 void ListView::AddChildren(const std::vector<HierarchyView*>& children) {
-  for (HierarchyView* child : children)
+  for (HierarchyView* child : children) {
+    children_.push_back(child);
     AddChildInternal(child);
+  }
   OnSizeChanged();
 }
 
 void ListView::AddChild(HierarchyView* child) {
+  children_.push_back(child);
   AddChildInternal(child);
+  OnSizeChanged();
+}
+
+void ListView::InsertChild(HierarchyView* child, int index) {
+  if (index < 0 || index > children_.size())
+    return;
+
+  children_.insert(children_.begin() + index, child);
+  Relayout();
+  OnSizeChanged();
+}
+
+void ListView::Clear() {
+  for (HierarchyView* child : children_)
+    child->SetParent(nullptr);
+
+  children_.clear();
+  SetInitialSize(GetPadding());
   OnSizeChanged();
 }
 
 void ListView::AddChildInternal(HierarchyView* child) {
   child->SetParent(this);
-  children_.push_back(child);
 
   Vec<int, 2> child_margin = child->GetMargin();
   Vec<int, 2> child_size = child->GetSize();
@@ -77,6 +97,7 @@ void ListView::RemoveChild(int index) {
   if (index < 0 || index >= children_.size())
     return;
 
+  children_[index]->SetParent(nullptr);
   children_.erase(children_.begin() + index);
   Relayout();
   OnSizeChanged();
