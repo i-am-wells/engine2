@@ -42,5 +42,9 @@ std::string TextView::GetText() const {
   return text_;
 }
 
+void TextView::SetText(const std::string& text) {
+  RenderText(text, GetPadding());
+}
+
 }  // namespace ui
 }  // namespace engine2

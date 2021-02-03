@@ -18,6 +18,7 @@ class TextView : public HierarchyView {
   void Draw() const override;
 
   std::string GetText() const;
+  void SetText(const std::string& text);
 
  protected:
   void RenderText(const std::string& text);
