@@ -28,6 +28,10 @@ class Window {
   Vec<int, 2> GetMaximumSize() const;
   Vec<int, 2> GetMinimumSize() const;
 
+  Vec<int, 2> GetDisplaySize() const;
+
+  Point<int, 2> GetInnerPosition() const;
+
   void Maximize();
 
  private:

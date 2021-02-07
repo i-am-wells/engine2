@@ -38,8 +38,31 @@ Vec<int, 2> Window::GetMinimumSize() const {
   return {x, y};
 }
 
+Vec<int, 2> Window::GetDisplaySize() const {
+  int display_index = SDL_GetWindowDisplayIndex(window_);
+  if (display_index == -1)
+    return {};
+
+  SDL_Rect display_rect;
+  if (SDL_GetDisplayBounds(display_index, &display_rect) != 0)
+    return {};
+
+  return {display_rect.w, display_rect.h};
+}
+
 void Window::Maximize() {
   SDL_MaximizeWindow(window_);
+}
+
+Point<int, 2> Window::GetInnerPosition() const {
+  int pos_x, pos_y;
+  SDL_GetWindowPosition(window_, &pos_x, &pos_y);
+
+  int border_x = 0;
+  int border_y = 0;
+  SDL_GetWindowBordersSize(window_, &border_y, &border_x, nullptr, nullptr);
+
+  return {pos_x + border_x, pos_y + border_y};
 }
 
 }  // namespace engine2
