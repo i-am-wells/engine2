@@ -9,6 +9,7 @@
 #include "engine2/timing.h"
 #include "engine2/window.h"
 #include "tools/tilemapeditor/sidebar_view.h"
+#include "tools/tilemapeditor/two_finger_touch.h"
 
 namespace tilemapeditor {
 
@@ -35,8 +36,16 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   void OnMouseMotion(const SDL_MouseMotionEvent& event) override;
   void OnMouseWheel(const SDL_MouseWheelEvent& event) override;
 
+  void OnFingerDown(const SDL_TouchFingerEvent& event) override;
+  void OnFingerUp(const SDL_TouchFingerEvent& event) override;
+  void OnFingerMotion(const SDL_TouchFingerEvent& event) override;
+
   engine2::Graphics2D* graphics() { return graphics_; }
   engine2::Font* font() { return font_; }
+  engine2::Point<int64_t, 2> TouchPointToPixels(
+      const engine2::Point<double, 2>& touch_point) const;
+  engine2::Vec<int64_t, 2> TouchMotionToPixels(
+      const engine2::Vec<double, 2>& touch_motion) const;
 
  private:
   void DrawMapGrid();
@@ -61,6 +70,22 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::Vec<int64_t, 2> grid_size_tiles_{10, 10};  // save
   engine2::TileMap::GridPoint last_cursor_map_position_{};
   engine2::Rect<> map_selection_{};
+
+  engine2::Vec<double, 2> display_size_{};
+
+  class TwoFingerHandler : public TwoFingerTouch::Handler {
+   public:
+    TwoFingerHandler(Editor* editor);
+    void OnPinch(const engine2::Point<double, 2>& center,
+                 double pinch_factor) override;
+    void OnDrag(const engine2::Vec<double, 2>& drag_amount) override;
+
+   private:
+    Editor* editor_;
+  };
+  friend class TwoFingerHandler;
+  TwoFingerHandler two_finger_handler_;
+  TwoFingerTouch two_finger_touch_;
 };
 
 }  // namespace tilemapeditor
