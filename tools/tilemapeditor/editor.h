@@ -85,6 +85,8 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
 
   double scale_ = 1.;
 
+  bool mouse_down_ = false;
+
   class TwoFingerHandler : public TwoFingerTouch::Handler {
    public:
     TwoFingerHandler(Editor* editor);

@@ -158,6 +158,7 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
     SetCursorGridPosition({event.x, event.y});
     map_->SetTileIndex(last_cursor_map_position_, 1,
                        tile_picker_.GetSelectedTileIndex());
+    mouse_down_ = true;
   }
 }
 
@@ -165,6 +166,7 @@ void Editor::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {
   // if (sidebar_.Contains({event.x, event.y})) {
   //  sidebar_.OnMouseButtonUp(event);
   //}
+  mouse_down_ = false;
 }
 
 void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
@@ -175,6 +177,10 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
     return;
 
   SetCursorGridPosition({event.x, event.y});
+  if (mouse_down_) {
+    map_->SetTileIndex(last_cursor_map_position_, 1,
+                       tile_picker_.GetSelectedTileIndex());
+  }
 }
 
 void Editor::OnMouseWheel(const SDL_MouseWheelEvent& event) {
