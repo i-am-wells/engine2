@@ -131,6 +131,10 @@ void TileMap::AddTiles(const std::vector<Tile>& tiles) {
   tiles_.insert(tiles_.end(), tiles.begin(), tiles.end());
 }
 
+uint16_t TileMap::GetTileCount() const {
+  return tiles_.size();
+}
+
 uint64_t TileMap::GridIndex(const GridPoint& grid_point, int layer) const {
   return layer_count_ * (grid_size_.x() * grid_point.y() + grid_point.x()) +
          layer;

@@ -50,6 +50,7 @@ class TileMap {
   // Add a tile to the map's set of tiles and return the index.
   uint16_t AddTile(const Tile& tile);
   void AddTiles(const std::vector<Tile>& tiles);
+  uint16_t GetTileCount() const;
 
   double GetScale() const { return scale_; }
   void SetScale(double scale) { scale_ = scale; }
