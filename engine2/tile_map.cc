@@ -85,6 +85,10 @@ TileMap::GridPoint TileMap::WorldToGrid(
   return result;
 }
 
+Point<> TileMap::GridToWorld(const GridPoint& grid_point) const {
+  return (grid_point * tile_size_) + world_rect_.pos;
+}
+
 TileMap::Tile* TileMap::GetTile(const GridPoint& grid_point, int layer) {
   if (!PositionInMap(grid_point) || layer < 0 || layer >= layer_count_)
     return nullptr;

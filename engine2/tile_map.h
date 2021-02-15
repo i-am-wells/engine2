@@ -38,6 +38,7 @@ class TileMap {
 
   // Convert a point in the world to tile grid coordinates.
   GridPoint WorldToGrid(const Point<>& world_point) const;
+  Point<> GridToWorld(const GridPoint& grid_point) const;
 
   // Returns nullptr if point/layer are out of bounds.
   Tile* GetTile(const GridPoint& point, int layer);
