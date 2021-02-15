@@ -54,6 +54,11 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
 
   void SetCursorGridPosition(const engine2::Point<>& screen_pos);
 
+  engine2::Point<> ScreenToWorld(const engine2::Point<>& pixel_point) const;
+  engine2::Point<> WorldToScreen(const engine2::Point<>& world_point) const;
+
+  engine2::Vec<int64_t, 2> GetGraphicsLogicalSize() const;
+
   engine2::Window* window_;
   engine2::Graphics2D* graphics_;
   engine2::Font* font_;
@@ -72,6 +77,8 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::Rect<> map_selection_{};
 
   engine2::Vec<double, 2> display_size_{};
+
+  double scale_ = 1.;
 
   class TwoFingerHandler : public TwoFingerTouch::Handler {
    public:

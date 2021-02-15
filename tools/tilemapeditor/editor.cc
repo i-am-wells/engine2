@@ -71,7 +71,7 @@ Vec<int64_t, 2> Editor::TouchMotionToPixels(
 void Editor::EveryFrame() {
   graphics_->SetDrawColor(kDarkGray)->Clear();
   map_->Draw(graphics_, window_in_world_);
-  DrawMapGrid();
+  // DrawMapGrid();
   DrawSelectionHighlight();
   DrawCursorHighlight();
 
@@ -165,54 +165,17 @@ void Editor::OnFingerUp(const SDL_TouchFingerEvent& event) {
 }
 void Editor::OnFingerMotion(const SDL_TouchFingerEvent& event) {
   two_finger_touch_.OnFingerMotion(event);
-
-  /*
-  int num_fingers = SDL_GetNumTouchFingers(event.touchId);
-  if (num_fingers != 2)
-    return;
-
-  Point<double, 2> this_touch{event.x + event.dx, event.y + event.dy};
-  int this_touch_index = -1;
-
-  Point<double, 2> fingers[2];
-
-  for (int i = 0; i < 2; ++i) {
-    SDL_Finger* finger = SDL_GetTouchFinger(event.touchId, i);
-    if (!finger)
-      return;
-
-    fingers[i] = {finger->x, finger->y};
-
-    if (fingers[i] == this_touch)
-      this_touch_index = i;
-
-    Print("diff: ", this_touch - fingers[i]);
-  }
-  if (this_touch_index == -1) {
-    std::cerr << "no match??\n";
-    return;
-  } else {
-    std::cerr << "match\n";
-  }
-
-  int other_index = (this_touch_index + 1) % 2;
-
-  Point<double, 2> rel{event.dx, event.dy};
-  Point<double, 2> prev = this_touch - rel;
-  double zoom = Distance(prev, fingers[other_index]) /
-                Distance(this_touch, fingers[other_index]);
-
-  Point<double, 2> move = rel / 2.;
-  std::cerr << "zoom: " << zoom << ", move: " << move.x() << " " << move.y()
-            << '\n';
-  window_in_world_.pos -= TouchMotionToPixels(rel / 2.);
-  */
 }
 
 void Editor::DrawMapGrid() {
   Vec<int64_t, 2> grid_size_pixels_ = grid_size_tiles_ * tile_size_;
   Vec<int64_t, 2> phase = window_in_world_.pos % grid_size_pixels_;
   graphics_->SetDrawColor(kGreen);
+
+  grid_size_pixels_.x() *= scale_;
+  grid_size_pixels_.y() *= scale_;
+  phase.x() *= scale_;
+  phase.y() *= scale_;
 
   // Draw vertical lines
   for (int64_t x = window_in_world_.x() - phase.x();
@@ -221,8 +184,9 @@ void Editor::DrawMapGrid() {
     if (x == 0)
       graphics_->SetDrawColor(kRed);
 
-    world_graphics_.DrawLine({x, window_in_world_.y()},
-                             {x, window_in_world_.y() + window_in_world_.h()});
+    world_graphics_.DrawLine(
+        {x, window_in_world_.y()},
+        {x, int64_t(window_in_world_.y() + window_in_world_.h() * scale_)});
     if (x == 0)
       graphics_->SetDrawColor(kGreen);
   }
@@ -234,8 +198,9 @@ void Editor::DrawMapGrid() {
     if (y == 0)
       graphics_->SetDrawColor(kRed);
 
-    world_graphics_.DrawLine({window_in_world_.x(), y},
-                             {window_in_world_.x() + window_in_world_.w(), y});
+    world_graphics_.DrawLine(
+        {window_in_world_.x(), y},
+        {int64_t(window_in_world_.x() + window_in_world_.w() * scale_), y});
     if (y == 0)
       graphics_->SetDrawColor(kGreen);
   }
@@ -257,15 +222,43 @@ void Editor::SetCursorGridPosition(const Point<>& screen_pos) {
   last_cursor_map_position_ = {map_pos.x(), map_pos.y()};
 }
 
+Point<> Editor::ScreenToWorld(const Point<>& pixel_point) const {
+  return (pixel_point.ConvertTo<double>() / scale_).ConvertTo<int64_t>() +
+         window_in_world_.pos;
+}
+
+Point<> Editor::WorldToScreen(const Point<>& world_point) const {
+  return ((world_point - window_in_world_.pos).ConvertTo<double>() * scale_)
+      .ConvertTo<int64_t>();
+}
+
+Vec<int64_t, 2> Editor::GetGraphicsLogicalSize() const {
+  return graphics_->GetLogicalSize().size;
+}
+
 Editor::TwoFingerHandler::TwoFingerHandler(Editor* editor) : editor_(editor) {}
 
 void Editor::TwoFingerHandler::OnPinch(const Point<double, 2>& center,
                                        double pinch_factor) {
-  std::cerr << "pinch amount: " << pinch_factor << '\n';
+  editor_->scale_ *= pinch_factor;
+  editor_->map_->SetScale(editor_->scale_);
+
+  // TODO: center zoom on center!
+  Vec<int64_t, 2> old_size = editor_->window_in_world_.size;
+  editor_->window_in_world_.size =
+      (editor_->GetGraphicsLogicalSize().ConvertTo<double>() / editor_->scale_)
+          .ConvertTo<int64_t>();
+
+  editor_->window_in_world_.pos -=
+      ((editor_->window_in_world_.size - old_size).ConvertTo<double>() * center)
+          .ConvertTo<int64_t>();
+
+  std::cerr << "scale " << editor_->scale_ << '\n';
 }
 
 void Editor::TwoFingerHandler::OnDrag(const Vec<double, 2>& drag_amount) {
-  editor_->window_in_world_.pos -= editor_->TouchMotionToPixels(drag_amount);
+  editor_->window_in_world_.pos -=
+      editor_->TouchMotionToPixels(drag_amount / editor_->scale_);
 }
 
 }  // namespace tilemapeditor
