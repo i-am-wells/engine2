@@ -50,6 +50,9 @@ class TileMap {
   uint16_t AddTile(const Tile& tile);
   void AddTiles(const std::vector<Tile>& tiles);
 
+  double GetScale() const { return scale_; }
+  void SetScale(double scale) { scale_ = scale; }
+
  private:
   bool PositionInMap(const GridPoint& grid_position) const;
 
@@ -59,6 +62,9 @@ class TileMap {
   Vec<int64_t, 2> grid_size_;
   Rect<int64_t, 2> world_rect_;
   int layer_count_;
+
+  // used for drawing
+  double scale_ = 1.;
 
   // Storage for tiles.
   std::vector<Tile> tiles_;
