@@ -21,6 +21,16 @@ void Sprite::Draw(Graphics2D* graphics, const Point<int64_t, 2>& dest) {
       Rect<int64_t, 2>{dest + frame.dest_offset, frame.source_rect.size});
 }
 
+void Sprite::Draw(Graphics2D* graphics,
+                  const Point<int64_t, 2>& dest,
+                  double scale) {
+  AnimationFrame& frame = CurrentFrame();
+  Vec<double, 2> scaled = frame.source_rect.size.ConvertTo<double>() * scale;
+  graphics->DrawTexture(
+      *texture_, frame.source_rect,
+      Rect<int64_t, 2>{dest + frame.dest_offset, scaled.ConvertTo<int64_t>()});
+}
+
 void Sprite::Update(const Time& time) {
   if (time <= last_update_time_)
     return;

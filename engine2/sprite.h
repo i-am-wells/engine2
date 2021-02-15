@@ -21,6 +21,9 @@ class Sprite {
   Sprite(Texture* texture, int frame_count = 1);
 
   virtual void Draw(Graphics2D* graphics, const Point<int64_t, 2>& dest);
+  virtual void Draw(Graphics2D* graphics,
+                    const Point<int64_t, 2>& dest,
+                    double scale);
 
   void Update(const Time& time);
 
