@@ -42,8 +42,8 @@ void LoadMapAndRun() {
   if (!graphics)
     return PrintSDLError("failed to create renderer");
 
-  Vec<int64_t, 2> logical_size = graphics->GetSize().size / 4l;
-  graphics->SetLogicalSize(logical_size.x(), logical_size.y());
+  // Vec<int64_t, 2> logical_size = graphics->GetSize().size / 4l;
+  // graphics->SetLogicalSize(logical_size.x(), logical_size.y());
 
   // TODO try to load example tile images here
   auto texture =

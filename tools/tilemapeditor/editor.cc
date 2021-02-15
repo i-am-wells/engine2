@@ -49,7 +49,7 @@ Editor::Editor(Window* window, Graphics2D* graphics, Font* font, TileMap* map)
       two_finger_handler_(this),
       two_finger_touch_(&two_finger_handler_) {
   window_in_world_.pos = {};
-  window_in_world_.size = graphics_->GetLogicalSize().size;
+  window_in_world_.size = graphics_->GetSize().size;
 
   // TODO get correct display (and account for display origin!)
   display_size_ = window_->GetDisplaySize().ConvertTo<double>();
@@ -131,12 +131,10 @@ void Editor::OnKeyUp(const SDL_KeyboardEvent& event) {
 }
 
 void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
-  // if (sidebar_.Contains({event.x, event.y})) {
-  //  sidebar_.OnMouseButtonDown(event);
-  //} else {
-  SetCursorGridPosition({event.x, event.y});
-  map_->SetTileIndex(last_cursor_map_position_, 1, 4);
-  //}
+  if (event.which != SDL_TOUCH_MOUSEID) {
+    SetCursorGridPosition({event.x, event.y});
+    map_->SetTileIndex(last_cursor_map_position_, 1, 4);
+  }
 }
 
 void Editor::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {
@@ -208,8 +206,12 @@ void Editor::DrawMapGrid() {
 
 void Editor::DrawCursorHighlight() {
   graphics_->SetDrawColor(kGreen);
-  world_graphics_.DrawRect(
-      {last_cursor_map_position_ * tile_size_, tile_size_});
+
+  Vec<int64_t, 2> size =
+      (tile_size_.ConvertTo<double>() * scale_).ConvertTo<int64_t>();
+  Point<> pos = WorldToScreen(map_->GridToWorld(last_cursor_map_position_));
+
+  graphics_->DrawRect({pos, size});
 }
 
 void Editor::DrawSelectionHighlight() {
@@ -218,8 +220,7 @@ void Editor::DrawSelectionHighlight() {
 }
 
 void Editor::SetCursorGridPosition(const Point<>& screen_pos) {
-  Point<> map_pos = (screen_pos + window_in_world_.pos) / tile_size_;
-  last_cursor_map_position_ = {map_pos.x(), map_pos.y()};
+  last_cursor_map_position_ = map_->WorldToGrid(ScreenToWorld(screen_pos));
 }
 
 Point<> Editor::ScreenToWorld(const Point<>& pixel_point) const {
@@ -233,7 +234,8 @@ Point<> Editor::WorldToScreen(const Point<>& world_point) const {
 }
 
 Vec<int64_t, 2> Editor::GetGraphicsLogicalSize() const {
-  return graphics_->GetLogicalSize().size;
+  // return graphics_->GetLogicalSize().size;
+  return graphics_->GetSize().size;
 }
 
 Editor::TwoFingerHandler::TwoFingerHandler(Editor* editor) : editor_(editor) {}
@@ -252,8 +254,6 @@ void Editor::TwoFingerHandler::OnPinch(const Point<double, 2>& center,
   editor_->window_in_world_.pos -=
       ((editor_->window_in_world_.size - old_size).ConvertTo<double>() * center)
           .ConvertTo<int64_t>();
-
-  std::cerr << "scale " << editor_->scale_ << '\n';
 }
 
 void Editor::TwoFingerHandler::OnDrag(const Vec<double, 2>& drag_amount) {

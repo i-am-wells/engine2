@@ -12,8 +12,6 @@ double Distance(const Point<double, 2>& a, const Point<double, 2>& b) {
   return sqrt(temp.x() + temp.y());
 }
 
-static constexpr double kDragScaleFactor = 0.25;
-
 }  // namespace
 
 TwoFingerTouch::TwoFingerTouch(Handler* handler) : handler_(handler) {}
@@ -46,7 +44,7 @@ void TwoFingerTouch::OnFingerMotion(const SDL_TouchFingerEvent& event) {
 
   UpdateCenter();
 
-  handler_->OnDrag((new_point - prev_point) * kDragScaleFactor);
+  handler_->OnDrag(new_point - prev_point);
   handler_->OnPinch(center_, Distance(new_point, other_point) /
                                  Distance(prev_point, other_point));
 }
