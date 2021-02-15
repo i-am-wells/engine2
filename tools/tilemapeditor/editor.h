@@ -18,11 +18,14 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   Editor(engine2::Window* window,
          engine2::Graphics2D* graphics,
          engine2::Font* font,
-         engine2::TileMap* map);
+         engine2::TileMap* map,
+         engine2::Texture* tiles_image);
 
   engine2::Vec<int, 2> TileSize() const {
     return tile_size_.template ConvertTo<int>();
   }
+
+  void Init();
 
   // FrameLoop
   void EveryFrame() override;
@@ -67,7 +70,9 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::Rect<> window_size_;
   engine2::Timing::FramerateRegulator framerate_regulator_{60};
 
-  SidebarView sidebar_;
+  // SidebarView sidebar_;
+  TilePicker tile_picker_;
+  friend class TilePicker;
 
   engine2::Rect<> window_in_world_;
   engine2::Vec<int64_t, 2> viewport_velocity_{};

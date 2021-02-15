@@ -11,6 +11,7 @@ using engine2::kOpaque;
 using engine2::Point;
 using engine2::Rect;
 using engine2::RgbaColor;
+using engine2::Texture;
 using engine2::TileMap;
 using engine2::Vec;
 using engine2::Window;
@@ -38,14 +39,18 @@ void Print(const std::string& msg, const T& val) {
 
 }  // namespace
 
-Editor::Editor(Window* window, Graphics2D* graphics, Font* font, TileMap* map)
+Editor::Editor(Window* window,
+               Graphics2D* graphics,
+               Font* font,
+               TileMap* map,
+               Texture* tiles_image)
     : FrameLoop(/*event_handler=*/this),
       window_(window),
       graphics_(graphics),
       font_(font),
       world_graphics_(graphics_, &(window_in_world_.pos)),
       map_(map),
-      sidebar_(this),
+      tile_picker_(this, tiles_image),
       two_finger_handler_(this),
       two_finger_touch_(&two_finger_handler_) {
   window_in_world_.pos = {};
@@ -53,6 +58,20 @@ Editor::Editor(Window* window, Graphics2D* graphics, Font* font, TileMap* map)
 
   // TODO get correct display (and account for display origin!)
   display_size_ = window_->GetDisplaySize().ConvertTo<double>();
+}
+
+void Editor::Init() {
+  tile_picker_.Init();
+
+  // TODO do something different
+  // Set grid randomly
+  TileMap::GridPoint point;
+  for (point.y() = 0; point.y() < 50; ++point.y()) {
+    for (point.x() = 0; point.x() < 50; ++point.x()) {
+      map_->SetTileIndex(point, /*layer=*/0, (rand() % 4) + 1);
+      map_->SetTileIndex(point, 1, 0);
+    }
+  }
 }
 
 Point<int64_t, 2> Editor::TouchPointToPixels(
@@ -76,6 +95,7 @@ void Editor::EveryFrame() {
   DrawCursorHighlight();
 
   // sidebar_.Draw();
+  tile_picker_.Draw();
 
   window_in_world_.pos += viewport_velocity_;
 
@@ -131,9 +151,13 @@ void Editor::OnKeyUp(const SDL_KeyboardEvent& event) {
 }
 
 void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
+  if (tile_picker_.Contains({event.x, event.y}))
+    return tile_picker_.OnMouseButtonDown(event);
+
   if (event.which != SDL_TOUCH_MOUSEID) {
     SetCursorGridPosition({event.x, event.y});
-    map_->SetTileIndex(last_cursor_map_position_, 1, 4);
+    map_->SetTileIndex(last_cursor_map_position_, 1,
+                       tile_picker_.GetSelectedTileIndex());
   }
 }
 
@@ -147,6 +171,8 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
   // if (sidebar_.Contains({event.x, event.y})) {
   //  sidebar_.OnMouseMotion(event);
   //}
+  if (tile_picker_.Contains({event.x, event.y}))
+    return;
 
   SetCursorGridPosition({event.x, event.y});
 }

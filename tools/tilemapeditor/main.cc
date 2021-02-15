@@ -55,36 +55,20 @@ void LoadMapAndRun() {
   if (!font)
     return PrintSDLError("failed to load font");
 
-  // Create sprites
-  Sprite white_sprite(texture.get(), {0, 0, 16, 16});
-  Sprite lines_sprite(texture.get(), {16, 0, 16, 16});
-  Sprite black_sprite(texture.get(), {16, 16, 16, 16});
-  Sprite scribble_sprite(texture.get(), {0, 16, 16, 16});
+  Vec<int, 2> tile_size{16, 16};
 
   // Create a tile map
-  TileMap map(/*tile_size=*/Vec<int, 2>{16, 16},
+  TileMap map(tile_size,
               /*grid_size=*/Vec<int64_t, 2>{50, 50},
               /*layer_count=*/2,
               /*position_in_world=*/Point<>{});
 
-  map.AddTiles({
-      {nullptr},
-      {&white_sprite},
-      {&lines_sprite},
-      {&black_sprite},
-      {&scribble_sprite},
-  });
+  map.AddTile({nullptr});
 
-  // Set grid randomly
-  TileMap::GridPoint point;
-  for (point.y() = 0; point.y() < 50; ++point.y()) {
-    for (point.x() = 0; point.x() < 50; ++point.x()) {
-      map.SetTileIndex(point, /*layer=*/0, (rand() % 4) + 1);
-      map.SetTileIndex(point, 1, 0);
-    }
-  }
-
-  tilemapeditor::Editor(window.get(), graphics.get(), font.get(), &map).Run();
+  tilemapeditor::Editor editor(window.get(), graphics.get(), font.get(), &map,
+                               texture.get());
+  editor.Init();
+  editor.Run();
 }
 
 }  // namespace
