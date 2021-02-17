@@ -78,8 +78,8 @@ Point<int64_t, 2> Editor::TouchPointToPixels(
     const Point<double, 2>& touch_point) const {
   Point<double, 2> display_point = touch_point * display_size_;
 
-  return display_point.ConvertTo<int64_t>() -
-         window_->GetInnerPosition().ConvertTo<int64_t>();
+  return display_point.ConvertTo<int64_t>();
+  //- window_->GetInnerPosition().ConvertTo<int64_t>();
 }
 
 Vec<int64_t, 2> Editor::TouchMotionToPixels(
@@ -188,12 +188,21 @@ void Editor::OnMouseWheel(const SDL_MouseWheelEvent& event) {
 }
 
 void Editor::OnFingerDown(const SDL_TouchFingerEvent& event) {
-  two_finger_touch_.OnFingerDown(event);
+  Point<> point = TouchPointToPixels({event.x, event.y});
+  if (tile_picker_.Contains(point.ConvertTo<int>())) {
+    tile_picker_.OnFingerDown(event);
+  } else {
+    two_finger_touch_.OnFingerDown(event);
+  }
 }
+
 void Editor::OnFingerUp(const SDL_TouchFingerEvent& event) {
+  tile_picker_.OnFingerUp(event);
   two_finger_touch_.OnFingerUp(event);
 }
+
 void Editor::OnFingerMotion(const SDL_TouchFingerEvent& event) {
+  tile_picker_.OnFingerMotion(event);
   two_finger_touch_.OnFingerMotion(event);
 }
 

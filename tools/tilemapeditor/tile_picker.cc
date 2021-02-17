@@ -10,7 +10,10 @@ using engine2::Vec;
 namespace tilemapeditor {
 
 TilePicker::TilePicker(Editor* editor, Texture* tiles_image)
-    : editor_(editor), tiles_image_(tiles_image) {
+    : editor_(editor),
+      tiles_image_(tiles_image),
+      two_finger_handler_(this),
+      two_finger_touch_(&two_finger_handler_) {
   Vec<int64_t, 2> size = ScaledSize() + (padding_ * 2l);
   SetSize(size.ConvertTo<int>());
 }
@@ -38,13 +41,17 @@ void TilePicker::Draw() const {
       ->SetDrawColor(engine2::kRed)
       ->FillRect(GetRect().ConvertTo<int64_t>());
 
-  editor_->graphics()->DrawTexture(*tiles_image_, {padding_, ScaledSize()});
+  Point<> pos = GetRelativePosition().ConvertTo<int64_t>();
+
+  editor_->graphics()->DrawTexture(*tiles_image_,
+                                   {pos + padding_, ScaledSize()});
 
   Vec<int64_t, 2> scaled_tile_size = ScaledTileSize();
   Point<> select_grid_point{selected_picker_index_ % grid_size_.x(),
                             selected_picker_index_ / grid_size_.x()};
   editor_->graphics()->DrawRect(
-      {select_grid_point * scaled_tile_size + padding_, scaled_tile_size});
+      {pos + select_grid_point * scaled_tile_size + padding_,
+       scaled_tile_size});
 }
 
 void TilePicker::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
@@ -52,6 +59,16 @@ void TilePicker::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
       Point<>{event.x, event.y} - GetRect().pos.ConvertTo<int64_t>() - padding_;
   selected_picker_index_ = PickerIndex(
       (point_in_image.ConvertTo<double>() / scale_).ConvertTo<int64_t>());
+}
+
+void TilePicker::OnFingerDown(const SDL_TouchFingerEvent& event) {
+  two_finger_touch_.OnFingerDown(event);
+}
+void TilePicker::OnFingerUp(const SDL_TouchFingerEvent& event) {
+  two_finger_touch_.OnFingerUp(event);
+}
+void TilePicker::OnFingerMotion(const SDL_TouchFingerEvent& event) {
+  two_finger_touch_.OnFingerMotion(event);
 }
 
 uint16_t TilePicker::GetSelectedTileIndex() const {
@@ -63,6 +80,10 @@ uint16_t TilePicker::GetSelectedTileIndex() const {
     return 0;
 
   return iter->second;
+}
+
+Vec<int, 2> TilePicker::GetSize() const {
+  return (ScaledSize() + padding_ * 2l).ConvertTo<int>();
 }
 
 Vec<int64_t, 2> TilePicker::ScaledSize() const {
@@ -78,6 +99,22 @@ Vec<int64_t, 2> TilePicker::ScaledTileSize() const {
 int TilePicker::PickerIndex(const Point<>& image_point) const {
   Point<> grid_point = image_point / editor_->tile_size_;
   return grid_point.y() * grid_size_.x() + grid_point.x();
+}
+
+TilePicker::TwoFingerHandler::TwoFingerHandler(TilePicker* picker)
+    : picker_(picker) {}
+
+void TilePicker::TwoFingerHandler::OnPinch(
+    const engine2::Point<double, 2>& center,
+    double pinch_factor) {
+  picker_->scale_ *= pinch_factor;
+}
+
+void TilePicker::TwoFingerHandler::OnDrag(
+    const engine2::Vec<double, 2>& drag_amount) {
+  picker_->SetRelativePosition(
+      picker_->GetRelativePosition() +
+      picker_->editor_->TouchMotionToPixels(drag_amount).ConvertTo<int>());
 }
 
 }  // namespace tilemapeditor
