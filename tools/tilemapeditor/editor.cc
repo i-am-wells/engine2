@@ -21,6 +21,9 @@ using engine2::kDarkGray;
 using engine2::kGray;
 using engine2::kGreen;
 using engine2::kRed;
+using engine2::kWhite;
+
+using engine2::ui::ImageView;
 
 namespace tilemapeditor {
 namespace {
@@ -30,11 +33,18 @@ static constexpr Vec<int64_t, 2> kSouth{0, 1};
 static constexpr Vec<int64_t, 2> kEast{1, 0};
 static constexpr Vec<int64_t, 2> kWest{-1, 0};
 
+static constexpr Vec<int64_t, 2> kIconSize{8, 8};
+static constexpr double kIconScale = 4.;
+
 static constexpr int64_t kSpeed = 2;
 
 template <class T>
 void Print(const std::string& msg, const T& val) {
   std::cerr << msg << " " << val.x() << " " << val.y() << '\n';
+}
+
+Rect<> IconRect(const Point<>& p) {
+  return {p * kIconSize, kIconSize};
 }
 
 }  // namespace
@@ -43,7 +53,8 @@ Editor::Editor(Window* window,
                Graphics2D* graphics,
                Font* font,
                TileMap* map,
-               Texture* tiles_image)
+               Texture* tiles_image,
+               Texture* icons_image)
     : FrameLoop(/*event_handler=*/this),
       window_(window),
       graphics_(graphics),
@@ -52,12 +63,15 @@ Editor::Editor(Window* window,
       map_(map),
       tile_picker_(this, tiles_image),
       two_finger_handler_(this),
-      two_finger_touch_(&two_finger_handler_) {
+      two_finger_touch_(&two_finger_handler_),
+      tool_buttons_(this, icons_image) {
   window_in_world_.pos = {};
   window_in_world_.size = graphics_->GetSize().size;
 
   // TODO get correct display (and account for display origin!)
   display_size_ = window_->GetDisplaySize().ConvertTo<double>();
+
+  tool_buttons_.SetRelativePosition({10, int(display_size_.y()) - 800});
 }
 
 void Editor::Init() {
@@ -96,6 +110,8 @@ void Editor::EveryFrame() {
 
   // sidebar_.Draw();
   tile_picker_.Draw();
+
+  tool_buttons_.Draw();
 
   window_in_world_.pos += viewport_velocity_;
 
@@ -151,8 +167,12 @@ void Editor::OnKeyUp(const SDL_KeyboardEvent& event) {
 }
 
 void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
-  if (tile_picker_.Contains({event.x, event.y}))
+  Point<int, 2> point{event.x, event.y};
+  if (tile_picker_.Contains(point))
     return tile_picker_.OnMouseButtonDown(event);
+
+  if (tool_buttons_.Contains(point))
+    return tool_buttons_.OnMouseButtonDown(event);
 
   if (event.which != SDL_TOUCH_MOUSEID) {
     SetCursorGridPosition({event.x, event.y});
@@ -300,6 +320,85 @@ void Editor::TwoFingerHandler::OnPinch(const Point<double, 2>& center,
 void Editor::TwoFingerHandler::OnDrag(const Vec<double, 2>& drag_amount) {
   editor_->window_in_world_.pos -=
       editor_->TouchMotionToPixels(drag_amount / editor_->scale_);
+}
+
+Editor::ToolButton::ToolButton(ToolButtonTray* tray,
+                               Texture* icons,
+                               Graphics2D* graphics,
+                               const Rect<>& source_rect,
+                               double scale,
+                               ToolMode mode)
+    : ImageView(icons, graphics, source_rect, scale),
+      tray_(tray),
+      mode_(mode) {}
+
+void Editor::ToolButton::Draw() const {
+  if (selected_)
+    graphics_->SetDrawColor(kRed);
+  else
+    graphics_->SetDrawColor(kWhite);
+
+  graphics_->FillRect(GetRect().ConvertTo<int64_t>());
+  ImageView::Draw();
+}
+Vec<int, 2> Editor::ToolButton::GetMargin() const {
+  return {20, 20};
+}
+Vec<int, 2> Editor::ToolButton::GetPadding() const {
+  return {8, 8};
+}
+
+void Editor::ToolButton::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
+  tray_->Select(this);
+}
+
+void Editor::ToolButton::SetSelected(bool selected) {
+  selected_ = selected;
+}
+bool Editor::ToolButton::IsSelected() const {
+  return selected_;
+}
+
+Editor::ToolButtonTray::ToolButtonTray(Editor* editor, Texture* icons)
+    : engine2::ui::ListView(Direction::kVertical),
+      editor_(editor),
+      draw_(this,
+            icons,
+            editor->graphics_,
+            IconRect({1, 0}),
+            kIconScale,
+            ToolMode::kDraw),
+      erase_(this,
+             icons,
+             editor->graphics_,
+             IconRect({1, 1}),
+             kIconScale,
+             ToolMode::kErase),
+      paste_(this,
+             icons,
+             editor->graphics_,
+             IconRect({2, 3}),
+             kIconScale,
+             ToolMode::kPaste),
+      select_(this,
+              icons,
+              editor->graphics_,
+              IconRect({2, 0}),
+              kIconScale,
+              ToolMode::kSelect) {
+  AddChildren({&select_, &paste_, &erase_, &draw_});
+  Select(&draw_);
+}
+
+void Editor::ToolButtonTray::Init() {}
+
+void Editor::ToolButtonTray::Select(ToolButton* button) {
+  if (selected_)
+    selected_->SetSelected(false);
+
+  selected_ = button;
+  editor_->tool_mode_ = button->mode();
+  selected_->SetSelected(true);
 }
 
 }  // namespace tilemapeditor

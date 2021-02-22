@@ -7,7 +7,10 @@
 #include "engine2/graphics2d.h"
 #include "engine2/tile_map.h"
 #include "engine2/timing.h"
+#include "engine2/ui/image_view.h"
+#include "engine2/ui/list_view.h"
 #include "engine2/window.h"
+
 #include "tools/tilemapeditor/sidebar_view.h"
 #include "tools/tilemapeditor/two_finger_touch.h"
 
@@ -19,7 +22,8 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
          engine2::Graphics2D* graphics,
          engine2::Font* font,
          engine2::TileMap* map,
-         engine2::Texture* tiles_image);
+         engine2::Texture* tiles_image,
+         engine2::Texture* icons_image);
 
   engine2::Vec<int, 2> TileSize() const {
     return tile_size_.template ConvertTo<int>();
@@ -100,6 +104,59 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   friend class TwoFingerHandler;
   TwoFingerHandler two_finger_handler_;
   TwoFingerTouch two_finger_touch_;
+
+  enum class ToolMode {
+    kDraw,
+    kErase,
+    kSelect,
+    kPaste,
+    kFill,
+  };
+
+  class ToolButtonTray;
+  class ToolButton : public engine2::ui::ImageView {
+   public:
+    ToolButton(ToolButtonTray* tray,
+               engine2::Texture* icons,
+               engine2::Graphics2D* graphics,
+               const engine2::Rect<>& source_rect,
+               double scale,
+               ToolMode mode);
+
+    void Draw() const override;
+    engine2::Vec<int, 2> GetMargin() const override;
+    engine2::Vec<int, 2> GetPadding() const override;
+
+    void OnMouseButtonDown(const SDL_MouseButtonEvent& event) override;
+
+    void SetSelected(bool selected);
+    bool IsSelected() const;
+
+    ToolMode mode() const { return mode_; }
+
+   private:
+    bool selected_ = false;
+    ToolButtonTray* tray_;
+    ToolMode mode_;
+  };
+
+  class ToolButtonTray : public engine2::ui::ListView {
+   public:
+    ToolButtonTray(Editor* editor, engine2::Texture* icons);
+    void Init();
+
+    void Select(ToolButton* button);
+
+   private:
+    Editor* editor_;
+    ToolButton draw_;
+    ToolButton erase_;
+    ToolButton paste_;
+    ToolButton select_;
+    ToolButton* selected_ = nullptr;
+  };
+  ToolButtonTray tool_buttons_;
+  ToolMode tool_mode_;
 };
 
 }  // namespace tilemapeditor

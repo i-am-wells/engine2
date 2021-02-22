@@ -107,6 +107,11 @@ void Run(const engine2::CommandLineParser& flags) {
     return PrintSDLError("failed to create renderer");
 
   if (mode == Mode::kCreate) {
+    auto icons_texture = Texture::LoadFromImage(
+        *graphics, "tools/tilemapeditor/editor-icons.png");
+    if (!icons_texture)
+      return PrintSDLError("failed to load editor icons");
+
     // TODO try to load example tile images here
     auto texture =
         Texture::LoadFromImage(*graphics, flags.GetFlag("tiles_image"));
@@ -150,7 +155,7 @@ void Run(const engine2::CommandLineParser& flags) {
     map.AddTile({nullptr});
 
     tilemapeditor::Editor editor(window.get(), graphics.get(), font.get(), &map,
-                                 texture.get());
+                                 texture.get(), icons_texture.get());
     editor.Init();
     editor.Run();
   } else if (mode == Mode::kEdit) {
