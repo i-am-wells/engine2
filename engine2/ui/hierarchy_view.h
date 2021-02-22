@@ -18,6 +18,7 @@ class HierarchyView : public View {
   void SetRelativePosition(const Point<int, 2>& pos) override;
 
   Point<int, 2> GetAbsolutePosition() const override;
+  Point<int, 2> GetAbsoluteInnerPosition() const override;
 
   Vec<int, 2> GetSize() const override;
   void SetSize(const Vec<int, 2>& size) override;

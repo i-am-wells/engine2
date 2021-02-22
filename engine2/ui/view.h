@@ -38,6 +38,7 @@ class View {
   virtual void SetRelativePosition(const Point<int, 2>& pos) = 0;
 
   virtual Point<int, 2> GetAbsolutePosition() const = 0;
+  virtual Point<int, 2> GetAbsoluteInnerPosition() const = 0;
 
   virtual Vec<int, 2> GetSize() const = 0;
   virtual void SetSize(const Vec<int, 2>& size) = 0;

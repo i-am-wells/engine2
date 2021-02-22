@@ -21,6 +21,10 @@ Point<int, 2> HierarchyView::GetAbsolutePosition() const {
   return relative_pos_;
 }
 
+Point<int, 2> HierarchyView::GetAbsoluteInnerPosition() const {
+  return GetAbsolutePosition() + GetPadding();
+}
+
 Vec<int, 2> HierarchyView::GetSize() const {
   return size_;
 }
