@@ -1,0 +1,3 @@
+[submodule "luadata"]
+	path = luadata
+	url = https://github.com/i-am-wells/luadata
