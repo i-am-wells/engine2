@@ -16,6 +16,8 @@ class RectTest : public TestGroup {
   void TestGetOverlap();
   void TestGetTouchingDimension();
 
+  void TestImplicitConvert();
+
   RectTest();
 };
 

@@ -34,6 +34,15 @@ struct Vec {
     return result;
   }
 
+  template <typename OtherScalar, int OtherN>
+  operator Vec<OtherScalar, OtherN>() const {
+    Vec<OtherScalar, OtherN> result;
+    for (int i = 0; i < std::min(N, OtherN); ++i) {
+      result[i] = value[i];
+    }
+    return result;
+  }
+
   Scalar& operator[](int i) { return value[i]; }
   const Scalar& operator[](int i) const { return value[i]; }
 

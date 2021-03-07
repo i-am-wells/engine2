@@ -14,6 +14,9 @@ class VecTest : public TestGroup {
   void TestAdd();
   void TestSubtract();
   // TODO test the rest... or is this good enough?
+  //
+
+  void TestImplicitConvert();
 
   VecTest();
 };

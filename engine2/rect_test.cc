@@ -132,6 +132,24 @@ void RectTest::TestGetTouchingDimension() {
   EXPECT_EQ(1, c.GetTouchingDimension(b));
 }
 
+void RectTest::TestImplicitConvert() {
+  Rect<int64_t, 2> a{1, 2, 3, 4};
+  Rect<double, 2> b = a;
+  EXPECT_EQ(a.x(), b.x());
+  EXPECT_EQ(a.y(), b.y());
+  EXPECT_EQ(a.w(), b.w());
+  EXPECT_EQ(a.h(), b.h());
+
+  Rect<int32_t, 3> c{};
+  c = b;
+  EXPECT_EQ(b.x(), c.x());
+  EXPECT_EQ(b.y(), c.y());
+  EXPECT_EQ(b.w(), c.w());
+  EXPECT_EQ(b.h(), c.h());
+  EXPECT_EQ(0, c.z());
+  EXPECT_EQ(0, c.d());
+}
+
 RectTest::RectTest()
     : TestGroup("RectTest",
                 {
@@ -142,6 +160,7 @@ RectTest::RectTest()
                     std::bind(&RectTest::TestContainsRect, this),
                     std::bind(&RectTest::TestGetOverlap, this),
                     std::bind(&RectTest::TestGetTouchingDimension, this),
+                    std::bind(&RectTest::TestImplicitConvert, this),
                 }) {}
 
 }  // namespace test

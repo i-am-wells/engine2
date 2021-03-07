@@ -45,6 +45,13 @@ void VecTest::TestAdd() {
   EXPECT_EQ(5 + 7 + 9, a.y());
 }
 
+void VecTest::TestImplicitConvert() {
+  Vec<int64_t, 2> a{10, 20};
+  Vec<uint32_t, 2> b = a;
+  EXPECT_EQ(a.x(), b.x());
+  EXPECT_EQ(a.y(), b.y());
+}
+
 VecTest::VecTest()
     : TestGroup("VecTest",
                 {
@@ -52,6 +59,7 @@ VecTest::VecTest()
                     std::bind(&VecTest::TestCompare, this),
                     std::bind(&VecTest::TestDefaultZeroInit, this),
                     std::bind(&VecTest::TestAdd, this),
+                    std::bind(&VecTest::TestImplicitConvert, this),
                 }) {}
 
 }  // namespace test

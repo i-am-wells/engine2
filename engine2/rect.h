@@ -37,6 +37,11 @@ struct Rect {
             size.template ConvertTo<OtherScalar>()};
   }
 
+  template <typename OtherScalar, int OtherN>
+  operator Rect<OtherScalar, OtherN>() const {
+    return {pos, size};
+  }
+
   bool operator==(const Rect& other) const {
     return pos == other.pos && size == other.size;
   }
