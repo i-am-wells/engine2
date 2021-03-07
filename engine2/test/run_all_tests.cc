@@ -6,6 +6,7 @@
 #include "engine2/physics_object_test.h"
 #include "engine2/rect_test.h"
 #include "engine2/space_test.h"
+#include "engine2/sprite_cache_test.h"
 #include "engine2/sprite_test.h"
 #include "engine2/texture_cache_test.h"
 #include "engine2/tile_map_test.h"
@@ -23,6 +24,7 @@ void RunAllTests() {
                              RectTest().RunTests() +
                              RectSearchTreeTest().RunTests() +
                              SpaceTest().RunTests() +
+                             SpriteCacheTest().RunTests() +
                              SpriteTest().RunTests() + 
                              TextureCacheTest().RunTests() +
                              TileMapTest().RunTests() +

@@ -35,6 +35,8 @@ source_set("engine2") {
     "space.h",
     "sprite.cc",
     "sprite.h",
+    "sprite_cache.cc",
+    "sprite_cache.h",
     "state_mutex.cc",
     "state_mutex.h",
     "texture.cc",
@@ -55,7 +57,8 @@ source_set("engine2") {
     "window.cc",
   ]
   deps = [
-    "//engine2/impl:impl"
+    "//engine2/impl:impl",
+    "//luadata:luadata",
   ]
 }
 
@@ -83,6 +86,8 @@ source_set("tests") {
     "rect_test.h",
     "space_test.cc",
     "space_test.h",
+    "sprite_cache_test.cc",
+    "sprite_cache_test.h",
     "sprite_test.cc",
     "sprite_test.h",
     "texture_cache_test.cc",
