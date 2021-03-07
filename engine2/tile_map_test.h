@@ -9,6 +9,8 @@ namespace test {
 class TileMapTest : public TestGroup {
  public:
   void TestDraw();
+  void TestSaveAndLoad();
+
   TileMapTest();
 };
 

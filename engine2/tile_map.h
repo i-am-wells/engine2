@@ -7,6 +7,7 @@
 
 #include "engine2/camera2d.h"
 #include "engine2/sprite.h"
+#include "engine2/sprite_cache.h"
 #include "engine2/time.h"
 
 namespace engine2 {
@@ -15,10 +16,18 @@ class TileMap {
  public:
   static constexpr int kAllLayers = -1;
 
-  TileMap(const Vec<int, 2>& tile_size,
+  static std::unique_ptr<TileMap> FromString(const std::string& data,
+                                             SpriteCache* sprite_cache);
+
+  static std::unique_ptr<TileMap> Read(std::istream& stream,
+                                       SpriteCache* sprite_cache);
+  bool Write(std::ostream& stream) const;
+
+  TileMap(const Vec<int64_t, 2>& tile_size,
           const Vec<int64_t, 2>& grid_size,
           int layer_count,
           const Point<int64_t, 2>& position_in_world,
+          SpriteCache* sprite_cache,
           bool empty_initialize = false);
 
   void Draw(Graphics2D* graphics,
@@ -55,11 +64,17 @@ class TileMap {
   double GetScale() const { return scale_; }
   void SetScale(double scale) { scale_ = scale; }
 
+  Vec<int64_t, 2> GetTileSize() const { return tile_size_; }
+  Vec<int64_t, 2> GetGridSize() const { return grid_size_; }
+  int GetLayerCount() const { return layer_count_; }
+  Rect<int64_t, 2> GetWorldRect() const { return world_rect_; }
+
  private:
   bool PositionInMap(const GridPoint& grid_position) const;
 
   uint64_t GridIndex(const GridPoint& grid_point, int layer) const;
 
+  SpriteCache* sprite_cache_;
   Vec<int64_t, 2> tile_size_;
   Vec<int64_t, 2> grid_size_;
   Rect<int64_t, 2> world_rect_;
