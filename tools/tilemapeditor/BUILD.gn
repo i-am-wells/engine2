@@ -1,4 +1,5 @@
 import("//build/sdl2.gni")
+import("//build/lua.gni")
 
 executable("tilemapeditor") {
   sources = [
@@ -19,5 +20,5 @@ executable("tilemapeditor") {
     "//engine2/ui:ui",
   ]
   cflags = sdl2_cflags
-  ldflags = sdl2_ldflags
+  ldflags = sdl2_ldflags + lua_ldflags
 }

@@ -1,4 +1,5 @@
 import("//build/sdl2.gni")
+import("//build/lua.gni")
 
 group("all") {
   deps = [
@@ -6,8 +7,6 @@ group("all") {
     "//tools/tilemapeditor:tilemapeditor",
   ]
 }
-
-lua_ldflags = [ "-llua" ]
 
 executable("piratedemo") {
   sources = ["piratedemo/main.cc"]
