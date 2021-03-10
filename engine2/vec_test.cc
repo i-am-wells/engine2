@@ -50,6 +50,10 @@ void VecTest::TestImplicitConvert() {
   Vec<uint32_t, 2> b = a;
   EXPECT_EQ(a.x(), b.x());
   EXPECT_EQ(a.y(), b.y());
+
+  Vec<double, 2> c = a + b;
+  EXPECT_EQ(20, c.x());
+  EXPECT_EQ(40, c.y());
 }
 
 VecTest::VecTest()

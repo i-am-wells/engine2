@@ -37,6 +37,11 @@ struct Rect {
             size.template ConvertTo<OtherScalar>()};
   }
 
+  template <typename OtherScalar>
+  static Rect<Scalar, N> Fill(OtherScalar val) {
+    return {Vec<Scalar, N>::Fill(val), Vec<Scalar, N>::Fill(val)};
+  }
+
   template <typename OtherScalar, int OtherN>
   operator Rect<OtherScalar, OtherN>() const {
     return {pos, size};
@@ -60,12 +65,16 @@ struct Rect {
   // lowest index.
   int GetTouchingDimension(const Rect& other) const;
 
-  Rect& operator*=(const Vec<Scalar, N>& vec) {
+  template <typename OtherScalar>
+  Rect& operator*=(const Vec<OtherScalar, N>& vec) {
     pos *= vec;
     size *= vec;
     return *this;
   }
-  Rect operator*(const Vec<Scalar, N>& vec) const { return Rect(*this) *= vec; }
+  template <typename OtherScalar>
+  Rect operator*(const Vec<OtherScalar, N>& vec) const {
+    return Rect(*this) *= vec;
+  }
 };
 
 // TODO: maybe these should be members of Rect (but with better names)

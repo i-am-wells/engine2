@@ -19,12 +19,15 @@ struct Vec {
   Scalar& a() { return value[3]; }
   const Scalar& a() const { return value[3]; }
 
-  static Vec Ones() {
+  template <typename OtherScalar>
+  static Vec Fill(OtherScalar val) {
     Vec result;
     for (int i = 0; i < N; ++i)
-      result[i] = 1;
+      result.value[i] = val;
     return result;
   }
+
+  static Vec Ones() { return Fill(1); }
 
   template <typename OtherScalar>
   Vec<OtherScalar, N> ConvertTo() const {
@@ -46,7 +49,8 @@ struct Vec {
   Scalar& operator[](int i) { return value[i]; }
   const Scalar& operator[](int i) const { return value[i]; }
 
-  bool operator==(const Vec& other) const {
+  template <typename OtherScalar>
+  bool operator==(const Vec<OtherScalar, N>& other) const {
     for (int i = 0; i < N; ++i) {
       if (value[i] != other[i])
         return false;
@@ -61,83 +65,101 @@ struct Vec {
     return result;
   }
 
-  Vec& operator+=(const Vec& other) {
+  template <typename OtherScalar>
+  Vec& operator+=(const Vec<OtherScalar, N>& other) {
     for (int i = 0; i < N; ++i) {
       value[i] += other[i];
     };
     return *this;
   }
 
-  Vec& operator-=(const Vec& other) { return *this += -other; }
+  template <typename OtherScalar>
+  Vec& operator-=(const Vec<OtherScalar, N>& other) {
+    return *this += -other;
+  }
 
-  Vec& operator*=(const Vec& other) {
+  template <typename OtherScalar>
+  Vec& operator*=(const Vec<OtherScalar, N>& other) {
     for (int i = 0; i < N; ++i) {
       value[i] *= other[i];
     };
     return *this;
   }
 
-  Vec& operator/=(const Vec& other) {
+  template <typename OtherScalar>
+  Vec& operator/=(const Vec<OtherScalar, N>& other) {
     for (int i = 0; i < N; ++i) {
       value[i] /= other[i];
     };
     return *this;
   }
 
-  Vec& operator+=(Scalar scalar) {
+  template <typename OtherScalar>
+  Vec& operator+=(OtherScalar scalar) {
     for (int i = 0; i < N; ++i) {
       value[i] += scalar;
     };
     return *this;
   }
 
-  Vec& operator-=(Scalar scalar) {
+  template <typename OtherScalar>
+  Vec& operator-=(OtherScalar scalar) {
     for (int i = 0; i < N; ++i) {
       value[i] -= scalar;
     };
     return *this;
   }
 
-  Vec& operator*=(Scalar scalar) {
+  template <typename OtherScalar>
+  Vec& operator*=(OtherScalar scalar) {
     for (int i = 0; i < N; ++i) {
       value[i] *= scalar;
     };
     return *this;
   }
 
-  Vec& operator/=(Scalar scalar) {
+  template <typename OtherScalar>
+  Vec& operator/=(OtherScalar scalar) {
     for (int i = 0; i < N; ++i) {
       value[i] /= scalar;
     };
     return *this;
   }
 
-  Vec& operator%=(const Vec& other) {
+  template <typename OtherScalar>
+  Vec& operator%=(const Vec<OtherScalar, N>& other) {
     for (int i = 0; i < N; ++i)
       value[i] %= other.value[i];
     return *this;
   }
 
-  Vec operator%(const Vec& other) const { return Vec(*this) %= other; }
+  template <typename OtherScalar>
+  Vec operator%(const Vec<OtherScalar, N>& other) const {
+    return Vec(*this) %= other;
+  }
 };
 
-template <typename Scalar, int N>
-Vec<Scalar, N> operator+(const Vec<Scalar, N>& l, const Vec<Scalar, N>& r) {
+template <typename Scalar, typename OtherScalar, int N>
+Vec<Scalar, N> operator+(const Vec<Scalar, N>& l,
+                         const Vec<OtherScalar, N>& r) {
   return Vec<Scalar, N>(l) += r;
 }
 
-template <typename Scalar, int N>
-Vec<Scalar, N> operator-(const Vec<Scalar, N>& l, const Vec<Scalar, N>& r) {
+template <typename Scalar, typename OtherScalar, int N>
+Vec<Scalar, N> operator-(const Vec<Scalar, N>& l,
+                         const Vec<OtherScalar, N>& r) {
   return Vec<Scalar, N>(l) -= r;
 }
 
-template <typename Scalar, int N>
-Vec<Scalar, N> operator*(const Vec<Scalar, N>& l, const Vec<Scalar, N>& r) {
+template <typename Scalar, typename OtherScalar, int N>
+Vec<Scalar, N> operator*(const Vec<Scalar, N>& l,
+                         const Vec<OtherScalar, N>& r) {
   return Vec<Scalar, N>(l) *= r;
 }
 
-template <typename Scalar, int N>
-Vec<Scalar, N> operator/(const Vec<Scalar, N>& l, const Vec<Scalar, N>& r) {
+template <typename Scalar, typename OtherScalar, int N>
+Vec<Scalar, N> operator/(const Vec<Scalar, N>& l,
+                         const Vec<OtherScalar, N>& r) {
   return Vec<Scalar, N>(l) /= r;
 }
 
