@@ -11,6 +11,7 @@ using engine2::kOpaque;
 using engine2::Point;
 using engine2::Rect;
 using engine2::RgbaColor;
+using engine2::SpriteCache;
 using engine2::Texture;
 using engine2::TileMap;
 using engine2::Vec;
@@ -53,15 +54,15 @@ Editor::Editor(Window* window,
                Graphics2D* graphics,
                Font* font,
                TileMap* map,
-               Texture* tiles_image,
-               Texture* icons_image)
+               Texture* icons_image,
+               SpriteCache* sprite_cache)
     : FrameLoop(/*event_handler=*/this),
       window_(window),
       graphics_(graphics),
       font_(font),
       world_graphics_(graphics_, &(window_in_world_.pos)),
       map_(map),
-      tile_picker_(this, tiles_image),
+      tile_picker_(this, sprite_cache),
       two_finger_handler_(this),
       two_finger_touch_(&two_finger_handler_),
       tool_buttons_(this, icons_image) {
@@ -136,6 +137,13 @@ void Editor::OnKeyDown(const SDL_KeyboardEvent& event) {
     case SDLK_d:
       viewport_velocity_ += kEast * kSpeed;
       break;
+    // TODO: remove once layer picker is done!
+    case SDLK_0:
+      layer_ = 0;
+      break;
+    case SDLK_1:
+      layer_ = 1;
+      break;
     case SDLK_ESCAPE:
       Stop();
       break;
@@ -176,7 +184,7 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
 
   if (event.which != SDL_TOUCH_MOUSEID) {
     SetCursorGridPosition({event.x, event.y});
-    map_->SetTileIndex(last_cursor_map_position_, 1,
+    map_->SetTileIndex(last_cursor_map_position_, layer_,
                        tile_picker_.GetSelectedTileIndex());
     mouse_down_ = true;
   }
@@ -198,7 +206,7 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
 
   SetCursorGridPosition({event.x, event.y});
   if (mouse_down_) {
-    map_->SetTileIndex(last_cursor_map_position_, 1,
+    map_->SetTileIndex(last_cursor_map_position_, layer_,
                        tile_picker_.GetSelectedTileIndex());
   }
 }

@@ -1,19 +1,29 @@
-#include "tools/tilemapeditor/tile_picker.h"
+#include <iostream>
+
 #include "tools/tilemapeditor/editor.h"
+#include "tools/tilemapeditor/tile_picker.h"
 
 using engine2::Point;
 using engine2::Rect;
 using engine2::Sprite;
+using engine2::SpriteCache;
 using engine2::Texture;
 using engine2::Vec;
 
 namespace tilemapeditor {
 
-TilePicker::TilePicker(Editor* editor, Texture* tiles_image)
+TilePicker::TilePicker(Editor* editor, SpriteCache* sprite_cache)
     : editor_(editor),
-      tiles_image_(tiles_image),
+      sprite_cache_(sprite_cache),
       two_finger_handler_(this),
       two_finger_touch_(&two_finger_handler_) {
+  // TODO: support multiple sprite sheets
+  // for now, assume there's just one
+  for (auto& [key, sprite] : *sprite_cache_) {
+    tiles_image_ = sprite.texture();
+    break;
+  }
+
   Vec<int64_t, 2> size = ScaledSize() + (padding_ * 2l);
   SetSize(size.ConvertTo<int>());
 }
@@ -23,16 +33,9 @@ void TilePicker::Init() {
   grid_size_ = image_size / editor_->tile_size_;
 
   // Get all tiles and add to map
-  Point<> p;
-  for (p.y() = 0; p.y() < image_size.y(); p.y() += editor_->tile_size_.y()) {
-    for (p.x() = 0; p.x() < image_size.x(); p.x() += editor_->tile_size_.x()) {
-      sprites_.emplace_front(tiles_image_, Rect<>{p, editor_->tile_size_});
-
-      picker_index_to_map_index_.insert(
-          {PickerIndex(p), editor_->map_->GetTileCount()});
-
-      editor_->map_->AddTile({&(sprites_.front())});
-    }
+  for (auto& [path, sprite] : *sprite_cache_) {
+    sprite_name_to_map_index_.emplace(path, editor_->map_->GetTileCount());
+    editor_->map_->AddTile({&sprite});
   }
 }
 
@@ -46,19 +49,26 @@ void TilePicker::Draw() const {
   editor_->graphics()->DrawTexture(*tiles_image_,
                                    {pos + padding_, ScaledSize()});
 
-  Vec<int64_t, 2> scaled_tile_size = ScaledTileSize();
-  Point<> select_grid_point{selected_picker_index_ % grid_size_.x(),
-                            selected_picker_index_ / grid_size_.x()};
-  editor_->graphics()->DrawRect(
-      {pos + select_grid_point * scaled_tile_size + padding_,
-       scaled_tile_size});
+  if (selected_sprite_) {
+    Vec<int64_t, 2> scaled_tile_size = ScaledTileSize();
+
+    Rect<> sel_rect =
+        selected_sprite_->Frame(0).source_rect * Vec<double, 2>::Fill(scale_);
+    editor_->graphics()->DrawRect(
+        {pos + sel_rect.pos + padding_, sel_rect.size});
+  }
 }
 
 void TilePicker::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
-  Point<> point_in_image =
-      Point<>{event.x, event.y} - GetRect().pos.ConvertTo<int64_t>() - padding_;
-  selected_picker_index_ = PickerIndex(
-      (point_in_image.ConvertTo<double>() / scale_).ConvertTo<int64_t>());
+  Point<> point_in_image = Point<>{event.x, event.y} - GetRect().pos - padding_;
+  point_in_image /= scale_;
+
+  for (auto& [path, sprite] : *sprite_cache_) {
+    if (sprite.Frame(0).source_rect.Contains(point_in_image)) {
+      selected_sprite_name_ = path;
+      selected_sprite_ = &sprite;
+    }
+  }
 }
 
 void TilePicker::OnFingerDown(const SDL_TouchFingerEvent& event) {
@@ -72,11 +82,11 @@ void TilePicker::OnFingerMotion(const SDL_TouchFingerEvent& event) {
 }
 
 uint16_t TilePicker::GetSelectedTileIndex() const {
-  if (selected_picker_index_ < 0)
+  if (selected_sprite_name_.empty())
     return 0;
 
-  auto iter = picker_index_to_map_index_.find(selected_picker_index_);
-  if (iter == picker_index_to_map_index_.end())
+  auto iter = sprite_name_to_map_index_.find(selected_sprite_name_);
+  if (iter == sprite_name_to_map_index_.end())
     return 0;
 
   return iter->second;
@@ -94,11 +104,6 @@ Vec<int64_t, 2> TilePicker::ScaledSize() const {
 Vec<int64_t, 2> TilePicker::ScaledTileSize() const {
   return (editor_->tile_size_.ConvertTo<double>() * scale_)
       .ConvertTo<int64_t>();
-}
-
-int TilePicker::PickerIndex(const Point<>& image_point) const {
-  Point<> grid_point = image_point / editor_->tile_size_;
-  return grid_point.y() * grid_size_.x() + grid_point.x();
 }
 
 TilePicker::TwoFingerHandler::TwoFingerHandler(TilePicker* picker)

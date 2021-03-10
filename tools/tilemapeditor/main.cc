@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 
 #include <SDL2/SDL.h>
@@ -8,7 +9,9 @@
 #include "engine2/command_line_parser.h"
 #include "engine2/impl/basic_graphics2d.h"
 #include "engine2/sprite.h"
+#include "engine2/sprite_cache.h"
 #include "engine2/texture.h"
+#include "engine2/texture_cache.h"
 #include "engine2/tile_map.h"
 #include "engine2/vec.h"
 #include "engine2/video_context.h"
@@ -31,7 +34,7 @@ void PrintUsage() {
             << "To edit an existing tile map: tilemapeditor edit "
                "map_file_name.map\n\n"
             << "To create a new tile map: tilemapeditor create \\\n"
-            << "                              --tiles_image=image.png \\\n"
+            << "                              --sprite_sheet=sprites.lua \\\n"
             << "                              --tile_size=W,H \\\n"
             << "                              --layers=N \\\n"
             << "                              --grid_size=W,H \\\n"
@@ -80,12 +83,72 @@ CreateWindowAndRenderer() {
   return {std::move(window), std::move(graphics)};
 }
 
+std::unique_ptr<engine2::TileMap> CreateMap(
+    const engine2::CommandLineParser& flags,
+    engine2::SpriteCache* sprite_cache) {
+  engine2::Vec<int64_t, 2> tile_size;
+  auto parsed_size = ParseSize(flags.GetFlag("tile_size"));
+  if (parsed_size.first) {
+    tile_size = parsed_size.second;
+  } else {
+    std::cerr << "Expected tile_size flag to look like this: --tile_size=W,H\n";
+    return nullptr;
+  }
+
+  int layers;
+  try {
+    layers = std::stoi(flags.GetFlag("layers"));
+  } catch (const std::invalid_argument& e) {
+    std::cerr << "Expected layers flag to be an integer.\n";
+    return nullptr;
+  }
+
+  engine2::Vec<int64_t, 2> grid_size;
+  parsed_size = ParseSize(flags.GetFlag("grid_size"));
+  if (parsed_size.first) {
+    grid_size = parsed_size.second;
+  } else {
+    std::cerr << "Expected grid_size flag to look like this: --grid_size=W,H\n";
+    return nullptr;
+  }
+
+  engine2::Vec<int64_t, 2> position_in_world;
+  parsed_size = ParseSize(flags.GetFlag("grid_size"));
+  if (parsed_size.first) {
+    position_in_world = parsed_size.second;
+  } else {
+    std::cerr << "Expected position_in_world flag to look like this: "
+                 "--position_in_world=X,Y\n";
+    return nullptr;
+  }
+
+  auto map = std::make_unique<TileMap>(tile_size, grid_size, layers,
+                                       position_in_world, sprite_cache);
+  if (!map)
+    return nullptr;
+  map->AddTile({nullptr});
+
+  return map;
+}
+
+std::unique_ptr<TileMap> LoadMap(const engine2::CommandLineParser& flags,
+                                 const std::string& map_file_name,
+                                 engine2::SpriteCache* sprite_cache) {
+  std::ifstream map_file(map_file_name, std::ios::binary);
+  if (map_file.fail()) {
+    std::cerr << "Can't open " << map_file_name << ".\n";
+    return nullptr;
+  }
+
+  return TileMap::Read(map_file, sprite_cache);
+}
+
 void Run(const engine2::CommandLineParser& flags) {
   Mode mode;
   if (flags.GetPositional(0) == "create") {
     mode = Mode::kCreate;
     if (!flags.CheckFlags({
-            "tiles_image",
+            "sprite_sheet",
             "tile_size",
             "layers",
             "grid_size",
@@ -106,61 +169,42 @@ void Run(const engine2::CommandLineParser& flags) {
   if (!graphics)
     return PrintSDLError("failed to create renderer");
 
+  auto icons_texture =
+      Texture::LoadFromImage(*graphics, "tools/tilemapeditor/editor-icons.png");
+  if (!icons_texture)
+    return PrintSDLError("failed to load editor icons");
+
+  auto font = Font::Load("tools/tilemapeditor/ter-u12b.otb", 12);
+  if (!font)
+    return PrintSDLError("failed to load font");
+
+  TextureCache texture_cache(graphics.get());
+  SpriteCache sprite_cache(&texture_cache);
+
+  std::string map_file_name = flags.GetPositional(1);
+
+  std::unique_ptr<TileMap> map;
   if (mode == Mode::kCreate) {
-    auto icons_texture = Texture::LoadFromImage(
-        *graphics, "tools/tilemapeditor/editor-icons.png");
-    if (!icons_texture)
-      return PrintSDLError("failed to load editor icons");
-
-    // TODO try to load example tile images here
-    auto texture =
-        Texture::LoadFromImage(*graphics, flags.GetFlag("tiles_image"));
-    if (!texture)
-      return PrintSDLError("failed to load image");
-
-    auto font = Font::Load("tools/tilemapeditor/ter-u12b.otb", 12);
-    if (!font)
-      return PrintSDLError("failed to load font");
-
-    engine2::Vec<int, 2> tile_size;
-    auto parsed_size = ParseSize(flags.GetFlag("tile_size"));
-    if (parsed_size.first) {
-      tile_size = parsed_size.second.ConvertTo<int>();
-    } else {
-      std::cerr
-          << "Expected tile_size flag to look like this: --tile_size=W,H\n";
+    map = CreateMap(flags, &sprite_cache);
+    if (!map) {
+      std::cerr << "Failed to create map.\n";
       return;
     }
 
-    int layers;
-    try {
-      layers = std::stoi(flags.GetFlag("layers"));
-    } catch (const std::invalid_argument& e) {
-      std::cerr << "Expected layers flag to be an integer.\n";
-      return;
-    }
-
-    engine2::Vec<int64_t, 2> grid_size;
-    parsed_size = ParseSize(flags.GetFlag("grid_size"));
-    if (parsed_size.first) {
-      grid_size = parsed_size.second;
-    } else {
-      std::cerr
-          << "Expected grid_size flag to look like this: --grid_size=W,H\n";
-      return;
-    }
-
-    TileMap map(tile_size, grid_size, layers,
-                /*position_in_world=*/Point<>{});
-    map.AddTile({nullptr});
-
-    tilemapeditor::Editor editor(window.get(), graphics.get(), font.get(), &map,
-                                 texture.get(), icons_texture.get());
-    editor.Init();
-    editor.Run();
+    // TODO pass this in?
+    sprite_cache.Get("tools/tilemapeditor/sprites.lua");
   } else if (mode == Mode::kEdit) {
-    // TODO
+    auto map = LoadMap(flags, map_file_name, &sprite_cache);
+    if (!map) {
+      std::cerr << "Failed to load map from " << map_file_name << ".\n";
+      return;
+    }
   }
+
+  tilemapeditor::Editor editor(window.get(), graphics.get(), font.get(),
+                               map.get(), icons_texture.get(), &sprite_cache);
+  editor.Init();
+  editor.Run();
 }
 
 }  // namespace

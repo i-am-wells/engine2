@@ -5,6 +5,7 @@
 #include "engine2/font.h"
 #include "engine2/frame_loop.h"
 #include "engine2/graphics2d.h"
+#include "engine2/sprite_cache.h"
 #include "engine2/tile_map.h"
 #include "engine2/timing.h"
 #include "engine2/ui/image_view.h"
@@ -22,8 +23,8 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
          engine2::Graphics2D* graphics,
          engine2::Font* font,
          engine2::TileMap* map,
-         engine2::Texture* tiles_image,
-         engine2::Texture* icons_image);
+         engine2::Texture* icons_image,
+         engine2::SpriteCache* sprite_cache);
 
   engine2::Vec<int, 2> TileSize() const {
     return tile_size_.template ConvertTo<int>();
@@ -84,6 +85,7 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::Vec<int64_t, 2> grid_size_tiles_{10, 10};  // save
   engine2::TileMap::GridPoint last_cursor_map_position_{};
   engine2::Rect<> map_selection_{};
+  int layer_ = 0;
 
   engine2::Vec<double, 2> display_size_{};
 

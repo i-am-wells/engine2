@@ -5,6 +5,7 @@
 #include <map>
 
 #include "engine2/sprite.h"
+#include "engine2/sprite_cache.h"
 #include "engine2/texture.h"
 #include "engine2/ui/container_view.h"
 #include "tools/tilemapeditor/two_finger_touch.h"
@@ -15,7 +16,7 @@ class Editor;
 
 class TilePicker : public engine2::ui::ContainerView {
  public:
-  TilePicker(Editor* editor, engine2::Texture* tiles_image);
+  TilePicker(Editor* editor, engine2::SpriteCache* sprite_cache);
 
   void Init();
 
@@ -34,19 +35,18 @@ class TilePicker : public engine2::ui::ContainerView {
  private:
   engine2::Vec<int64_t, 2> ScaledSize() const;
   engine2::Vec<int64_t, 2> ScaledTileSize() const;
-  int PickerIndex(const engine2::Point<>& image_point) const;
 
   engine2::Vec<int64_t, 2> padding_{20, 20};
   double scale_ = 8.;
 
+  engine2::SpriteCache* sprite_cache_;
   engine2::Texture* tiles_image_;
   Editor* editor_;
   engine2::Point<> grid_size_;
 
-  std::list<engine2::Sprite> sprites_;
-  std::map<int, uint16_t> picker_index_to_map_index_;
-
-  int selected_picker_index_;
+  std::map<std::string, uint16_t> sprite_name_to_map_index_;
+  std::string selected_sprite_name_;
+  engine2::Sprite* selected_sprite_ = nullptr;
 
   class TwoFingerHandler : public TwoFingerTouch::Handler {
    public:
