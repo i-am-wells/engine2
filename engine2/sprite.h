@@ -39,6 +39,8 @@ class Sprite {
   AnimationFrame& Frame(int index) { return frames_[index]; }
   AnimationFrame& CurrentFrame() { return frames_[current_frame_]; }
 
+  Texture* texture() { return texture_; }
+
  private:
   void AdvanceFrame();
 
