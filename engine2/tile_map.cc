@@ -238,17 +238,17 @@ void TileMap::Draw(Graphics2D* graphics,
   // ((point - corner0) * tile_size - offset) * scale_
   Vec<int64_t, 2> offset = (world_rect.pos - world_rect_.pos) % tile_size_;
 
-  GridPoint point;
-  for (point.y() = corner0.y(); point.y() <= corner1.y(); ++point.y()) {
-    for (point.x() = corner0.x(); point.x() <= corner1.x(); ++point.x()) {
-      // TODO
-      //
-      Point<> draw_point =
-          (((point - corner0) * tile_size_ - offset).ConvertTo<double>() *
-           scale_)
-              .ConvertTo<int64_t>();
+  for (int i = first_layer; i < after_last_layer; ++i) {
+    GridPoint point;
+    for (point.y() = corner0.y(); point.y() <= corner1.y(); ++point.y()) {
+      for (point.x() = corner0.x(); point.x() <= corner1.x(); ++point.x()) {
+        // TODO
+        //
+        Point<> draw_point =
+            (((point - corner0) * tile_size_ - offset).ConvertTo<double>() *
+             scale_)
+                .ConvertTo<int64_t>();
 
-      for (int i = first_layer; i < after_last_layer; ++i) {
         Tile* tile = GetTile(point, i);
         if (tile && tile->sprite) {
           if (scale_ == 1.)
