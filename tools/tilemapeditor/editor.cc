@@ -184,8 +184,20 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
 
   if (event.which != SDL_TOUCH_MOUSEID) {
     SetCursorGridPosition({event.x, event.y});
-    map_->SetTileIndex(last_cursor_map_position_, layer_,
-                       tile_picker_.GetSelectedTileIndex());
+    switch (tool_mode_) {
+      case ToolMode::kDraw:
+        map_->SetTileIndex(last_cursor_map_position_, layer_,
+                           tile_picker_.GetSelectedTileIndex());
+        break;
+      case ToolMode::kErase:
+        map_->SetTileIndex(last_cursor_map_position_, layer_, 0);
+        break;
+      case ToolMode::kFill:
+      case ToolMode::kPaste:
+      case ToolMode::kSelect:
+      default:
+        break;
+    }
     mouse_down_ = true;
   }
 }
@@ -206,8 +218,20 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
 
   SetCursorGridPosition({event.x, event.y});
   if (mouse_down_) {
-    map_->SetTileIndex(last_cursor_map_position_, layer_,
-                       tile_picker_.GetSelectedTileIndex());
+    switch (tool_mode_) {
+      case ToolMode::kDraw:
+        map_->SetTileIndex(last_cursor_map_position_, layer_,
+                           tile_picker_.GetSelectedTileIndex());
+        break;
+      case ToolMode::kErase:
+        map_->SetTileIndex(last_cursor_map_position_, layer_, 0);
+        break;
+      case ToolMode::kFill:
+      case ToolMode::kPaste:
+      case ToolMode::kSelect:
+      default:
+        break;
+    }
   }
 }
 
@@ -239,10 +263,9 @@ void Editor::DrawMapGrid() {
   Vec<int64_t, 2> phase = window_in_world_.pos % grid_size_pixels_;
   graphics_->SetDrawColor(kGreen);
 
-  grid_size_pixels_.x() *= scale_;
-  grid_size_pixels_.y() *= scale_;
-  phase.x() *= scale_;
-  phase.y() *= scale_;
+  auto scale = Vec<double, 2>::Fill(scale_);
+  grid_size_pixels_ *= scale;
+  phase *= scale;
 
   // Draw vertical lines
   for (int64_t x = window_in_world_.x() - phase.x();
