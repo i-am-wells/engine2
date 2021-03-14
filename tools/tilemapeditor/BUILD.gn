@@ -3,6 +3,8 @@ import("//build/lua.gni")
 
 executable("tilemapeditor") {
   sources = [
+    "action_stack.cc",
+    "action_stack.h",
     "editor.cc",
     "editor.h",
     "layer_picker.cc",

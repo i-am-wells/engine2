@@ -194,7 +194,7 @@ void Run(const engine2::CommandLineParser& flags) {
     // TODO pass this in?
     sprite_cache.Get("tools/tilemapeditor/sprites.lua");
   } else if (mode == Mode::kEdit) {
-    auto map = LoadMap(flags, map_file_name, &sprite_cache);
+    map = LoadMap(flags, map_file_name, &sprite_cache);
     if (!map) {
       std::cerr << "Failed to load map from " << map_file_name << ".\n";
       return;
@@ -202,7 +202,8 @@ void Run(const engine2::CommandLineParser& flags) {
   }
 
   tilemapeditor::Editor editor(window.get(), graphics.get(), font.get(),
-                               map.get(), icons_texture.get(), &sprite_cache);
+                               map.get(), icons_texture.get(), &sprite_cache,
+                               map_file_name);
   editor.Init();
   editor.Run();
 }

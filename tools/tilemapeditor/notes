@@ -1,0 +1,19 @@
+work remaining:
+
+- generally improve UI/UX
+  - move tile picker to the right, reduce scale
+  - status text
+
+- show shadow of tile with mouse over
+- center large sprites under the mouse
+
+- special functions
+  - flood fill
+  - copy/stamp
+  - rectangle select/clear/move
+
+- save undo/redo stacks
+
+- layer picker
+- multiple sprite sheets
+- undo UI

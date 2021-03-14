@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 
 #include "engine2/rgba_color.h"
@@ -55,13 +56,15 @@ Editor::Editor(Window* window,
                Font* font,
                TileMap* map,
                Texture* icons_image,
-               SpriteCache* sprite_cache)
+               SpriteCache* sprite_cache,
+               const std::string& file_path)
     : FrameLoop(/*event_handler=*/this),
       window_(window),
       graphics_(graphics),
       font_(font),
       world_graphics_(graphics_, &(window_in_world_.pos)),
       map_(map),
+      file_path_(file_path),
       tile_picker_(this, sprite_cache),
       two_finger_handler_(this),
       two_finger_touch_(&two_finger_handler_),
@@ -77,16 +80,6 @@ Editor::Editor(Window* window,
 
 void Editor::Init() {
   tile_picker_.Init();
-
-  // TODO do something different
-  // Set grid randomly
-  TileMap::GridPoint point;
-  for (point.y() = 0; point.y() < 50; ++point.y()) {
-    for (point.x() = 0; point.x() < 50; ++point.x()) {
-      map_->SetTileIndex(point, /*layer=*/0, (rand() % 4) + 1);
-      map_->SetTileIndex(point, 1, 0);
-    }
-  }
 }
 
 Point<int64_t, 2> Editor::TouchPointToPixels(
@@ -124,19 +117,37 @@ void Editor::OnKeyDown(const SDL_KeyboardEvent& event) {
   if (event.repeat)
     return;
 
+  bool ctrl = event.keysym.mod & KMOD_CTRL;
   switch (event.keysym.sym) {
-    case SDLK_w:
-      viewport_velocity_ += kNorth * kSpeed;
-      break;
-    case SDLK_a:
-      viewport_velocity_ += kWest * kSpeed;
-      break;
+      /*
+      case SDLK_w:
+        viewport_velocity_ += kNorth * kSpeed;
+        break;
+      case SDLK_a:
+        viewport_velocity_ += kWest * kSpeed;
+        break;
+      */
     case SDLK_s:
-      viewport_velocity_ += kSouth * kSpeed;
+      if (ctrl)
+        Save();
       break;
-    case SDLK_d:
-      viewport_velocity_ += kEast * kSpeed;
+      /*
+        viewport_velocity_ += kSouth * kSpeed;
+        break;
+      case SDLK_d:
+        viewport_velocity_ += kEast * kSpeed;
+        break;
+      */
+
+    case SDLK_y:
+      if (ctrl)
+        Redo();
       break;
+    case SDLK_z:
+      if (ctrl)
+        Undo();
+      break;
+
     // TODO: remove once layer picker is done!
     case SDLK_0:
       layer_ = 0;
@@ -157,6 +168,7 @@ void Editor::OnKeyUp(const SDL_KeyboardEvent& event) {
     return;
 
   switch (event.keysym.sym) {
+    /*
     case SDLK_w:
       viewport_velocity_ -= kNorth * kSpeed;
       break;
@@ -169,6 +181,7 @@ void Editor::OnKeyUp(const SDL_KeyboardEvent& event) {
     case SDLK_d:
       viewport_velocity_ -= kEast * kSpeed;
       break;
+    */
     default:
       break;
   }
@@ -186,11 +199,11 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
     SetCursorGridPosition({event.x, event.y});
     switch (tool_mode_) {
       case ToolMode::kDraw:
-        map_->SetTileIndex(last_cursor_map_position_, layer_,
-                           tile_picker_.GetSelectedTileIndex());
+        SetSingleTileIndex(last_cursor_map_position_, layer_,
+                           tile_picker_.GetSelectedTileIndex(), &undo_stack_);
         break;
       case ToolMode::kErase:
-        map_->SetTileIndex(last_cursor_map_position_, layer_, 0);
+        SetSingleTileIndex(last_cursor_map_position_, layer_, 0, &undo_stack_);
         break;
       case ToolMode::kFill:
       case ToolMode::kPaste:
@@ -220,11 +233,13 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
   if (mouse_down_) {
     switch (tool_mode_) {
       case ToolMode::kDraw:
-        map_->SetTileIndex(last_cursor_map_position_, layer_,
-                           tile_picker_.GetSelectedTileIndex());
+        SetSingleTileIndex(last_cursor_map_position_, layer_,
+                           tile_picker_.GetSelectedTileIndex(), &undo_stack_,
+                           /*new_stroke=*/false);
         break;
       case ToolMode::kErase:
-        map_->SetTileIndex(last_cursor_map_position_, layer_, 0);
+        SetSingleTileIndex(last_cursor_map_position_, layer_, 0, &undo_stack_,
+                           /*new_stroke=*/false);
         break;
       case ToolMode::kFill:
       case ToolMode::kPaste:
@@ -328,6 +343,73 @@ Point<> Editor::WorldToScreen(const Point<>& world_point) const {
 Vec<int64_t, 2> Editor::GetGraphicsLogicalSize() const {
   // return graphics_->GetLogicalSize().size;
   return graphics_->GetSize().size;
+}
+
+void Editor::Redo() {
+  UndoRedoInternal(&redo_stack_, &undo_stack_);
+}
+
+void Editor::Undo() {
+  UndoRedoInternal(&undo_stack_, &redo_stack_);
+}
+
+void Editor::Save() {
+  std::ofstream stream(file_path_, std::ios::binary);
+  if (stream.fail()) {
+    std::cerr << "failed to open file " << file_path_ << " for writing\n";
+    return;
+  }
+
+  if (!map_->Write(stream)) {
+    std::cerr << "failed to write map file!\n";
+    return;
+  }
+}
+
+void Editor::SetSingleTileIndex(const engine2::TileMap::GridPoint& point,
+                                int layer,
+                                uint16_t index,
+                                ActionStack* action_stack,
+                                bool new_stroke) {
+  if (action_stack) {
+    ActionStack::SetTileIndexData new_set_tile_data{
+        .point = point,
+        .layer = layer,
+        .tile_index = index,
+        .prev_tile_index = map_->GetTileIndex(point, layer),
+    };
+
+    if (action_stack->Empty() || new_stroke) {
+      action_stack->Push(
+          ActionStack::Action(ActionStack::Action::Type::kSetTileIndex));
+    }
+
+    std::vector<ActionStack::SetTileIndexData>& data =
+        action_stack->Last().set_tile_index_data;
+    if (data.empty() || data.back() != new_set_tile_data)
+      data.push_back(new_set_tile_data);
+  }
+  map_->SetTileIndex(point, layer, index);
+}
+
+void Editor::UndoRedoInternal(ActionStack* stack, ActionStack* anti_stack) {
+  if (stack->Empty())
+    return;
+
+  ActionStack::Action& last_action = stack->Last();
+  switch (last_action.type) {
+    case ActionStack::Action::Type::kSetTileIndex: {
+      bool is_first = true;
+      for (auto iter = last_action.set_tile_index_data.rbegin();
+           iter != last_action.set_tile_index_data.rend(); ++iter) {
+        SetSingleTileIndex(iter->point, iter->layer, iter->prev_tile_index,
+                           anti_stack, /*new_stroke=*/is_first);
+        is_first = false;
+      }
+      break;
+    }
+  }
+  stack->Pop();
 }
 
 Editor::TwoFingerHandler::TwoFingerHandler(Editor* editor) : editor_(editor) {}

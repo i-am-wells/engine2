@@ -59,17 +59,17 @@ Sprite* SpriteCache::LoadInternal(const std::string& path) {
   if (colon_pos != std::string::npos)
     sprite_wanted_name = path.substr(colon_pos + 1);
 
-  auto [data, error] = LuaData::LoadFile(file_path);
-  if (!data)
+  LuaData::LoadResult load_result = LuaData::LoadFile(file_path);
+  if (!load_result.data)
     return nullptr;
 
-  Texture* texture = texture_cache_->Get(data->GetString("image"));
+  Texture* texture = texture_cache_->Get(load_result.data->GetString("image"));
   if (!texture)
     return nullptr;
 
   Sprite* result = nullptr;
 
-  LuaData sprites = data->GetObject("sprites");
+  LuaData sprites = load_result.data->GetObject("sprites");
   int sprites_count = sprites.Count();
   for (int i = 1; i <= sprites_count; ++i) {
     LuaData sprite_data = sprites.GetObject(i);

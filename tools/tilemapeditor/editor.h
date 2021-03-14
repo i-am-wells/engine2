@@ -12,6 +12,7 @@
 #include "engine2/ui/list_view.h"
 #include "engine2/window.h"
 
+#include "tools/tilemapeditor/action_stack.h"
 #include "tools/tilemapeditor/sidebar_view.h"
 #include "tools/tilemapeditor/two_finger_touch.h"
 
@@ -24,7 +25,8 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
          engine2::Font* font,
          engine2::TileMap* map,
          engine2::Texture* icons_image,
-         engine2::SpriteCache* sprite_cache);
+         engine2::SpriteCache* sprite_cache,
+         const std::string& file_path);
 
   engine2::Vec<int, 2> TileSize() const {
     return tile_size_.template ConvertTo<int>();
@@ -67,12 +69,25 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
 
   engine2::Vec<int64_t, 2> GetGraphicsLogicalSize() const;
 
+  // Editor actions
+  void Redo();
+  void Undo();
+  void Save();
+  void SetSingleTileIndex(const engine2::TileMap::GridPoint& point,
+                          int layer,
+                          uint16_t index,
+                          ActionStack* action_stack,
+                          bool new_stroke = true);
+
+  void UndoRedoInternal(ActionStack* stack, ActionStack* anti_stack);
+
   engine2::Window* window_;
   engine2::Graphics2D* graphics_;
   engine2::Font* font_;
   engine2::OffsetGraphics2D world_graphics_;
   engine2::TileMap* map_;
   engine2::Rect<> window_size_;
+  std::string file_path_;
   engine2::Timing::FramerateRegulator framerate_regulator_{60};
 
   // SidebarView sidebar_;
@@ -86,12 +101,10 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::TileMap::GridPoint last_cursor_map_position_{};
   engine2::Rect<> map_selection_{};
   int layer_ = 0;
-
   engine2::Vec<double, 2> display_size_{};
-
   double scale_ = 1.;
-
   bool mouse_down_ = false;
+  ActionStack undo_stack_, redo_stack_;
 
   class TwoFingerHandler : public TwoFingerTouch::Handler {
    public:

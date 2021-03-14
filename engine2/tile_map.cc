@@ -66,7 +66,7 @@ bool ReadString(std::istream& stream, std::string& str) {
   if (!ReadInt32(stream, length))
     return false;
 
-  auto data = std::make_unique<char>(length + 1);
+  auto data = std::make_unique<char[]>(length + 1);
   data.get()[length] = '\0';
 
   stream.read(data.get(), length);
