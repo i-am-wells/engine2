@@ -13,22 +13,28 @@ class TextView : public HierarchyView {
            Font* font,
            const std::string& text,
            RgbaColor color,
-           const Vec<int, 2>& padding = {});
+           const Vec<int, 2>& padding = {},
+           const Vec<int, 2>& margin = {});
 
+  void Init();
   void Draw() const override;
+
+  Vec<int, 2> GetSize() const override;
 
   std::string GetText() const;
   void SetText(const std::string& text);
 
+  Vec<double, 2> GetScale() const { return scale_; }
+  void SetScale(const Vec<double, 2>& scale) { scale_ = scale; }
+
  protected:
-  void RenderText(const std::string& text);
-  void RenderText(const std::string& text, const Vec<int, 2>& padding);
+  void RenderText();
 
   Graphics2D* graphics_;
   Font* font_;
   RgbaColor color_;
   std::unique_ptr<Texture> texture_;
-  Vec<int, 2> texture_size_{};
+  Vec<double, 2> scale_{1, 1};
 
   std::string text_;
 };

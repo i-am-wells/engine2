@@ -12,6 +12,8 @@ namespace ui {
 // Child classes should update child absolute positions in UpdateLayout().
 class HierarchyView : public View {
  public:
+  HierarchyView(const Vec<int, 2>& padding, const Vec<int, 2>& margin);
+
   void SetParent(HierarchyView* parent) { parent_ = parent; }
 
   Point<int, 2> GetRelativePosition() const override;
@@ -19,6 +21,9 @@ class HierarchyView : public View {
 
   Point<int, 2> GetAbsolutePosition() const override;
   Point<int, 2> GetAbsoluteInnerPosition() const override;
+
+  Vec<int, 2> GetMargin() const override;
+  Vec<int, 2> GetPadding() const override;
 
   Vec<int, 2> GetSize() const override;
   void SetSize(const Vec<int, 2>& size) override;
@@ -30,7 +35,9 @@ class HierarchyView : public View {
  protected:
   HierarchyView* parent_ = nullptr;
   Point<int, 2> relative_pos_{};
-  Vec<int, 2> size_{};
+  Vec<int, 2> inner_size_{};
+  Vec<int, 2> padding_{};
+  Vec<int, 2> margin_{};
 };
 
 }  // namespace ui

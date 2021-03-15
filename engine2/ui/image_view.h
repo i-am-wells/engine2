@@ -13,7 +13,9 @@ class ImageView : public HierarchyView {
   ImageView(Texture* texture,
             Graphics2D* graphics,
             const Rect<>& source_rect,
-            double scale = 1.);
+            double scale = 1.,
+            const Vec<int, 2>& padding = {},
+            const Vec<int, 2>& margin = {});
   Vec<int, 2> GetSize() const override;
   void Draw() const override;
 

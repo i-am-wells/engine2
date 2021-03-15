@@ -14,7 +14,9 @@ class ListView : public ContainerView {
 
   // Need padding passed in to set initial size, and lookup of GetPadding() on a
   // child class won't work in a constructor.
-  ListView(Direction direction, const Vec<int, 2>& padding = {});
+  ListView(Direction direction,
+           const Vec<int, 2>& padding = {},
+           const Vec<int, 2>& margin = {});
 
   void AddChildren(const std::vector<HierarchyView*>& children);
   void AddChild(HierarchyView* child);
@@ -25,7 +27,6 @@ class ListView : public ContainerView {
   void Clear();
 
  private:
-  void SetInitialSize(const Vec<int, 2>& padding);
   void Relayout();
   void AddChildInternal(HierarchyView* child);
 

@@ -5,19 +5,15 @@
 namespace engine2 {
 namespace ui {
 
-ListView::ListView(Direction direction, const Vec<int, 2>& padding)
-    : direction_(direction) {
-  SetInitialSize(padding);
-}
-
-void ListView::SetInitialSize(const Vec<int, 2>& padding) {
-  size_ = padding * 2;
-}
+ListView::ListView(Direction direction,
+                   const Vec<int, 2>& padding,
+                   const Vec<int, 2>& margin)
+    : ContainerView(padding, margin), direction_(direction) {}
 
 void ListView::Relayout() {
   std::vector<HierarchyView*> temp_children = children_;
   children_.clear();
-  SetInitialSize(GetPadding());
+  inner_size_ = {};
   AddChildren(temp_children);
 }
 
@@ -49,7 +45,7 @@ void ListView::Clear() {
     child->SetParent(nullptr);
 
   children_.clear();
-  SetInitialSize(GetPadding());
+  inner_size_ = {};
   OnSizeChanged();
 }
 
@@ -63,29 +59,29 @@ void ListView::AddChildInternal(HierarchyView* child) {
   Point<int, 2> child_pos;
   switch (direction_) {
     case Direction::kHorizontal:
-      child_pos = {size_.x() - padding.x(), padding.y() + child_margin.y()};
+      child_pos = {inner_size_.x(), padding.y() + child_margin.y()};
 
-      size_.y() = std::max(size_.y(), child_size.y() + (child_margin.y() * 2) +
-                                          (padding.y() * 2));
-      size_.x() += child_size.x() + child_margin.x();
+      inner_size_.y() =
+          std::max(inner_size_.y(), child_size.y() + (child_margin.y() * 2));
+      inner_size_.x() += child_size.x() + child_margin.x();
 
       // Put just one child margin between children (but the first child should
       // have a margin before and after).
       if (children_.size() == 1) {
         child_pos.x() += child_margin.x();
-        size_.x() += child_margin.x();
+        inner_size_.x() += child_margin.x();
       }
       break;
     case Direction::kVertical:
-      child_pos = {padding.x() + child_margin.x(), size_.y() - padding.y()};
+      child_pos = {padding.x() + child_margin.x(), inner_size_.y()};
 
-      size_.x() = std::max(size_.x(), child_size.x() + (child_margin.x() * 2) +
-                                          (padding.x() * 2));
-      size_.y() += child_size.y() + child_margin.y();
+      inner_size_.x() =
+          std::max(inner_size_.x(), child_size.x() + (child_margin.x() * 2));
+      inner_size_.y() += child_size.y() + child_margin.y();
 
       if (children_.size() == 1) {
         child_pos.y() += child_margin.y();
-        size_.y() += child_margin.y();
+        inner_size_.y() += child_margin.y();
       }
 
       break;

@@ -3,6 +3,10 @@
 namespace engine2 {
 namespace ui {
 
+ContainerView::ContainerView(const Vec<int, 2>& padding,
+                             const Vec<int, 2>& margin)
+    : HierarchyView(padding, margin) {}
+
 void ContainerView::Draw() const {
   for (View* view : children_)
     view->Draw();

@@ -8,6 +8,10 @@ inline constexpr Vec<int, 2> kZeroVec{};
 
 }  // namespace
 
+HierarchyView::HierarchyView(const Vec<int, 2>& padding,
+                             const Vec<int, 2>& margin)
+    : padding_(padding), margin_(margin) {}
+
 Point<int, 2> HierarchyView::GetRelativePosition() const {
   return relative_pos_;
 }
@@ -26,11 +30,11 @@ Point<int, 2> HierarchyView::GetAbsoluteInnerPosition() const {
 }
 
 Vec<int, 2> HierarchyView::GetSize() const {
-  return size_;
+  return inner_size_ + (GetPadding() * 2);
 }
 
 void HierarchyView::SetSize(const Vec<int, 2>& size) {
-  size_ = size;
+  inner_size_ = size - (GetPadding() * 2);
   OnSizeChanged();
 }
 
@@ -41,6 +45,14 @@ Rect<int, 2> HierarchyView::GetRect() const {
 void HierarchyView::OnSizeChanged() {
   if (parent_)
     parent_->OnSizeChanged();
+}
+
+Vec<int, 2> HierarchyView::GetMargin() const {
+  return margin_;
+}
+
+Vec<int, 2> HierarchyView::GetPadding() const {
+  return padding_;
 }
 
 }  // namespace ui

@@ -8,6 +8,9 @@ namespace ui {
 
 class ContainerView : public HierarchyView {
  public:
+  ContainerView(const Vec<int, 2>& padding = {},
+                const Vec<int, 2>& margin = {});
+
   void Draw() const override;
 
   void OnMouseButtonDown(const SDL_MouseButtonEvent& event) override;
