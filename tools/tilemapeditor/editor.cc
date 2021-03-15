@@ -93,6 +93,7 @@ void Editor::Init() {
   // TODO get correct display (and account for display origin!)
   display_size_ = window_->GetDisplaySize();
   tool_buttons_.SetRelativePosition({10, int(display_size_.y()) - 800});
+
   tile_picker_.Init();
 }
 

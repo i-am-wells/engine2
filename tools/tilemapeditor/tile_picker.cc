@@ -13,8 +13,14 @@ using engine2::Vec;
 namespace tilemapeditor {
 
 TilePicker::TilePicker(Editor* editor, SpriteCache* sprite_cache)
-    : editor_(editor),
+    : ContainerView(/*padding=*/Vec<int, 2>{20, 20}),
+      editor_(editor),
       sprite_cache_(sprite_cache),
+      sprite_sheet_name_view_(editor_->graphics(),
+                              editor_->font(),
+                              "",
+                              engine2::kBlack,
+                              Vec<int, 2>{10, 10}),
       two_finger_handler_(this),
       two_finger_touch_(&two_finger_handler_) {
   // TODO: support multiple sprite sheets
@@ -23,14 +29,20 @@ TilePicker::TilePicker(Editor* editor, SpriteCache* sprite_cache)
     tiles_image_ = sprite.texture();
     break;
   }
-
-  Vec<int64_t, 2> size = ScaledSize() + (padding_ * 2l);
-  SetSize(size.ConvertTo<int>());
 }
 
 void TilePicker::Init() {
+  SetSize(ScaledSize() + (padding_ * 2));
+
   Vec<int64_t, 2> image_size = tiles_image_->GetSize().size;
   grid_size_ = image_size / editor_->tile_size_;
+
+  Vec<int, 2> picker_size = GetSize();
+  SetRelativePosition(
+      {int(editor_->graphics()->GetSize().size.x()) - picker_size.x(), 0});
+
+  sprite_sheet_name_view_.SetParent(this);
+  sprite_sheet_name_view_.SetRelativePosition({0, picker_size.y()});
 
   // Get all tiles and add to map
   for (auto& [path, sprite] : *sprite_cache_) {
@@ -40,22 +52,20 @@ void TilePicker::Init() {
 }
 
 void TilePicker::Draw() const {
-  editor_->graphics()
-      ->SetDrawColor(engine2::kRed)
-      ->FillRect(GetRect().ConvertTo<int64_t>());
+  engine2::Graphics2D* graphics = editor_->graphics();
+  graphics->SetDrawColor(engine2::kRed)->FillRect(GetRect());
 
-  Point<> pos = GetRelativePosition().ConvertTo<int64_t>();
+  Point<int, 2> inner_pos = GetAbsoluteInnerPosition();
+  graphics->DrawTexture(*tiles_image_, {inner_pos, ScaledSize()});
 
-  editor_->graphics()->DrawTexture(*tiles_image_,
-                                   {pos + padding_, ScaledSize()});
+  graphics->SetDrawColor(engine2::kRed)
+      ->FillRect(sprite_sheet_name_view_.GetRect());
+  sprite_sheet_name_view_.Draw();
 
   if (selected_sprite_) {
-    Vec<int64_t, 2> scaled_tile_size = ScaledTileSize();
-
     Rect<> sel_rect =
         selected_sprite_->Frame(0).source_rect * Vec<double, 2>::Fill(scale_);
-    editor_->graphics()->DrawRect(
-        {pos + sel_rect.pos + padding_, sel_rect.size});
+    editor_->graphics()->DrawRect({inner_pos + sel_rect.pos, sel_rect.size});
   }
 }
 
@@ -67,6 +77,9 @@ void TilePicker::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
     if (sprite.Frame(0).source_rect.Contains(point_in_image)) {
       selected_sprite_name_ = path;
       selected_sprite_ = &sprite;
+
+      sprite_sheet_name_view_.SetScale({4, 4});
+      sprite_sheet_name_view_.SetText(path);
     }
   }
 }
@@ -93,17 +106,15 @@ uint16_t TilePicker::GetSelectedTileIndex() const {
 }
 
 Vec<int, 2> TilePicker::GetSize() const {
-  return (ScaledSize() + padding_ * 2l).ConvertTo<int>();
+  return ScaledSize() + padding_ * 2;
 }
 
 Vec<int64_t, 2> TilePicker::ScaledSize() const {
-  return (tiles_image_->GetSize().size.ConvertTo<double>() * scale_)
-      .ConvertTo<int64_t>();
+  return tiles_image_->GetSize().size * Vec<double, 2>::Fill(scale_);
 }
 
 Vec<int64_t, 2> TilePicker::ScaledTileSize() const {
-  return (editor_->tile_size_.ConvertTo<double>() * scale_)
-      .ConvertTo<int64_t>();
+  return editor_->tile_size_ * Vec<double, 2>::Fill(scale_);
 }
 
 TilePicker::TwoFingerHandler::TwoFingerHandler(TilePicker* picker)
@@ -113,13 +124,15 @@ void TilePicker::TwoFingerHandler::OnPinch(
     const engine2::Point<double, 2>& center,
     double pinch_factor) {
   picker_->scale_ *= pinch_factor;
+  picker_->sprite_sheet_name_view_.SetRelativePosition(
+      {0, picker_->GetSize().y()});
 }
 
 void TilePicker::TwoFingerHandler::OnDrag(
     const engine2::Vec<double, 2>& drag_amount) {
   picker_->SetRelativePosition(
       picker_->GetRelativePosition() +
-      picker_->editor_->TouchMotionToPixels(drag_amount).ConvertTo<int>());
+      picker_->editor_->TouchMotionToPixels(drag_amount));
 }
 
 }  // namespace tilemapeditor

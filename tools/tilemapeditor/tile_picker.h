@@ -36,13 +36,13 @@ class TilePicker : public engine2::ui::ContainerView {
   engine2::Vec<int64_t, 2> ScaledSize() const;
   engine2::Vec<int64_t, 2> ScaledTileSize() const;
 
-  engine2::Vec<int64_t, 2> padding_{20, 20};
-  double scale_ = 8.;
+  double scale_ = 4.;
 
   engine2::SpriteCache* sprite_cache_;
   engine2::Texture* tiles_image_;
   Editor* editor_;
   engine2::Point<> grid_size_;
+  engine2::ui::TextView sprite_sheet_name_view_;
 
   std::map<std::string, uint16_t> sprite_name_to_map_index_;
   std::string selected_sprite_name_;
