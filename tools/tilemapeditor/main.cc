@@ -67,10 +67,10 @@ CreateWindowAndRenderer() {
   }
 
   constexpr int kWindowFlags =
-      SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE;
+      SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN_DESKTOP;
   auto window = Window::Create("tilemap editor",
                                {SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                display_bounds.w, display_bounds.h},
+                                display_bounds.x, display_bounds.y},
                                kWindowFlags);
   if (!window)
     return {};
@@ -183,6 +183,7 @@ void Run(const engine2::CommandLineParser& flags) {
 
   std::string map_file_name = flags.GetPositional(1);
 
+  std::string initial_status_text;
   std::unique_ptr<TileMap> map;
   if (mode == Mode::kCreate) {
     map = CreateMap(flags, &sprite_cache);
@@ -190,6 +191,8 @@ void Run(const engine2::CommandLineParser& flags) {
       std::cerr << "Failed to create map.\n";
       return;
     }
+
+    initial_status_text = "Created a new map to be saved as " + map_file_name;
 
     // TODO pass this in?
     sprite_cache.Get("tools/tilemapeditor/sprites.lua");
@@ -199,11 +202,13 @@ void Run(const engine2::CommandLineParser& flags) {
       std::cerr << "Failed to load map from " << map_file_name << ".\n";
       return;
     }
+
+    initial_status_text = "Opened " + map_file_name;
   }
 
   tilemapeditor::Editor editor(window.get(), graphics.get(), font.get(),
                                map.get(), icons_texture.get(), &sprite_cache,
-                               map_file_name);
+                               map_file_name, initial_status_text);
   editor.Init();
   editor.Run();
 }

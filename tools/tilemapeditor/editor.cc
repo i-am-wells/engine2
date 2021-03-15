@@ -41,7 +41,12 @@ static constexpr double kIconScale = 4.;
 static constexpr int64_t kSpeed = 2;
 
 template <class T>
-void Print(const std::string& msg, const T& val) {
+void PrintR(const std::string& msg, const T& val) {
+  std::cerr << msg << " " << val.x() << " " << val.y() << " " << val.w() << " "
+            << val.h() << '\n';
+}
+template <class T>
+void PrintV(const std::string& msg, const T& val) {
   std::cerr << msg << " " << val.x() << " " << val.y() << '\n';
 }
 
@@ -57,7 +62,8 @@ Editor::Editor(Window* window,
                TileMap* map,
                Texture* icons_image,
                SpriteCache* sprite_cache,
-               const std::string& file_path)
+               const std::string& file_path,
+               const std::string& initial_status_text)
     : FrameLoop(/*event_handler=*/this),
       window_(window),
       graphics_(graphics),
@@ -65,20 +71,28 @@ Editor::Editor(Window* window,
       world_graphics_(graphics_, &(window_in_world_.pos)),
       map_(map),
       file_path_(file_path),
+      status_bar_(graphics,
+                  font,
+                  initial_status_text,
+                  kBlack,
+                  Vec<int, 2>{10, 10}),
       tile_picker_(this, sprite_cache),
       two_finger_handler_(this),
       two_finger_touch_(&two_finger_handler_),
-      tool_buttons_(this, icons_image) {
+      tool_buttons_(this, icons_image) {}
+
+void Editor::Init() {
   window_in_world_.pos = {};
   window_in_world_.size = graphics_->GetSize().size;
 
+  status_bar_.Init();
+  status_bar_.SetScale({5, 5});
+  // Set status bar position
+  SetStatusText(status_bar_.GetText());
+
   // TODO get correct display (and account for display origin!)
-  display_size_ = window_->GetDisplaySize().ConvertTo<double>();
-
+  display_size_ = window_->GetDisplaySize();
   tool_buttons_.SetRelativePosition({10, int(display_size_.y()) - 800});
-}
-
-void Editor::Init() {
   tile_picker_.Init();
 }
 
@@ -104,6 +118,10 @@ void Editor::EveryFrame() {
 
   // sidebar_.Draw();
   tile_picker_.Draw();
+
+  // Status bar and background
+  graphics_->SetDrawColor(kGray)->FillRect(status_bar_.GetRect());
+  status_bar_.Draw();
 
   tool_buttons_.Draw();
 
@@ -346,22 +364,22 @@ Vec<int64_t, 2> Editor::GetGraphicsLogicalSize() const {
 }
 
 void Editor::Redo() {
-  UndoRedoInternal(&redo_stack_, &undo_stack_);
+  UndoRedoInternal(&redo_stack_, &undo_stack_, "Redid ");
 }
 
 void Editor::Undo() {
-  UndoRedoInternal(&undo_stack_, &redo_stack_);
+  UndoRedoInternal(&undo_stack_, &redo_stack_, "Undid ");
 }
 
 void Editor::Save() {
   std::ofstream stream(file_path_, std::ios::binary);
   if (stream.fail()) {
-    std::cerr << "failed to open file " << file_path_ << " for writing\n";
+    Error("Failed to open file " + file_path_ + " for writing.");
     return;
   }
 
   if (!map_->Write(stream)) {
-    std::cerr << "failed to write map file!\n";
+    Error("Failed to write map file.");
     return;
   }
 }
@@ -392,10 +410,13 @@ void Editor::SetSingleTileIndex(const engine2::TileMap::GridPoint& point,
   map_->SetTileIndex(point, layer, index);
 }
 
-void Editor::UndoRedoInternal(ActionStack* stack, ActionStack* anti_stack) {
+void Editor::UndoRedoInternal(ActionStack* stack,
+                              ActionStack* anti_stack,
+                              const std::string& undid_or_redid) {
   if (stack->Empty())
     return;
 
+  std::string action_name;
   ActionStack::Action& last_action = stack->Last();
   switch (last_action.type) {
     case ActionStack::Action::Type::kSetTileIndex: {
@@ -406,10 +427,23 @@ void Editor::UndoRedoInternal(ActionStack* stack, ActionStack* anti_stack) {
                            anti_stack, /*new_stroke=*/is_first);
         is_first = false;
       }
+      action_name = "set tiles";
       break;
     }
   }
+  SetStatusText(undid_or_redid + action_name);
   stack->Pop();
+}
+
+void Editor::SetStatusText(const std::string& status) {
+  status_bar_.SetText(status);
+  Vec<int, 2> status_bar_size = status_bar_.GetSize();
+  status_bar_.SetRelativePosition(graphics_->GetSize().size - status_bar_size);
+}
+
+void Editor::Error(const std::string& message) {
+  std::cerr << message << '\n';
+  SetStatusText(message);
 }
 
 Editor::TwoFingerHandler::TwoFingerHandler(Editor* editor) : editor_(editor) {}

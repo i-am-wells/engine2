@@ -26,7 +26,8 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
          engine2::TileMap* map,
          engine2::Texture* icons_image,
          engine2::SpriteCache* sprite_cache,
-         const std::string& file_path);
+         const std::string& file_path,
+         const std::string& initial_status_text);
 
   engine2::Vec<int, 2> TileSize() const {
     return tile_size_.template ConvertTo<int>();
@@ -79,7 +80,11 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
                           ActionStack* action_stack,
                           bool new_stroke = true);
 
-  void UndoRedoInternal(ActionStack* stack, ActionStack* anti_stack);
+  void UndoRedoInternal(ActionStack* stack,
+                        ActionStack* anti_stack,
+                        const std::string& undid_or_redid);
+  void SetStatusText(const std::string& status);
+  void Error(const std::string& message);
 
   engine2::Window* window_;
   engine2::Graphics2D* graphics_;
@@ -95,6 +100,7 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   friend class TilePicker;
 
   engine2::Rect<> window_in_world_;
+  engine2::Vec<int, 2> window_inner_size_;
   engine2::Vec<int64_t, 2> viewport_velocity_{};
   engine2::Vec<int64_t, 2> tile_size_{16, 16};
   engine2::Vec<int64_t, 2> grid_size_tiles_{10, 10};  // save
@@ -105,6 +111,8 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   double scale_ = 1.;
   bool mouse_down_ = false;
   ActionStack undo_stack_, redo_stack_;
+
+  engine2::ui::TextView status_bar_;
 
   class TwoFingerHandler : public TwoFingerTouch::Handler {
    public:
