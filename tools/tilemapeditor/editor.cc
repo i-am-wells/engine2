@@ -219,6 +219,9 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
         break;
       case ToolMode::kPaste:
       case ToolMode::kSelect:
+        map_selection_p0_ = last_cursor_map_position_;
+        map_selection_p1_ = last_cursor_map_position_;
+        break;
       default:
         break;
     }
@@ -255,6 +258,8 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
       case ToolMode::kFill:
       case ToolMode::kPaste:
       case ToolMode::kSelect:
+        map_selection_p1_ = last_cursor_map_position_;
+        break;
       default:
         break;
     }
@@ -330,13 +335,21 @@ void Editor::DrawCursorHighlight() {
 
 void Editor::DrawSelectionHighlight() {
   graphics_->SetDrawColor(kGreen);
-  TileMap::GridPoint map_selection_pos{map_selection_.x(), map_selection_.y()};
+  Rect<> map_selection = GetMapSelection();
+  TileMap::GridPoint map_selection_pos{map_selection.x(), map_selection.y()};
   graphics_->DrawRect({WorldToScreen(map_->GridToWorld(map_selection_pos)),
-                       map_selection_.size * map_->GetTileSize() * scale_});
+                       map_selection.size * map_->GetTileSize() * scale_});
 }
 
 void Editor::SetCursorGridPosition(const Point<>& screen_pos) {
   last_cursor_map_position_ = map_->WorldToGrid(ScreenToWorld(screen_pos));
+}
+
+Rect<int64_t, 2> Editor::GetMapSelection() const {
+  Vec<int64_t, 2> diff = map_selection_p1_ - map_selection_p0_;
+  return {std::min(map_selection_p0_.x(), map_selection_p1_.x()),
+          std::min(map_selection_p0_.y(), map_selection_p1_.y()),
+          std::abs(diff.x()) + 1, std::abs(diff.y()) + 1};
 }
 
 Point<> Editor::ScreenToWorld(const Point<>& pixel_point) const {
