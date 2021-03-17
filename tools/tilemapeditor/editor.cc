@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <deque>
 #include <fstream>
 #include <iostream>
 
@@ -68,7 +69,7 @@ Editor::Editor(Window* window,
                   font,
                   initial_status_text,
                   kBlack,
-                  Vec<int, 2>{10, 10}),
+                  /*padding=*/{10, 10}),
       tile_picker_(this, sprite_cache),
       two_finger_handler_(this),
       two_finger_touch_(&two_finger_handler_),
@@ -213,6 +214,9 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
         SetSingleTileIndex(last_cursor_map_position_, layer_, 0, &undo_stack_);
         break;
       case ToolMode::kFill:
+        FloodFill(last_cursor_map_position_, layer_,
+                  tile_picker_.GetSelectedTileIndex(), &undo_stack_);
+        break;
       case ToolMode::kPaste:
       case ToolMode::kSelect:
       default:
@@ -374,6 +378,20 @@ void Editor::SetSingleTileIndex(const engine2::TileMap::GridPoint& point,
                                 ActionStack* action_stack,
                                 bool new_stroke) {
   if (action_stack) {
+    if (action_stack->Empty() || new_stroke) {
+      action_stack->Push(
+          ActionStack::Action(ActionStack::Action::Type::kSetTileIndex));
+    }
+  }
+  SetSingleTileIndexInternal(point, layer, index, action_stack);
+}
+
+void Editor::SetSingleTileIndexInternal(
+    const engine2::TileMap::GridPoint& point,
+    int layer,
+    uint16_t index,
+    ActionStack* action_stack) {
+  if (action_stack && !action_stack->Empty()) {
     ActionStack::SetTileIndexData new_set_tile_data{
         .point = point,
         .layer = layer,
@@ -381,17 +399,44 @@ void Editor::SetSingleTileIndex(const engine2::TileMap::GridPoint& point,
         .prev_tile_index = map_->GetTileIndex(point, layer),
     };
 
-    if (action_stack->Empty() || new_stroke) {
-      action_stack->Push(
-          ActionStack::Action(ActionStack::Action::Type::kSetTileIndex));
-    }
-
     std::vector<ActionStack::SetTileIndexData>& data =
         action_stack->Last().set_tile_index_data;
     if (data.empty() || data.back() != new_set_tile_data)
       data.push_back(new_set_tile_data);
   }
   map_->SetTileIndex(point, layer, index);
+}
+
+void Editor::FloodFill(const engine2::TileMap::GridPoint& point,
+                       int layer,
+                       uint16_t index,
+                       ActionStack* action_stack) {
+  Vec<int64_t, 2> grid_size = map_->GetGridSize();
+  uint16_t to_replace = map_->GetTileIndex(point, layer);
+  if (to_replace == index)
+    return;
+
+  if (action_stack) {
+    action_stack->Push(
+        ActionStack::Action(ActionStack::Action::Type::kSetTileIndex));
+  }
+
+  std::deque<TileMap::GridPoint> points_;
+  points_.push_back(point);
+  while (!points_.empty()) {
+    TileMap::GridPoint fill_point = points_.front();
+    if (fill_point.x() >= 0 && fill_point.y() >= 0 &&
+        fill_point.x() < grid_size.x() && fill_point.y() < grid_size.y() &&
+        map_->GetTileIndex(fill_point, layer) == to_replace) {
+      points_.push_back(TileMap::GridPoint{fill_point.x() + 1, fill_point.y()});
+      points_.push_back(TileMap::GridPoint{fill_point.x() - 1, fill_point.y()});
+      points_.push_back(TileMap::GridPoint{fill_point.x(), fill_point.y() + 1});
+      points_.push_back(TileMap::GridPoint{fill_point.x(), fill_point.y() - 1});
+      SetSingleTileIndexInternal(fill_point, layer, index, action_stack);
+    }
+
+    points_.pop_front();
+  }
 }
 
 void Editor::UndoRedoInternal(ActionStack* stack,

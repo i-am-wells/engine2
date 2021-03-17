@@ -77,6 +77,15 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
                           uint16_t index,
                           ActionStack* action_stack,
                           bool new_stroke = true);
+  void SetSingleTileIndexInternal(const engine2::TileMap::GridPoint& point,
+                                  int layer,
+                                  uint16_t index,
+                                  ActionStack* action_stack);
+
+  void FloodFill(const engine2::TileMap::GridPoint& point,
+                 int layer,
+                 uint16_t index,
+                 ActionStack* action_stack);
 
   void UndoRedoInternal(ActionStack* stack,
                         ActionStack* anti_stack,
