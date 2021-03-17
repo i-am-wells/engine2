@@ -29,10 +29,6 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
          const std::string& file_path,
          const std::string& initial_status_text);
 
-  engine2::Vec<int, 2> TileSize() const {
-    return tile_size_.template ConvertTo<int>();
-  }
-
   void Init();
 
   // FrameLoop
@@ -91,7 +87,6 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::Font* font_;
   engine2::OffsetGraphics2D world_graphics_;
   engine2::TileMap* map_;
-  engine2::Rect<> window_size_;
   std::string file_path_;
   engine2::Timing::FramerateRegulator framerate_regulator_{60};
 
@@ -101,14 +96,12 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
 
   engine2::Rect<> window_in_world_;
   engine2::Vec<int, 2> window_inner_size_;
-  engine2::Vec<int64_t, 2> viewport_velocity_{};
-  engine2::Vec<int64_t, 2> tile_size_{16, 16};
   engine2::Vec<int64_t, 2> grid_size_tiles_{10, 10};  // save
   engine2::TileMap::GridPoint last_cursor_map_position_{};
   engine2::Rect<> map_selection_{};
   int layer_ = 0;
   engine2::Vec<double, 2> display_size_{};
-  double scale_ = 1.;
+  engine2::Vec<double, 2> scale_{1., 1.};
   bool mouse_down_ = false;
   ActionStack undo_stack_, redo_stack_;
 

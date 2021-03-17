@@ -112,14 +112,10 @@ std::unique_ptr<engine2::TileMap> CreateMap(
     return nullptr;
   }
 
-  engine2::Vec<int64_t, 2> position_in_world;
-  parsed_size = ParseSize(flags.GetFlag("grid_size"));
+  engine2::Vec<int64_t, 2> position_in_world{};
+  parsed_size = ParseSize(flags.GetFlag("position_in_world"));
   if (parsed_size.first) {
     position_in_world = parsed_size.second;
-  } else {
-    std::cerr << "Expected position_in_world flag to look like this: "
-                 "--position_in_world=X,Y\n";
-    return nullptr;
   }
 
   auto map = std::make_unique<TileMap>(tile_size, grid_size, layers,

@@ -30,15 +30,8 @@ using engine2::ui::ImageView;
 namespace tilemapeditor {
 namespace {
 
-static constexpr Vec<int64_t, 2> kNorth{0, -1};
-static constexpr Vec<int64_t, 2> kSouth{0, 1};
-static constexpr Vec<int64_t, 2> kEast{1, 0};
-static constexpr Vec<int64_t, 2> kWest{-1, 0};
-
 static constexpr Vec<int64_t, 2> kIconSize{8, 8};
-static constexpr double kIconScale = 4.;
-
-static constexpr int64_t kSpeed = 2;
+static constexpr double kIconScale = 3.;
 
 template <class T>
 void PrintR(const std::string& msg, const T& val) {
@@ -82,11 +75,31 @@ Editor::Editor(Window* window,
       tool_buttons_(this, icons_image) {}
 
 void Editor::Init() {
-  window_in_world_.pos = {};
+  window_in_world_.pos = {0, 0};
   window_in_world_.size = graphics_->GetSize().size;
 
+  // Set map scale so it fills the window.
+  Rect<> map_rect = map_->GetWorldRect();
+  if (map_rect.w() > 0 && map_rect.h() > 0) {
+    double map_aspect_ratio = double(map_rect.w()) / map_rect.h();
+    double window_aspect_ratio =
+        double(window_in_world_.size.x()) / window_in_world_.size.y();
+
+    double scale = 1.;
+    if (map_aspect_ratio > window_aspect_ratio) {
+      // Scale to match width
+      scale = double(window_in_world_.size.x()) / map_rect.w();
+    } else {
+      // Scale to match height
+      scale = double(window_in_world_.size.y()) / map_rect.h();
+    }
+    map_->SetScale(scale);
+    scale_ = {scale, scale};
+    window_in_world_.size /= scale_;
+  }
+
   status_bar_.Init();
-  status_bar_.SetScale({5, 5});
+  status_bar_.SetScale({3, 3});
   // Set status bar position
   SetStatusText(status_bar_.GetText());
 
@@ -99,19 +112,23 @@ void Editor::Init() {
 
 Point<int64_t, 2> Editor::TouchPointToPixels(
     const Point<double, 2>& touch_point) const {
-  Point<double, 2> display_point = touch_point * display_size_;
-
-  return display_point.ConvertTo<int64_t>();
-  //- window_->GetInnerPosition().ConvertTo<int64_t>();
+  return touch_point * display_size_;
 }
 
 Vec<int64_t, 2> Editor::TouchMotionToPixels(
     const Vec<double, 2>& touch_motion) const {
-  return (touch_motion * display_size_).ConvertTo<int64_t>();
+  return touch_motion * display_size_;
 }
 
 void Editor::EveryFrame() {
   graphics_->SetDrawColor(kDarkGray)->Clear();
+
+  // Draw map rectangle
+  Rect<> map_draw_rect = map_->GetWorldRect();
+  map_draw_rect.pos -= window_in_world_.pos;
+  map_draw_rect *= scale_;
+  graphics_->SetDrawColor(kGray)->FillRect(map_draw_rect);
+
   map_->Draw(graphics_, window_in_world_);
   // DrawMapGrid();
   DrawSelectionHighlight();
@@ -126,8 +143,6 @@ void Editor::EveryFrame() {
 
   tool_buttons_.Draw();
 
-  window_in_world_.pos += viewport_velocity_;
-
   graphics_->Present();
   framerate_regulator_.Wait();
 }
@@ -138,25 +153,10 @@ void Editor::OnKeyDown(const SDL_KeyboardEvent& event) {
 
   bool ctrl = event.keysym.mod & KMOD_CTRL;
   switch (event.keysym.sym) {
-      /*
-      case SDLK_w:
-        viewport_velocity_ += kNorth * kSpeed;
-        break;
-      case SDLK_a:
-        viewport_velocity_ += kWest * kSpeed;
-        break;
-      */
     case SDLK_s:
       if (ctrl)
         Save();
       break;
-      /*
-        viewport_velocity_ += kSouth * kSpeed;
-        break;
-      case SDLK_d:
-        viewport_velocity_ += kEast * kSpeed;
-        break;
-      */
 
     case SDLK_y:
       if (ctrl)
@@ -187,20 +187,6 @@ void Editor::OnKeyUp(const SDL_KeyboardEvent& event) {
     return;
 
   switch (event.keysym.sym) {
-    /*
-    case SDLK_w:
-      viewport_velocity_ -= kNorth * kSpeed;
-      break;
-    case SDLK_a:
-      viewport_velocity_ -= kWest * kSpeed;
-      break;
-    case SDLK_s:
-      viewport_velocity_ -= kSouth * kSpeed;
-      break;
-    case SDLK_d:
-      viewport_velocity_ -= kEast * kSpeed;
-      break;
-    */
     default:
       break;
   }
@@ -275,7 +261,7 @@ void Editor::OnMouseWheel(const SDL_MouseWheelEvent& event) {
 
 void Editor::OnFingerDown(const SDL_TouchFingerEvent& event) {
   Point<> point = TouchPointToPixels({event.x, event.y});
-  if (tile_picker_.Contains(point.ConvertTo<int>())) {
+  if (tile_picker_.Contains(point)) {
     tile_picker_.OnFingerDown(event);
   } else {
     two_finger_touch_.OnFingerDown(event);
@@ -293,13 +279,12 @@ void Editor::OnFingerMotion(const SDL_TouchFingerEvent& event) {
 }
 
 void Editor::DrawMapGrid() {
-  Vec<int64_t, 2> grid_size_pixels_ = grid_size_tiles_ * tile_size_;
+  Vec<int64_t, 2> grid_size_pixels_ = grid_size_tiles_ * map_->GetTileSize();
   Vec<int64_t, 2> phase = window_in_world_.pos % grid_size_pixels_;
   graphics_->SetDrawColor(kGreen);
 
-  auto scale = Vec<double, 2>::Fill(scale_);
-  grid_size_pixels_ *= scale;
-  phase *= scale;
+  grid_size_pixels_ *= scale_;
+  phase *= scale_;
 
   // Draw vertical lines
   for (int64_t x = window_in_world_.x() - phase.x();
@@ -310,7 +295,7 @@ void Editor::DrawMapGrid() {
 
     world_graphics_.DrawLine(
         {x, window_in_world_.y()},
-        {x, int64_t(window_in_world_.y() + window_in_world_.h() * scale_)});
+        {x, int64_t(window_in_world_.y() + window_in_world_.h() * scale_.y())});
     if (x == 0)
       graphics_->SetDrawColor(kGreen);
   }
@@ -324,7 +309,7 @@ void Editor::DrawMapGrid() {
 
     world_graphics_.DrawLine(
         {window_in_world_.x(), y},
-        {int64_t(window_in_world_.x() + window_in_world_.w() * scale_), y});
+        {int64_t(window_in_world_.x() + window_in_world_.w() * scale_.x()), y});
     if (y == 0)
       graphics_->SetDrawColor(kGreen);
   }
@@ -332,17 +317,16 @@ void Editor::DrawMapGrid() {
 
 void Editor::DrawCursorHighlight() {
   graphics_->SetDrawColor(kGreen);
-
-  Vec<int64_t, 2> size =
-      (tile_size_.ConvertTo<double>() * scale_).ConvertTo<int64_t>();
-  Point<> pos = WorldToScreen(map_->GridToWorld(last_cursor_map_position_));
-
-  graphics_->DrawRect({pos, size});
+  graphics_->DrawRect(
+      {WorldToScreen(map_->GridToWorld(last_cursor_map_position_)),
+       map_->GetTileSize() * scale_});
 }
 
 void Editor::DrawSelectionHighlight() {
   graphics_->SetDrawColor(kGreen);
-  world_graphics_.DrawRect(map_selection_ * tile_size_);
+  TileMap::GridPoint map_selection_pos{map_selection_.x(), map_selection_.y()};
+  graphics_->DrawRect({WorldToScreen(map_->GridToWorld(map_selection_pos)),
+                       map_selection_.size * map_->GetTileSize() * scale_});
 }
 
 void Editor::SetCursorGridPosition(const Point<>& screen_pos) {
@@ -350,17 +334,14 @@ void Editor::SetCursorGridPosition(const Point<>& screen_pos) {
 }
 
 Point<> Editor::ScreenToWorld(const Point<>& pixel_point) const {
-  return (pixel_point.ConvertTo<double>() / scale_).ConvertTo<int64_t>() +
-         window_in_world_.pos;
+  return (pixel_point / scale_) + window_in_world_.pos;
 }
 
 Point<> Editor::WorldToScreen(const Point<>& world_point) const {
-  return ((world_point - window_in_world_.pos).ConvertTo<double>() * scale_)
-      .ConvertTo<int64_t>();
+  return (world_point - window_in_world_.pos) * scale_;
 }
 
 Vec<int64_t, 2> Editor::GetGraphicsLogicalSize() const {
-  // return graphics_->GetLogicalSize().size;
   return graphics_->GetSize().size;
 }
 
@@ -452,17 +433,15 @@ Editor::TwoFingerHandler::TwoFingerHandler(Editor* editor) : editor_(editor) {}
 void Editor::TwoFingerHandler::OnPinch(const Point<double, 2>& center,
                                        double pinch_factor) {
   editor_->scale_ *= pinch_factor;
-  editor_->map_->SetScale(editor_->scale_);
+  editor_->map_->SetScale(editor_->scale_.x());
 
   // TODO: center zoom on center!
   Vec<int64_t, 2> old_size = editor_->window_in_world_.size;
   editor_->window_in_world_.size =
-      (editor_->GetGraphicsLogicalSize().ConvertTo<double>() / editor_->scale_)
-          .ConvertTo<int64_t>();
+      editor_->GetGraphicsLogicalSize() / editor_->scale_;
 
   editor_->window_in_world_.pos -=
-      ((editor_->window_in_world_.size - old_size).ConvertTo<double>() * center)
-          .ConvertTo<int64_t>();
+      ((editor_->window_in_world_.size - old_size) * center);
 }
 
 void Editor::TwoFingerHandler::OnDrag(const Vec<double, 2>& drag_amount) {

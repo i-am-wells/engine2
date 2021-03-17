@@ -35,7 +35,7 @@ void TilePicker::Init() {
   SetSize(ScaledSize() + (padding_ * 2));
 
   Vec<int64_t, 2> image_size = tiles_image_->GetSize().size;
-  grid_size_ = image_size / editor_->tile_size_;
+  grid_size_ = image_size / editor_->map_->GetTileSize();
 
   Vec<int, 2> picker_size = GetSize();
   SetRelativePosition(
@@ -43,6 +43,7 @@ void TilePicker::Init() {
 
   sprite_sheet_name_view_.SetParent(this);
   sprite_sheet_name_view_.SetRelativePosition({0, picker_size.y()});
+  sprite_sheet_name_view_.SetScale({3, 3});
 
   // Get all tiles and add to map
   for (auto& [path, sprite] : *sprite_cache_) {
@@ -78,7 +79,6 @@ void TilePicker::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
       selected_sprite_name_ = path;
       selected_sprite_ = &sprite;
 
-      sprite_sheet_name_view_.SetScale({4, 4});
       sprite_sheet_name_view_.SetText(path);
     }
   }
@@ -114,7 +114,7 @@ Vec<int64_t, 2> TilePicker::ScaledSize() const {
 }
 
 Vec<int64_t, 2> TilePicker::ScaledTileSize() const {
-  return editor_->tile_size_ * Vec<double, 2>::Fill(scale_);
+  return editor_->map_->GetTileSize() * Vec<double, 2>::Fill(scale_);
 }
 
 TilePicker::TwoFingerHandler::TwoFingerHandler(TilePicker* picker)
