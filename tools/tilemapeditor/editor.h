@@ -8,8 +8,10 @@
 #include "engine2/sprite_cache.h"
 #include "engine2/tile_map.h"
 #include "engine2/timing.h"
+#include "engine2/ui/container_view.h"
 #include "engine2/ui/image_view.h"
 #include "engine2/ui/list_view.h"
+#include "engine2/ui/text_view.h"
 #include "engine2/window.h"
 
 #include "tools/tilemapeditor/action_stack.h"
@@ -127,22 +129,19 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
     kSelect,
     kPaste,
     kFill,
+    kMove,
   };
 
   class ToolButtonTray;
-  class ToolButton : public engine2::ui::ImageView {
+  class ToolButton : public engine2::ui::ListView {
    public:
     ToolButton(ToolButtonTray* tray,
-               engine2::Texture* icons,
-               engine2::Graphics2D* graphics,
                const engine2::Rect<>& source_rect,
-               double scale,
-               ToolMode mode);
+               ToolMode mode,
+               const std::string& name);
 
+    void Init();
     void Draw() const override;
-    engine2::Vec<int, 2> GetMargin() const override;
-    engine2::Vec<int, 2> GetPadding() const override;
-
     void OnMouseButtonDown(const SDL_MouseButtonEvent& event) override;
 
     void SetSelected(bool selected);
@@ -154,6 +153,8 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
     bool selected_ = false;
     ToolButtonTray* tray_;
     ToolMode mode_;
+    engine2::ui::ImageView icon_view_;
+    engine2::ui::TextView name_view_;
   };
 
   class ToolButtonTray : public engine2::ui::ListView {
@@ -164,11 +165,10 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
     void Select(ToolButton* button);
 
    private:
+    friend class ToolButton;
     Editor* editor_;
-    ToolButton draw_;
-    ToolButton erase_;
-    ToolButton paste_;
-    ToolButton select_;
+    engine2::Texture* icons_;
+    ToolButton buttons_[6];
     ToolButton* selected_ = nullptr;
   };
   ToolButtonTray tool_buttons_;

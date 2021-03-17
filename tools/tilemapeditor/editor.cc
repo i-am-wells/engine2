@@ -105,6 +105,8 @@ void Editor::Init() {
 
   // TODO get correct display (and account for display origin!)
   display_size_ = window_->GetDisplaySize();
+
+  tool_buttons_.Init();
   tool_buttons_.SetRelativePosition({10, int(display_size_.y()) - 800});
 
   tile_picker_.Init();
@@ -450,29 +452,40 @@ void Editor::TwoFingerHandler::OnDrag(const Vec<double, 2>& drag_amount) {
 }
 
 Editor::ToolButton::ToolButton(ToolButtonTray* tray,
-                               Texture* icons,
-                               Graphics2D* graphics,
                                const Rect<>& source_rect,
-                               double scale,
-                               ToolMode mode)
-    : ImageView(icons, graphics, source_rect, scale),
+                               ToolMode mode,
+                               const std::string& name)
+    : ListView(ListView::Direction::kHorizontal),
       tray_(tray),
-      mode_(mode) {}
+      mode_(mode),
+      icon_view_(tray->icons_,
+                 tray->editor_->graphics_,
+                 source_rect,
+                 kIconScale,
+                 /*padding=*/{8, 8},
+                 /*margin=*/{10, 10}),
+      name_view_(tray->editor_->graphics_,
+                 tray->editor_->font_,
+                 name,
+                 kBlack,
+                 /*padding=*/{},
+                 /*margin=*/{10, 10}) {}
+
+void Editor::ToolButton::Init() {
+  name_view_.Init();
+  name_view_.SetScale({3, 3});
+  AddChildren({&icon_view_, &name_view_});
+}
 
 void Editor::ToolButton::Draw() const {
+  Graphics2D* graphics = tray_->editor_->graphics_;
   if (selected_)
-    graphics_->SetDrawColor(kRed);
+    graphics->SetDrawColor(kRed);
   else
-    graphics_->SetDrawColor(kWhite);
+    graphics->SetDrawColor(kWhite);
 
-  graphics_->FillRect(GetRect().ConvertTo<int64_t>());
-  ImageView::Draw();
-}
-Vec<int, 2> Editor::ToolButton::GetMargin() const {
-  return {20, 20};
-}
-Vec<int, 2> Editor::ToolButton::GetPadding() const {
-  return {8, 8};
+  graphics->FillRect(icon_view_.GetRect());
+  ListView::Draw();
 }
 
 void Editor::ToolButton::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
@@ -489,35 +502,23 @@ bool Editor::ToolButton::IsSelected() const {
 Editor::ToolButtonTray::ToolButtonTray(Editor* editor, Texture* icons)
     : engine2::ui::ListView(Direction::kVertical),
       editor_(editor),
-      draw_(this,
-            icons,
-            editor->graphics_,
-            IconRect({1, 0}),
-            kIconScale,
-            ToolMode::kDraw),
-      erase_(this,
-             icons,
-             editor->graphics_,
-             IconRect({1, 1}),
-             kIconScale,
-             ToolMode::kErase),
-      paste_(this,
-             icons,
-             editor->graphics_,
-             IconRect({2, 3}),
-             kIconScale,
-             ToolMode::kPaste),
-      select_(this,
-              icons,
-              editor->graphics_,
-              IconRect({2, 0}),
-              kIconScale,
-              ToolMode::kSelect) {
-  AddChildren({&select_, &paste_, &erase_, &draw_});
-  Select(&draw_);
-}
+      icons_(icons),
+      buttons_{
+          {this, IconRect({2, 0}), ToolMode::kSelect, "Select"},
+          {this, IconRect({3, 2}), ToolMode::kMove, "Move"},
+          {this, IconRect({2, 3}), ToolMode::kPaste, "Paste"},
+          {this, IconRect({2, 1}), ToolMode::kFill, "Fill"},
+          {this, IconRect({1, 1}), ToolMode::kErase, "Erase"},
+          {this, IconRect({1, 0}), ToolMode::kDraw, "Draw"},
+      } {}
 
-void Editor::ToolButtonTray::Init() {}
+void Editor::ToolButtonTray::Init() {
+  for (auto& button : buttons_) {
+    button.Init();
+    AddChild(&button);
+  }
+  Select(&(buttons_[5]));
+}
 
 void Editor::ToolButtonTray::Select(ToolButton* button) {
   if (selected_)
