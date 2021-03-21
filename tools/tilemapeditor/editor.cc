@@ -550,8 +550,12 @@ void Editor::FinishMove(const engine2::Point<> world_point) {
 
   Point<> dest_pos = map_->WorldToGrid(world_point) - move_cursor_offset_tiles_;
 
+  // Temporarily copy the buffer back into the original rect so undo will
+  // restore the tiles.
+  CopyTiles(move_buffer_.get(), {}, 0, map_, move_map_original_rect_.pos,
+            layer_, move_map_original_rect_.size, nullptr);
+
   // First clear the original rect again.
-  // TODO fix undo
   SetTilesInRect(move_map_original_rect_, 0, &undo_stack_);
   CopyTiles(move_buffer_.get(), {}, 0, map_, dest_pos, layer_,
             move_buffer_->GetGridSize(), &undo_stack_);
