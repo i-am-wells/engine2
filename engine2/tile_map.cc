@@ -234,6 +234,33 @@ void TileMap::Draw(Graphics2D* graphics,
   GridPoint corner0 = WorldToGrid(world_rect.pos);
   GridPoint corner1 = WorldToGrid(world_rect.pos + world_rect.size);
 
+  // Skip drawing beyond the edge of the map
+  if (corner0.x() < 0)
+    corner0.x() = 0;
+
+  if (corner0.x() >= grid_size_.x())
+    return;
+
+  if (corner0.y() < 0)
+    corner0.y() = 0;
+
+  if (corner0.y() >= grid_size_.y())
+    return;
+
+  if (corner1.x() < 0)
+    corner1.x() = 0;
+
+  if (corner1.x() >= grid_size_.x())
+    corner1.x() = grid_size_.x() - 1;
+
+  if (corner1.y() < 0)
+    corner1.y() = 0;
+
+  if (corner1.y() >= grid_size_.y())
+    corner1.y() = grid_size_.y() - 1;
+
+  Vec<double, 2> scale{scale_, scale_};
+
   // grid point to screen:
   // ((point - corner0) * tile_size - offset) * scale_
   Vec<int64_t, 2> offset = (world_rect.pos - world_rect_.pos) % tile_size_;
@@ -242,12 +269,9 @@ void TileMap::Draw(Graphics2D* graphics,
     GridPoint point;
     for (point.y() = corner0.y(); point.y() <= corner1.y(); ++point.y()) {
       for (point.x() = corner0.x(); point.x() <= corner1.x(); ++point.x()) {
-        // TODO
-        //
-        Point<> draw_point =
-            (((point - corner0) * tile_size_ - offset).ConvertTo<double>() *
-             scale_)
-                .ConvertTo<int64_t>();
+        Point<> draw_point = ((point - corner0) * tile_size_ + world_rect_.pos -
+                              world_rect.pos) *
+                             scale;
 
         Tile* tile = GetTile(point, i);
         if (tile && tile->sprite) {
@@ -323,6 +347,12 @@ uint16_t TileMap::AddTile(const Tile& tile) {
 
 void TileMap::AddTiles(const std::vector<Tile>& tiles) {
   tiles_.insert(tiles_.end(), tiles.begin(), tiles.end());
+}
+
+void TileMap::SetTile(uint16_t index, const Tile& tile) {
+  if (index >= tiles_.size())
+    tiles_.resize(index + 1);
+  tiles_[index] = tile;
 }
 
 uint16_t TileMap::GetTileCount() const {

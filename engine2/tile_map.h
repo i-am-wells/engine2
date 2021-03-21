@@ -60,6 +60,8 @@ class TileMap {
   uint16_t AddTile(const Tile& tile);
   void AddTiles(const std::vector<Tile>& tiles);
   uint16_t GetTileCount() const;
+  // If index is out of bounds, resizes tile vector and fills in empty tiles.
+  void SetTile(uint16_t index, const Tile& tile);
 
   double GetScale() const { return scale_; }
   void SetScale(double scale) { scale_ = scale; }
@@ -68,6 +70,7 @@ class TileMap {
   Vec<int64_t, 2> GetGridSize() const { return grid_size_; }
   int GetLayerCount() const { return layer_count_; }
   Rect<int64_t, 2> GetWorldRect() const { return world_rect_; }
+  void SetWorldRect(const engine2::Rect<>& rect) { world_rect_ = rect; }
 
  private:
   bool PositionInMap(const GridPoint& grid_position) const;
