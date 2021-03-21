@@ -49,6 +49,8 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   void OnFingerUp(const SDL_TouchFingerEvent& event) override;
   void OnFingerMotion(const SDL_TouchFingerEvent& event) override;
 
+  void OnQuit(const SDL_QuitEvent& event) override;
+
   engine2::Graphics2D* graphics() { return graphics_; }
   engine2::Font* font() { return font_; }
   engine2::Point<int64_t, 2> TouchPointToPixels(
@@ -64,6 +66,7 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   void SetCursorGridPosition(const engine2::Point<>& screen_pos);
 
   engine2::Rect<int64_t, 2> GetMapSelection() const;
+  void SetMapSelection(const engine2::Rect<>& rect);
 
   engine2::Point<> ScreenToWorld(const engine2::Point<>& pixel_point) const;
   engine2::Point<> WorldToScreen(const engine2::Point<>& world_point) const;
@@ -89,6 +92,23 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
                  uint16_t index,
                  ActionStack* action_stack);
 
+  void StartMove(const engine2::Point<> world_point);
+  void ContinueMove(const engine2::Point<> world_point);
+  void CancelMove();
+  void FinishMove(const engine2::Point<> world_point);
+
+  void SetTilesInRect(const engine2::Rect<>& rect,
+                      uint16_t index,
+                      ActionStack* action_stack);
+  void CopyTiles(engine2::TileMap* source,
+                 const engine2::Point<>& source_pos,
+                 int source_layer,
+                 engine2::TileMap* dest,
+                 const engine2::Point<>& dest_pos,
+                 int dest_layer,
+                 const engine2::Vec<int64_t, 2>& size,
+                 ActionStack* action_stack);
+
   void UndoRedoInternal(ActionStack* stack,
                         ActionStack* anti_stack,
                         const std::string& undid_or_redid);
@@ -101,6 +121,7 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::OffsetGraphics2D world_graphics_;
   engine2::TileMap* map_;
   std::string file_path_;
+  engine2::SpriteCache* sprite_cache_;
   engine2::Timing::FramerateRegulator framerate_regulator_{60};
 
   // SidebarView sidebar_;
@@ -118,6 +139,11 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::Vec<double, 2> scale_{1., 1.};
   bool mouse_down_ = false;
   ActionStack undo_stack_, redo_stack_;
+
+  std::unique_ptr<engine2::TileMap> move_buffer_;
+  engine2::Point<> move_cursor_offset_tiles_{};
+  engine2::Point<> move_cursor_offset_{};
+  engine2::Rect<> move_map_original_rect_{};
 
   engine2::ui::TextView status_bar_;
 

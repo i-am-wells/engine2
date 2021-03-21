@@ -62,6 +62,10 @@ ActionStack::Action::~Action() {
   }
 }
 
+ActionStack::Action& ActionStack::Action::operator=(const Action& other) {
+  return *(new (this) Action(other));
+}
+
 bool ActionStack::SetTileIndexData::operator==(
     const SetTileIndexData& other) const {
   return point == other.point && layer == other.layer &&

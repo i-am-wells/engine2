@@ -65,6 +65,7 @@ Editor::Editor(Window* window,
       world_graphics_(graphics_, &(window_in_world_.pos)),
       map_(map),
       file_path_(file_path),
+      sprite_cache_(sprite_cache),
       status_bar_(graphics,
                   font,
                   initial_status_text,
@@ -133,6 +134,9 @@ void Editor::EveryFrame() {
   graphics_->SetDrawColor(kGray)->FillRect(map_draw_rect);
 
   map_->Draw(graphics_, window_in_world_);
+  if (move_buffer_)
+    move_buffer_->Draw(graphics_, window_in_world_);
+
   // DrawMapGrid();
   DrawSelectionHighlight();
   DrawCursorHighlight();
@@ -178,7 +182,7 @@ void Editor::OnKeyDown(const SDL_KeyboardEvent& event) {
       layer_ = 1;
       break;
     case SDLK_ESCAPE:
-      Stop();
+      CancelMove();
       break;
     default:
       break;
@@ -204,7 +208,7 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
     return tool_buttons_.OnMouseButtonDown(event);
 
   if (event.which != SDL_TOUCH_MOUSEID) {
-    SetCursorGridPosition({event.x, event.y});
+    SetCursorGridPosition(point);
     switch (tool_mode_) {
       case ToolMode::kDraw:
         SetSingleTileIndex(last_cursor_map_position_, layer_,
@@ -222,8 +226,10 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
         map_selection_p0_ = last_cursor_map_position_;
         map_selection_p1_ = last_cursor_map_position_;
         break;
-      default:
+      case ToolMode::kMove: {
+        StartMove(ScreenToWorld(point));
         break;
+      }
     }
     mouse_down_ = true;
   }
@@ -234,16 +240,29 @@ void Editor::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {
   //  sidebar_.OnMouseButtonUp(event);
   //}
   mouse_down_ = false;
+
+  switch (tool_mode_) {
+    case ToolMode::kDraw:
+    case ToolMode::kErase:
+    case ToolMode::kFill:
+    case ToolMode::kPaste:
+    case ToolMode::kSelect:
+      break;
+    case ToolMode::kMove:
+      FinishMove(ScreenToWorld({event.x, event.y}));
+      break;
+  }
 }
 
 void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
   // if (sidebar_.Contains({event.x, event.y})) {
   //  sidebar_.OnMouseMotion(event);
   //}
-  if (tile_picker_.Contains({event.x, event.y}))
+  Point<> point{event.x, event.y};
+  if (tile_picker_.Contains(point))
     return;
 
-  SetCursorGridPosition({event.x, event.y});
+  SetCursorGridPosition(point);
   if (mouse_down_) {
     switch (tool_mode_) {
       case ToolMode::kDraw:
@@ -260,7 +279,8 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
       case ToolMode::kSelect:
         map_selection_p1_ = last_cursor_map_position_;
         break;
-      default:
+      case ToolMode::kMove:
+        ContinueMove(ScreenToWorld(point));
         break;
     }
   }
@@ -287,6 +307,10 @@ void Editor::OnFingerUp(const SDL_TouchFingerEvent& event) {
 void Editor::OnFingerMotion(const SDL_TouchFingerEvent& event) {
   tile_picker_.OnFingerMotion(event);
   two_finger_touch_.OnFingerMotion(event);
+}
+
+void Editor::OnQuit(const SDL_QuitEvent& event) {
+  Stop();
 }
 
 void Editor::DrawMapGrid() {
@@ -350,6 +374,11 @@ Rect<int64_t, 2> Editor::GetMapSelection() const {
   return {std::min(map_selection_p0_.x(), map_selection_p1_.x()),
           std::min(map_selection_p0_.y(), map_selection_p1_.y()),
           std::abs(diff.x()) + 1, std::abs(diff.y()) + 1};
+}
+
+void Editor::SetMapSelection(const Rect<>& rect) {
+  map_selection_p0_ = rect.pos;
+  map_selection_p1_ = rect.pos + rect.size - 1l;
 }
 
 Point<> Editor::ScreenToWorld(const Point<>& pixel_point) const {
@@ -449,6 +478,124 @@ void Editor::FloodFill(const engine2::TileMap::GridPoint& point,
     }
 
     points_.pop_front();
+  }
+}
+
+void Editor::StartMove(const engine2::Point<> world_point) {
+  if (!map_->GetWorldRect().Contains(world_point))
+    return;
+
+  TileMap::GridPoint map_point = map_->WorldToGrid(world_point);
+
+  move_map_original_rect_ = GetMapSelection();
+  if (!move_map_original_rect_.Contains(map_point)) {
+    move_map_original_rect_ = {map_point.x(), map_point.y(), 1, 1};
+  }
+
+  Point<> world_move_corner = map_->GridToWorld(
+      {move_map_original_rect_.x(), move_map_original_rect_.y()});
+  move_cursor_offset_ = world_point - world_move_corner;
+  move_cursor_offset_tiles_ = move_cursor_offset_ / map_->GetTileSize();
+
+  // Cut selection into move buffer
+  move_buffer_ = std::make_unique<TileMap>(map_->GetTileSize(),
+                                           move_map_original_rect_.size, 1,
+                                           world_move_corner, sprite_cache_);
+  move_buffer_->SetScale(map_->GetScale());
+
+  // Add all tiles for drawing
+  for (int y = 0; y < move_map_original_rect_.h(); ++y) {
+    for (int x = 0; x < move_map_original_rect_.w(); ++x) {
+      TileMap::GridPoint map_point{move_map_original_rect_.x() + x,
+                                   move_map_original_rect_.y() + y};
+      uint16_t index = map_->GetTileIndex(map_point, layer_);
+      move_buffer_->SetTile(index, *map_->GetTileByIndex(index));
+    }
+  }
+
+  CopyTiles(map_, move_map_original_rect_.pos, layer_, move_buffer_.get(), {},
+            0, move_map_original_rect_.size, nullptr);
+  SetTilesInRect(move_map_original_rect_, 0, nullptr);
+}
+
+void Editor::ContinueMove(const engine2::Point<> world_point) {
+  if (!move_buffer_)
+    return;
+
+  Rect<> move_buffer_rect = move_buffer_->GetWorldRect();
+  SetMapSelection({map_->WorldToGrid(world_point) - move_cursor_offset_tiles_,
+                   move_buffer_rect.size / map_->GetTileSize()});
+
+  // Snap to the nearest tile.
+  move_buffer_->SetWorldRect(
+      {world_point - move_cursor_offset_, move_buffer_rect.size});
+}
+
+void Editor::CancelMove() {
+  if (!move_buffer_)
+    return;
+
+  // TODO test
+  CopyTiles(move_buffer_.get(), {}, 0, map_, move_map_original_rect_.pos,
+            layer_, move_buffer_->GetGridSize(), nullptr);
+  move_buffer_.reset();
+}
+
+void Editor::FinishMove(const engine2::Point<> world_point) {
+  if (!move_buffer_)
+    return;
+
+  undo_stack_.Push(
+      ActionStack::Action(ActionStack::Action::Type::kSetTileIndex));
+
+  Point<> dest_pos = map_->WorldToGrid(world_point) - move_cursor_offset_tiles_;
+
+  // First clear the original rect again.
+  // TODO fix undo
+  SetTilesInRect(move_map_original_rect_, 0, &undo_stack_);
+  CopyTiles(move_buffer_.get(), {}, 0, map_, dest_pos, layer_,
+            move_buffer_->GetGridSize(), &undo_stack_);
+  move_buffer_.reset();
+}
+
+void Editor::SetTilesInRect(const Rect<>& rect,
+                            uint16_t index,
+                            ActionStack* action_stack) {
+  TileMap::GridPoint p;
+  for (p.y() = 0; p.y() < rect.h(); ++p.y()) {
+    for (p.x() = 0; p.x() < rect.w(); ++p.x()) {
+      TileMap::GridPoint dst_point{rect.x() + p.x(), rect.y() + p.y()};
+      SetSingleTileIndexInternal(dst_point, layer_, index, action_stack);
+    }
+  }
+}
+
+void Editor::CopyTiles(TileMap* source,
+                       const Point<>& source_pos,
+                       int source_layer,
+                       TileMap* dest,
+                       const Point<>& dest_pos,
+                       int dest_layer,
+                       const Vec<int64_t, 2>& size,
+                       ActionStack* action_stack) {
+  TileMap::GridPoint p;
+  for (p.y() = 0; p.y() < size.y(); ++p.y()) {
+    for (p.x() = 0; p.x() < size.x(); ++p.x()) {
+      TileMap::GridPoint src_point{source_pos.x() + p.x(),
+                                   source_pos.y() + p.y()};
+      TileMap::GridPoint dst_point{dest_pos.x() + p.x(), dest_pos.y() + p.y()};
+
+      uint16_t index = source->GetTileIndex(src_point, source_layer);
+      // Don't overwrite non-empty tiles with the empty tile.
+      if (index == 0)
+        continue;
+
+      if (dest == map_) {
+        SetSingleTileIndexInternal(dst_point, dest_layer, index, action_stack);
+      } else {
+        dest->SetTileIndex(dst_point, dest_layer, index);
+      }
+    }
   }
 }
 

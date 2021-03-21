@@ -33,6 +33,7 @@ class ActionStack {
     Action(Type type);
     Action(const Action& other);
     ~Action();
+    Action& operator=(const Action& other);
     bool operator==(const Action& other) const;
     bool operator!=(const Action& other) const;
   };
