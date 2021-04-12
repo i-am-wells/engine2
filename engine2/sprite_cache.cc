@@ -1,18 +1,20 @@
 #include <optional>
 
 #include "engine2/sprite_cache.h"
-#include "luadata/luadata.h"
+#include "luadata/object.h"
+#include "luadata/root_object.h"
 
 namespace engine2 {
 namespace {
 
-using luadata::LuaData;
+using luadata::Object;
+using luadata::RootObject;
 
-Vec<int64_t, 2> ReadVec2(const LuaData& obj) {
+Vec<int64_t, 2> ReadVec2(const Object& obj) {
   return {obj.GetInt("x"), obj.GetInt("y")};
 }
 
-Rect<int64_t, 2> ReadRect(const LuaData& obj) {
+Rect<int64_t, 2> ReadRect(const Object& obj) {
   return {obj.GetInt("x"), obj.GetInt("y"), obj.GetInt("w"), obj.GetInt("h")};
 }
 
@@ -59,7 +61,7 @@ Sprite* SpriteCache::LoadInternal(const std::string& path) {
   if (colon_pos != std::string::npos)
     sprite_wanted_name = path.substr(colon_pos + 1);
 
-  LuaData::LoadResult load_result = LuaData::LoadFile(file_path);
+  RootObject::LoadResult load_result = RootObject::LoadFile(file_path);
   if (!load_result.data)
     return nullptr;
 
@@ -69,16 +71,23 @@ Sprite* SpriteCache::LoadInternal(const std::string& path) {
 
   Sprite* result = nullptr;
 
-  LuaData sprites = load_result.data->GetObject("sprites");
-  int sprites_count = sprites.Count();
+  auto sprites = load_result.data->GetObject("sprites");
+  if (!sprites)
+    return nullptr;
+
+  int sprites_count = sprites->Count();
   for (int i = 1; i <= sprites_count; ++i) {
-    LuaData sprite_data = sprites.GetObject(i);
+    auto sprite_data = sprites->GetObject(i);
+    if (!sprite_data)
+      return nullptr;
 
     // Name can be empty.
-    std::string name = sprite_data.GetString("name");
+    std::string name = sprite_data->GetString("name");
 
-    LuaData frames = sprite_data.GetObject("frames");
-    int frame_count = frames.Count();
+    auto frames = sprite_data->GetObject("frames");
+    if (!frames)
+      return nullptr;
+    int frame_count = frames->Count();
     if (frame_count < 1)
       continue;
 
@@ -91,12 +100,18 @@ Sprite* SpriteCache::LoadInternal(const std::string& path) {
       result = sprite;
 
     for (int frame_idx = 1; frame_idx <= frame_count; ++frame_idx) {
-      LuaData frame = frames.GetObject(frame_idx);
+      auto frame = frames->GetObject(frame_idx);
+      if (!frame)
+        return nullptr;
+
+      auto source_rect = frame->GetObject("source_rect");
+      auto dest_offset = frame->GetObject("dest_offset");
+      if (!source_rect || !dest_offset)
+        return nullptr;
 
       sprite->AddFrame(
-          {ReadRect(frame.GetObject("source_rect")),
-           ReadVec2(frame.GetObject("dest_offset")),
-           Time::Delta::FromMicroseconds(frame.GetInt("duration_ms") * 1000)});
+          {ReadRect(*source_rect), ReadVec2(*dest_offset),
+           Time::Delta::FromMicroseconds(frame->GetInt("duration_ms") * 1000)});
     }
   }
 
