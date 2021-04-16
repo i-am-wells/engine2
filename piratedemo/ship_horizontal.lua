@@ -1,8 +1,10 @@
 local tileW, tileH = 16, 16
+local dest_offset = {x=0, y=0}
 
 local frame = function(x, y, w, h, ms)
   return {
     source_rect = {x=x * tileW, y=y * tileH, w=w * tileW, h=h * tileH},
+    dest_offset = dest_offset,
     duration_ms = ms,
   }
 end
