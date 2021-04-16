@@ -15,6 +15,7 @@
 #include "engine2/window.h"
 
 #include "tools/tilemapeditor/action_stack.h"
+#include "tools/tilemapeditor/rectangle_selection.h"
 #include "tools/tilemapeditor/sidebar_view.h"
 #include "tools/tilemapeditor/two_finger_touch.h"
 
@@ -64,9 +65,6 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   void DrawSelectionHighlight();
 
   void SetCursorGridPosition(const engine2::Point<>& screen_pos);
-
-  engine2::Rect<int64_t, 2> GetMapSelection() const;
-  void SetMapSelection(const engine2::Rect<>& rect);
 
   engine2::Point<> ScreenToWorld(const engine2::Point<>& pixel_point) const;
   engine2::Point<> WorldToScreen(const engine2::Point<>& world_point) const;
@@ -132,8 +130,7 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::Vec<int, 2> window_inner_size_;
   engine2::Vec<int64_t, 2> grid_size_tiles_{10, 10};  // save
   engine2::TileMap::GridPoint last_cursor_map_position_{};
-  engine2::Point<> map_selection_p0_{};
-  engine2::Point<> map_selection_p1_{};
+  RectangleSelection map_selection_;
   int layer_ = 0;
   engine2::Vec<double, 2> display_size_{};
   engine2::Vec<double, 2> scale_{1., 1.};

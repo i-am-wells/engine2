@@ -1,8 +1,8 @@
 #ifndef TOOLS_TILEMAPEDITOR_TILE_PICKER_H_
 #define TOOLS_TILEMAPEDITOR_TILE_PICKER_H_
 
-#include <list>
 #include <map>
+#include <set>
 
 #include "engine2/sprite.h"
 #include "engine2/sprite_cache.h"
@@ -23,18 +23,32 @@ class TilePicker : public engine2::ui::ContainerView {
   void Draw() const override;
 
   void OnMouseButtonDown(const SDL_MouseButtonEvent& event) override;
+  void OnMouseButtonUp(const SDL_MouseButtonEvent& event) override;
+  void OnMouseMotion(const SDL_MouseMotionEvent& event) override;
 
   void OnFingerDown(const SDL_TouchFingerEvent& event);
   void OnFingerUp(const SDL_TouchFingerEvent& event);
   void OnFingerMotion(const SDL_TouchFingerEvent& event);
 
+  // TODO remove
   uint16_t GetSelectedTileIndex() const;
+
+  // Apply selection to the map.
+  void CopyToMap(const engine2::Point<>& map_point,
+                 int layer,
+                 bool new_stroke = true);
 
   engine2::Vec<int, 2> GetSize() const override;
 
  private:
+  void UpdateSelectedSprites();
+
   engine2::Vec<int64_t, 2> ScaledSize() const;
   engine2::Vec<int64_t, 2> ScaledTileSize() const;
+
+  engine2::Point<> ScreenToImage(const engine2::Point<>& screen_point) const;
+  engine2::Point<> ImageToScreen(const engine2::Point<>& image_point) const;
+  engine2::Point<> ScreenToGrid(const engine2::Point<>& screen_point) const;
 
   double scale_ = 4.;
 
@@ -45,8 +59,15 @@ class TilePicker : public engine2::ui::ContainerView {
   engine2::ui::TextView sprite_sheet_name_view_;
 
   std::map<std::string, uint16_t> sprite_name_to_map_index_;
+  std::set<engine2::Sprite*> selected_sprites_;
+
+  // TODO still needed?
   std::string selected_sprite_name_;
   engine2::Sprite* selected_sprite_ = nullptr;
+
+  // Tile coords.
+  RectangleSelection selection_;
+  bool selecting_ = false;
 
   class TwoFingerHandler : public TwoFingerTouch::Handler {
    public:

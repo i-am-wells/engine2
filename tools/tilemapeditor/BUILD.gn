@@ -1,6 +1,9 @@
 import("//build/sdl2.gni")
 import("//build/lua.gni")
 
+#asan_flags = ["-fsanitize=address"]
+asan_flags = []
+
 executable("tilemapeditor") {
   sources = [
     "action_stack.cc",
@@ -10,6 +13,8 @@ executable("tilemapeditor") {
     "layer_picker.cc",
     "layer_picker.h",
     "main.cc",
+    "rectangle_selection.cc",
+    "rectangle_selection.h",
     #"sidebar_view.cc",
     #"sidebar_view.h",
     "tile_picker.cc",
@@ -21,6 +26,6 @@ executable("tilemapeditor") {
     "//engine2:engine2",
     "//engine2/ui:ui",
   ]
-  cflags = sdl2_cflags
-  ldflags = sdl2_ldflags + lua_ldflags
+  cflags = sdl2_cflags + asan_flags
+  ldflags = sdl2_ldflags + lua_ldflags + asan_flags
 }

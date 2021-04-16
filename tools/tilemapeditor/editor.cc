@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "engine2/rgba_color.h"
+#include "engine2/time.h"
 #include "tools/tilemapeditor/editor.h"
 
 using engine2::Font;
@@ -16,6 +17,7 @@ using engine2::RgbaColor;
 using engine2::SpriteCache;
 using engine2::Texture;
 using engine2::TileMap;
+using engine2::Time;
 using engine2::Vec;
 using engine2::Window;
 
@@ -125,6 +127,10 @@ Vec<int64_t, 2> Editor::TouchMotionToPixels(
 }
 
 void Editor::EveryFrame() {
+  Time now = Time::Now();
+  for (auto& [_, sprite] : *sprite_cache_)
+    sprite.Update(now);
+
   graphics_->SetDrawColor(kDarkGray)->Clear();
 
   // Draw map rectangle
@@ -211,8 +217,7 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
     SetCursorGridPosition(point);
     switch (tool_mode_) {
       case ToolMode::kDraw:
-        SetSingleTileIndex(last_cursor_map_position_, layer_,
-                           tile_picker_.GetSelectedTileIndex(), &undo_stack_);
+        tile_picker_.CopyToMap(last_cursor_map_position_, layer_);
         break;
       case ToolMode::kErase:
         SetSingleTileIndex(last_cursor_map_position_, layer_, 0, &undo_stack_);
@@ -223,8 +228,7 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
         break;
       case ToolMode::kPaste:
       case ToolMode::kSelect:
-        map_selection_p0_ = last_cursor_map_position_;
-        map_selection_p1_ = last_cursor_map_position_;
+        map_selection_.Start(last_cursor_map_position_);
         break;
       case ToolMode::kMove: {
         StartMove(ScreenToWorld(point));
@@ -239,6 +243,9 @@ void Editor::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {
   // if (sidebar_.Contains({event.x, event.y})) {
   //  sidebar_.OnMouseButtonUp(event);
   //}
+  Point<> point{event.x, event.y};
+  tile_picker_.OnMouseButtonUp(event);
+
   mouse_down_ = false;
 
   switch (tool_mode_) {
@@ -259,16 +266,14 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
   //  sidebar_.OnMouseMotion(event);
   //}
   Point<> point{event.x, event.y};
-  if (tile_picker_.Contains(point))
-    return;
+  tile_picker_.OnMouseMotion(event);
 
   SetCursorGridPosition(point);
   if (mouse_down_) {
     switch (tool_mode_) {
       case ToolMode::kDraw:
-        SetSingleTileIndex(last_cursor_map_position_, layer_,
-                           tile_picker_.GetSelectedTileIndex(), &undo_stack_,
-                           /*new_stroke=*/false);
+        tile_picker_.CopyToMap(last_cursor_map_position_, layer_,
+                               /*new_stroke=*/false);
         break;
       case ToolMode::kErase:
         SetSingleTileIndex(last_cursor_map_position_, layer_, 0, &undo_stack_,
@@ -277,7 +282,7 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
       case ToolMode::kFill:
       case ToolMode::kPaste:
       case ToolMode::kSelect:
-        map_selection_p1_ = last_cursor_map_position_;
+        map_selection_.Update(last_cursor_map_position_);
         break;
       case ToolMode::kMove:
         ContinueMove(ScreenToWorld(point));
@@ -359,7 +364,7 @@ void Editor::DrawCursorHighlight() {
 
 void Editor::DrawSelectionHighlight() {
   graphics_->SetDrawColor(kGreen);
-  Rect<> map_selection = GetMapSelection();
+  Rect<> map_selection = map_selection_.GetRect();
   TileMap::GridPoint map_selection_pos{map_selection.x(), map_selection.y()};
   graphics_->DrawRect({WorldToScreen(map_->GridToWorld(map_selection_pos)),
                        map_selection.size * map_->GetTileSize() * scale_});
@@ -367,18 +372,6 @@ void Editor::DrawSelectionHighlight() {
 
 void Editor::SetCursorGridPosition(const Point<>& screen_pos) {
   last_cursor_map_position_ = map_->WorldToGrid(ScreenToWorld(screen_pos));
-}
-
-Rect<int64_t, 2> Editor::GetMapSelection() const {
-  Vec<int64_t, 2> diff = map_selection_p1_ - map_selection_p0_;
-  return {std::min(map_selection_p0_.x(), map_selection_p1_.x()),
-          std::min(map_selection_p0_.y(), map_selection_p1_.y()),
-          std::abs(diff.x()) + 1, std::abs(diff.y()) + 1};
-}
-
-void Editor::SetMapSelection(const Rect<>& rect) {
-  map_selection_p0_ = rect.pos;
-  map_selection_p1_ = rect.pos + rect.size - 1l;
 }
 
 Point<> Editor::ScreenToWorld(const Point<>& pixel_point) const {
@@ -487,7 +480,7 @@ void Editor::StartMove(const engine2::Point<> world_point) {
 
   TileMap::GridPoint map_point = map_->WorldToGrid(world_point);
 
-  move_map_original_rect_ = GetMapSelection();
+  move_map_original_rect_ = map_selection_.GetRect();
   if (!move_map_original_rect_.Contains(map_point)) {
     move_map_original_rect_ = {map_point.x(), map_point.y(), 1, 1};
   }
@@ -523,8 +516,9 @@ void Editor::ContinueMove(const engine2::Point<> world_point) {
     return;
 
   Rect<> move_buffer_rect = move_buffer_->GetWorldRect();
-  SetMapSelection({map_->WorldToGrid(world_point) - move_cursor_offset_tiles_,
-                   move_buffer_rect.size / map_->GetTileSize()});
+  map_selection_.SetRect(
+      {map_->WorldToGrid(world_point) - move_cursor_offset_tiles_,
+       move_buffer_rect.size / map_->GetTileSize()});
 
   // Snap to the nearest tile.
   move_buffer_->SetWorldRect(

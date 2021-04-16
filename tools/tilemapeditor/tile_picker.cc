@@ -29,6 +29,7 @@ TilePicker::TilePicker(Editor* editor, SpriteCache* sprite_cache)
     tiles_image_ = sprite.texture();
     break;
   }
+  // TODO which sprite is selected at the beginning?
 }
 
 void TilePicker::Init() {
@@ -63,23 +64,93 @@ void TilePicker::Draw() const {
       ->FillRect(sprite_sheet_name_view_.GetRect());
   sprite_sheet_name_view_.Draw();
 
-  if (selected_sprite_) {
-    Rect<> sel_rect =
-        selected_sprite_->Frame(0).source_rect * Vec<double, 2>::Fill(scale_);
-    editor_->graphics()->DrawRect({inner_pos + sel_rect.pos, sel_rect.size});
+  Rect<> sel_rect = selection_.GetRect();
+  Point<> tile_size = editor_->map_->GetTileSize();
+  editor_->graphics()->DrawRect({ImageToScreen(sel_rect.pos * tile_size),
+                                 sel_rect.size * ScaledTileSize()});
+
+  for (Sprite* sprite : selected_sprites_) {
+    Rect<>& sprite_rect = sprite->Frame(0).source_rect;
+    editor_->graphics()->DrawRect(
+        {ImageToScreen(sprite_rect.pos),
+         sprite_rect.size * Vec<int64_t, 2>::Fill(scale_)});
   }
 }
 
-void TilePicker::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
-  Point<> point_in_image = Point<>{event.x, event.y} - GetRect().pos - padding_;
+void TilePicker::CopyToMap(const Point<>& map_point,
+                           int layer,
+                           bool new_stroke) {
+  bool first_tile = true;
+  for (Sprite* sprite : selected_sprites_) {
+    auto name = sprite_cache_->LookupName(sprite);
+    if (!name)
+      continue;
+
+    uint16_t index = sprite_name_to_map_index_[*name];
+
+    Rect<>& sprite_rect = sprite->Frame(0).source_rect;
+    Point<> draw_point = map_point +
+                         (sprite_rect.pos / editor_->map_->GetTileSize()) -
+                         selection_.GetRect().pos;
+
+    editor_->SetSingleTileIndex({draw_point.x(), draw_point.y()}, layer, index,
+                                &editor_->undo_stack_,
+                                new_stroke && first_tile);
+    if (first_tile)
+      first_tile = false;
+  }
+}
+
+Point<> TilePicker::ScreenToImage(const Point<>& screen_point) const {
+  Point<> point_in_image = screen_point - GetAbsoluteInnerPosition();
   point_in_image /= scale_;
+  return point_in_image;
+}
 
+Point<> TilePicker::ImageToScreen(const Point<>& image_point) const {
+  Point<> screen_point = image_point;
+  screen_point *= scale_;
+  return screen_point + GetAbsoluteInnerPosition();
+}
+
+Point<> TilePicker::ScreenToGrid(const Point<>& screen_point) const {
+  return ScreenToImage(screen_point) / editor_->map_->GetTileSize();
+}
+
+void TilePicker::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
+  selection_.Start(ScreenToGrid({event.x, event.y}));
+  selecting_ = true;
+
+  UpdateSelectedSprites();
+}
+
+void TilePicker::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {
+  if (selecting_) {
+    selection_.Update(ScreenToGrid({event.x, event.y}));
+    UpdateSelectedSprites();
+    selecting_ = false;
+  }
+}
+
+void TilePicker::OnMouseMotion(const SDL_MouseMotionEvent& event) {
+  if (selecting_) {
+    selection_.Update(ScreenToGrid({event.x, event.y}));
+    UpdateSelectedSprites();
+  }
+}
+
+void TilePicker::UpdateSelectedSprites() {
+  Rect<> selection_in_image =
+      selection_.GetRect() * editor_->map_->GetTileSize();
+
+  // TODO avoid iterating over entire sprite cache!
+  selected_sprites_.clear();
   for (auto& [path, sprite] : *sprite_cache_) {
-    if (sprite.Frame(0).source_rect.Contains(point_in_image)) {
-      selected_sprite_name_ = path;
-      selected_sprite_ = &sprite;
+    if (sprite.Frame(0).source_rect.Overlaps(selection_in_image)) {
+      // selected_sprite_name_ = path;
+      // sprite_sheet_name_view_.SetText(path);
 
-      sprite_sheet_name_view_.SetText(path);
+      selected_sprites_.insert(&sprite);
     }
   }
 }

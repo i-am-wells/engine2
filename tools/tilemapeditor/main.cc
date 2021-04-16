@@ -189,9 +189,8 @@ void Run(const engine2::CommandLineParser& flags) {
     }
 
     initial_status_text = "Created a new map to be saved as " + map_file_name;
+    sprite_cache.Get(flags.GetFlag("sprite_sheet"));
 
-    // TODO pass this in?
-    sprite_cache.Get("tools/tilemapeditor/sprites.lua");
   } else if (mode == Mode::kEdit) {
     map = LoadMap(flags, map_file_name, &sprite_cache);
     if (!map) {
