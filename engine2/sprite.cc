@@ -1,6 +1,11 @@
 #include "engine2/sprite.h"
 
 namespace engine2 {
+namespace {
+
+static constexpr Time::Delta kZero{};
+
+}  // namespace
 
 Sprite::Sprite(Texture* texture,
                const Rect<int64_t, 2>& source_rect,
@@ -32,7 +37,7 @@ void Sprite::Draw(Graphics2D* graphics,
 }
 
 void Sprite::Update(const Time& time) {
-  if (time <= last_update_time_)
+  if (time <= last_update_time_ || cycle_duration_ == kZero)
     return;
 
   Time::Delta elapsed = (time - last_update_time_) % cycle_duration_;

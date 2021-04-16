@@ -46,7 +46,7 @@ class Sprite {
 
   Texture* texture_;
   std::vector<AnimationFrame> frames_;
-  Time::Delta cycle_duration_;
+  Time::Delta cycle_duration_{};
 
   int current_frame_ = 0;
   Time::Delta time_since_frame_start_;
