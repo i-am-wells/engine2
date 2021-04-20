@@ -139,9 +139,9 @@ void Editor::EveryFrame() {
   map_draw_rect *= scale_;
   graphics_->SetDrawColor(kGray)->FillRect(map_draw_rect);
 
-  map_->Draw(graphics_, window_in_world_);
+  map_->Draw2(graphics_, window_in_world_, graphics_->GetSize());
   if (move_buffer_)
-    move_buffer_->Draw(graphics_, window_in_world_);
+    move_buffer_->Draw2(graphics_, window_in_world_, graphics_->GetSize());
 
   // DrawMapGrid();
   DrawSelectionHighlight();
@@ -281,6 +281,7 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
         break;
       case ToolMode::kFill:
       case ToolMode::kPaste:
+        break;
       case ToolMode::kSelect:
         map_selection_.Update(last_cursor_map_position_);
         break;

@@ -166,6 +166,15 @@ void TilePicker::OnFingerMotion(const SDL_TouchFingerEvent& event) {
 }
 
 uint16_t TilePicker::GetSelectedTileIndex() const {
+  if (selected_sprites_.empty())
+    return 0;
+
+  auto name = sprite_cache_->LookupName(*selected_sprites_.begin());
+  if (!name)
+    return 0;
+
+  return sprite_name_to_map_index_.find(*name)->second;
+  /*
   if (selected_sprite_name_.empty())
     return 0;
 
@@ -174,6 +183,7 @@ uint16_t TilePicker::GetSelectedTileIndex() const {
     return 0;
 
   return iter->second;
+  */
 }
 
 Vec<int, 2> TilePicker::GetSize() const {
