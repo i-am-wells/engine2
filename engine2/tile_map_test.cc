@@ -26,6 +26,9 @@ class TestSprite : public Sprite {
   void Draw(Graphics2D* graphics, const Point<int64_t, 2>& dest) override {
     draw_calls.push_back(dest);
   }
+  void Draw(Graphics2D* graphics, const Rect<int64_t, 2>& dest) override {
+    Draw(graphics, dest.pos);
+  }
 
   int CountDraws(const Point<int64_t, 2>& point) {
     int count = 0;
@@ -38,7 +41,7 @@ class TestSprite : public Sprite {
 };
 
 TestSprite CreateSprite() {
-  return TestSprite(nullptr, /*frame_count=*/0);
+  return TestSprite(nullptr, /*frame_count=*/1);
 }
 
 }  // namespace
@@ -64,7 +67,7 @@ void TileMapTest::TestDraw() {
 
   Rect<int64_t, 2> window_in_world{-100, -100, 300, 200};
   TestGraphics2D graphics;
-  map.Draw(&graphics, window_in_world);
+  map.Draw(&graphics, window_in_world, {0, 0, 300, 200});
 
   Point<> stride{0, kTileSize.y()};
 

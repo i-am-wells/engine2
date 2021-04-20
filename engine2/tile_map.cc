@@ -215,12 +215,9 @@ TileMap::TileMap(const Vec<int64_t, 2>& tile_size,
     std::memset(grid_.get(), 0, num_tiles * sizeof(uint16_t));
 }
 
-void TileMap::Draw(Camera2D* camera, int layer) {
-  Draw(camera->InWorldCoords(), camera->GetRect());
-}
-
 void TileMap::Draw(Graphics2D* graphics,
-                   const Rect<int64_t, 2>& world_rect,
+                   const Rect<>& world_rect,
+                   const Rect<>& window_rect,
                    int layer) {
   int first_layer, after_last_layer;
   if (layer == kAllLayers) {
@@ -233,33 +230,37 @@ void TileMap::Draw(Graphics2D* graphics,
 
   GridPoint corner0 = WorldToGrid(world_rect.pos);
   GridPoint corner1 = WorldToGrid(world_rect.pos + world_rect.size);
+  GridPoint start_corner = corner0;
+  GridPoint end_corner = corner1;
 
   // Skip drawing beyond the edge of the map
   if (corner0.x() < 0)
-    corner0.x() = 0;
+    start_corner.x() = 0;
 
   if (corner0.x() >= grid_size_.x())
     return;
 
   if (corner0.y() < 0)
-    corner0.y() = 0;
+    start_corner.y() = 0;
 
   if (corner0.y() >= grid_size_.y())
     return;
 
   if (corner1.x() < 0)
-    corner1.x() = 0;
+    end_corner.x() = 0;
 
   if (corner1.x() >= grid_size_.x())
-    corner1.x() = grid_size_.x() - 1;
+    end_corner.x() = grid_size_.x() - 1;
 
   if (corner1.y() < 0)
-    corner1.y() = 0;
+    end_corner.y() = 0;
 
   if (corner1.y() >= grid_size_.y())
-    corner1.y() = grid_size_.y() - 1;
+    end_corner.y() = grid_size_.y() - 1;
 
-  Vec<double, 2> scale{scale_, scale_};
+  const Vec<double, 2> scale =
+      window_rect.size.ConvertTo<double>() / world_rect.size;
+  Rect<int, 2> tile_draw_rect{{}, tile_size_ * scale};
 
   // grid point to screen:
   // ((point - corner0) * tile_size - offset) * scale_
@@ -267,23 +268,25 @@ void TileMap::Draw(Graphics2D* graphics,
 
   for (int i = first_layer; i < after_last_layer; ++i) {
     GridPoint point;
-    for (point.y() = corner0.y(); point.y() <= corner1.y(); ++point.y()) {
-      for (point.x() = corner0.x(); point.x() <= corner1.x(); ++point.x()) {
-        Point<> draw_point = ((point - corner0) * tile_size_ + world_rect_.pos -
-                              world_rect.pos) *
-                             scale;
-
+    for (point.y() = start_corner.y(); point.y() <= end_corner.y();
+         ++point.y()) {
+      for (point.x() = start_corner.x(); point.x() <= end_corner.x();
+           ++point.x()) {
         Tile* tile = GetTile(point, i);
         if (tile && tile->sprite) {
-          if (scale_ == 1.)
-            tile->sprite->Draw(graphics, draw_point);
-          else
-            tile->sprite->Draw(graphics, draw_point, scale_);
+          tile_draw_rect.pos =
+              ((point - corner0) * tile_size_ - offset) * scale;
+
+          tile->sprite->Draw(graphics, tile_draw_rect);
         }
       }
-      //
     }
   }
+}
+
+void TileMap::Draw(Camera2D* camera, int layer) {
+  Draw(camera->InWorldCoords(), camera->GetRect(), camera->GetWindowRect(),
+       layer);
 }
 
 bool TileMap::PositionInMap(const GridPoint& grid_position) const {

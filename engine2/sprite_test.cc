@@ -27,7 +27,7 @@ void SpriteTest::TestCreateStatic() {
 void SpriteTest::TestDraw() {
   Sprite sprite(/*texture=*/nullptr, Rect<int64_t, 2>{5, 6, 7, 8});
   TestGraphics2D graphics;
-  sprite.Draw(&graphics, {1, 2});
+  sprite.Draw(&graphics, Point<>{1, 2});
   auto dest = Rect<int64_t, 2>{1, 2, 7, 8};
   EXPECT_TRUE(graphics.draw_texture_dest == dest);
 }
@@ -37,7 +37,7 @@ void SpriteTest::TestOffsetDraw() {
                 /*source_rect=*/Rect<int64_t, 2>{5, 6, 7, 8},
                 /*dest_offset=*/Point<int64_t, 2>{20, 20});
   TestGraphics2D graphics;
-  sprite.Draw(&graphics, {1, 2});
+  sprite.Draw(&graphics, Point<>{1, 2});
   auto dest = Rect<int64_t, 2>{21, 22, 7, 8};
   EXPECT_TRUE(graphics.draw_texture_dest == dest);
 }

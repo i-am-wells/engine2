@@ -31,7 +31,8 @@ class TileMap {
           bool empty_initialize = false);
 
   void Draw(Graphics2D* graphics,
-            const Rect<int64_t, 2>& world_rect,
+            const Rect<>& world_rect,
+            const Rect<>& window_rect,
             int layer = kAllLayers);
   void Draw(Camera2D* camera, int layer = kAllLayers);
 

@@ -19,6 +19,13 @@ Sprite::Sprite(Texture* texture, int frame_count) : texture_(texture) {
   frames_.reserve(frame_count);
 }
 
+void Sprite::Draw(Graphics2D* graphics, const Rect<int64_t, 2>& dest) {
+  AnimationFrame& frame = CurrentFrame();
+  graphics->DrawTexture(
+      *texture_, frame.source_rect,
+      Rect<int64_t, 2>{dest.pos + frame.dest_offset, dest.size});
+}
+
 void Sprite::Draw(Graphics2D* graphics, const Point<int64_t, 2>& dest) {
   AnimationFrame& frame = CurrentFrame();
   graphics->DrawTexture(

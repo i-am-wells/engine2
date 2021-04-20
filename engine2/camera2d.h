@@ -30,6 +30,7 @@ class Camera2D {
     virtual bool operator<(Visible& other);
   };
 
+  Rect<> GetWindowRect() const { return screen_rect_; }
   void SetWorldPosition(const Point<int64_t, 2>& position);
   void Move(const Vec<int64_t, 2>& distance);
 
