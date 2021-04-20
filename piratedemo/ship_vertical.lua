@@ -16,23 +16,14 @@ local sprite = function(name, x, y, w, h)
   }
 end
 
--- Wave
-local wave = {
-  name = 'wave',
-  frames = {},
-}
-for x = 6, 21 do
-  wave.frames[#wave.frames+1] = frame(x, 11, 1, 1, --[[ms=]]100)
-end
-
 local sprites = {
-  image = 'piratedemo/ship_horizontal.png',
-  sprites = {wave},
+  image = 'piratedemo/ship_vertical.png',
+  sprites = {},
 }
 
 -- Ship sprites
-for yy = 0, 10 do
-  for xx = 0, 22 do
+for yy = 0, 26 do
+  for xx = 0, 19 do
     local name = 'ship'..xx..'_'..yy
     sprites.sprites[#sprites.sprites+1] = sprite(name, xx, yy, 1, 1)
   end
