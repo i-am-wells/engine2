@@ -58,7 +58,7 @@ class TilePicker : public engine2::ui::ContainerView {
   engine2::Point<> grid_size_;
   engine2::ui::TextView sprite_sheet_name_view_;
 
-  std::map<std::string, uint16_t> sprite_name_to_map_index_;
+  std::map<engine2::Sprite*, uint16_t> sprite_to_map_index_;
   std::set<engine2::Sprite*> selected_sprites_;
 
   // TODO still needed?

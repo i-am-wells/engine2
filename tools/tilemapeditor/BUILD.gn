@@ -13,6 +13,8 @@ executable("tilemapeditor") {
     "layer_picker.cc",
     "layer_picker.h",
     "main.cc",
+    "map_info.cc",
+    "map_info.h",
     "rectangle_selection.cc",
     "rectangle_selection.h",
     #"sidebar_view.cc",

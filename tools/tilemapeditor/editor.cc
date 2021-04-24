@@ -36,6 +36,10 @@ namespace {
 static constexpr Vec<int64_t, 2> kIconSize{8, 8};
 static constexpr double kIconScale = 3.;
 
+constexpr RgbaColor kRedTint{255, 0, 0, 127};
+constexpr RgbaColor kGreenTint{0, 255, 0, 127};
+constexpr RgbaColor kBlueTint{0, 0, 255, 127};
+
 template <class T>
 void PrintR(const std::string& msg, const T& val) {
   std::cerr << msg << " " << val.x() << " " << val.y() << " " << val.w() << " "
@@ -97,7 +101,6 @@ void Editor::Init() {
       // Scale to match height
       scale = double(window_in_world_.size.y()) / map_rect.h();
     }
-    map_->SetScale(scale);
     scale_ = {scale, scale};
     window_in_world_.size /= scale_;
   }
@@ -112,8 +115,9 @@ void Editor::Init() {
 
   tool_buttons_.Init();
   tool_buttons_.SetRelativePosition({10, int(display_size_.y()) - 800});
-
   tile_picker_.Init();
+
+  map_->SetObserver(&tile_map_observer_);
 }
 
 Point<int64_t, 2> Editor::TouchPointToPixels(
@@ -139,9 +143,9 @@ void Editor::EveryFrame() {
   map_draw_rect *= scale_;
   graphics_->SetDrawColor(kGray)->FillRect(map_draw_rect);
 
-  map_->Draw2(graphics_, window_in_world_, graphics_->GetSize());
+  map_->Draw(graphics_, window_in_world_, graphics_->GetSize());
   if (move_buffer_)
-    move_buffer_->Draw2(graphics_, window_in_world_, graphics_->GetSize());
+    move_buffer_->Draw(graphics_, window_in_world_, graphics_->GetSize());
 
   // DrawMapGrid();
   DrawSelectionHighlight();
@@ -178,6 +182,9 @@ void Editor::OnKeyDown(const SDL_KeyboardEvent& event) {
     case SDLK_z:
       if (ctrl)
         Undo();
+      break;
+    case SDLK_f:
+      show_flags_ = !show_flags_;
       break;
 
     // TODO: remove once layer picker is done!
@@ -495,7 +502,6 @@ void Editor::StartMove(const engine2::Point<> world_point) {
   move_buffer_ = std::make_unique<TileMap>(map_->GetTileSize(),
                                            move_map_original_rect_.size, 1,
                                            world_move_corner, sprite_cache_);
-  move_buffer_->SetScale(map_->GetScale());
 
   // Add all tiles for drawing
   for (int y = 0; y < move_map_original_rect_.h(); ++y) {
@@ -639,7 +645,6 @@ Editor::TwoFingerHandler::TwoFingerHandler(Editor* editor) : editor_(editor) {}
 void Editor::TwoFingerHandler::OnPinch(const Point<double, 2>& center,
                                        double pinch_factor) {
   editor_->scale_ *= pinch_factor;
-  editor_->map_->SetScale(editor_->scale_.x());
 
   // TODO: center zoom on center!
   Vec<int64_t, 2> old_size = editor_->window_in_world_.size;
@@ -731,6 +736,26 @@ void Editor::ToolButtonTray::Select(ToolButton* button) {
   selected_ = button;
   editor_->tool_mode_ = button->mode();
   selected_->SetSelected(true);
+}
+
+Editor::TileMapObserver::TileMapObserver(Editor* editor) : editor_(editor) {}
+
+void Editor::TileMapObserver::OnDrawTile(
+    engine2::TileMap::Tile* tile,
+    const engine2::Rect<int, 2>& screen_rect) {
+  if (!editor_->show_flags_)
+    return;
+
+  if (!tile)
+    return;
+
+  // TODO more as needed
+  if (tile->HasTag(0))
+    editor_->graphics()->SetDrawColor(kRedTint)->FillRect(screen_rect);
+  if (tile->HasTag(1))
+    editor_->graphics()->SetDrawColor(kGreenTint)->FillRect(screen_rect);
+  if (tile->HasTag(2))
+    editor_->graphics()->SetDrawColor(kBlueTint)->FillRect(screen_rect);
 }
 
 }  // namespace tilemapeditor

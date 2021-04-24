@@ -8,6 +8,7 @@ using engine2::Rect;
 using engine2::Sprite;
 using engine2::SpriteCache;
 using engine2::Texture;
+using engine2::TileMap;
 using engine2::Vec;
 
 namespace tilemapeditor {
@@ -47,9 +48,9 @@ void TilePicker::Init() {
   sprite_sheet_name_view_.SetScale({3, 3});
 
   // Get all tiles and add to map
-  for (auto& [path, sprite] : *sprite_cache_) {
-    sprite_name_to_map_index_.emplace(path, editor_->map_->GetTileCount());
-    editor_->map_->AddTile({&sprite});
+  for (int i = 0; i < editor_->map_->GetTileCount(); ++i) {
+    TileMap::Tile* tile = editor_->map_->GetTileByIndex(i);
+    sprite_to_map_index_[tile->sprite] = i;
   }
 }
 
@@ -82,11 +83,7 @@ void TilePicker::CopyToMap(const Point<>& map_point,
                            bool new_stroke) {
   bool first_tile = true;
   for (Sprite* sprite : selected_sprites_) {
-    auto name = sprite_cache_->LookupName(sprite);
-    if (!name)
-      continue;
-
-    uint16_t index = sprite_name_to_map_index_[*name];
+    uint16_t index = sprite_to_map_index_[sprite];
 
     Rect<>& sprite_rect = sprite->Frame(0).source_rect;
     Point<> draw_point = map_point +
@@ -168,22 +165,10 @@ void TilePicker::OnFingerMotion(const SDL_TouchFingerEvent& event) {
 uint16_t TilePicker::GetSelectedTileIndex() const {
   if (selected_sprites_.empty())
     return 0;
-
-  auto name = sprite_cache_->LookupName(*selected_sprites_.begin());
-  if (!name)
+  auto iter = sprite_to_map_index_.find(*selected_sprites_.cbegin());
+  if (iter == sprite_to_map_index_.end())
     return 0;
-
-  return sprite_name_to_map_index_.find(*name)->second;
-  /*
-  if (selected_sprite_name_.empty())
-    return 0;
-
-  auto iter = sprite_name_to_map_index_.find(selected_sprite_name_);
-  if (iter == sprite_name_to_map_index_.end())
-    return 0;
-
   return iter->second;
-  */
 }
 
 Vec<int, 2> TilePicker::GetSize() const {

@@ -136,6 +136,7 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::Vec<double, 2> scale_{1., 1.};
   bool mouse_down_ = false;
   ActionStack undo_stack_, redo_stack_;
+  bool show_flags_ = true;
 
   std::unique_ptr<engine2::TileMap> move_buffer_;
   engine2::Point<> move_cursor_offset_tiles_{};
@@ -208,6 +209,17 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   };
   ToolButtonTray tool_buttons_;
   ToolMode tool_mode_;
+
+  class TileMapObserver : public engine2::TileMap::Observer {
+   public:
+    TileMapObserver(Editor* editor);
+    void OnDrawTile(engine2::TileMap::Tile* tile,
+                    const engine2::Rect<int, 2>& screen_rect) override;
+
+   private:
+    Editor* editor_;
+  };
+  TileMapObserver tile_map_observer_{this};
 };
 
 }  // namespace tilemapeditor

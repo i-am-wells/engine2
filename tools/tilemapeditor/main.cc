@@ -18,6 +18,7 @@
 #include "engine2/window.h"
 
 #include "tools/tilemapeditor/editor.h"
+#include "tools/tilemapeditor/map_info.h"
 
 using namespace engine2;
 
@@ -34,11 +35,8 @@ void PrintUsage() {
             << "To edit an existing tile map: tilemapeditor edit "
                "map_file_name.map\n\n"
             << "To create a new tile map: tilemapeditor create \\\n"
-            << "                              --sprite_sheet=sprites.lua \\\n"
-            << "                              --tile_size=W,H \\\n"
-            << "                              --layers=N \\\n"
-            << "                              --grid_size=W,H \\\n"
-            << "                              map_file_name.map\n\n";
+            << "                            --map_info=map_info.lua \\\n"
+            << "                            map_file_name.map\n\n";
 }
 
 std::pair<bool, engine2::Vec<int64_t, 2>> ParseSize(const std::string& str) {
@@ -80,51 +78,22 @@ CreateWindowAndRenderer() {
   if (!graphics)
     return {};
 
+  // SDL_SetRenderDrawBlendMode(graphics->renderer(), SDL_BLENDMODE_BLEND);
+
   return {std::move(window), std::move(graphics)};
 }
 
 std::unique_ptr<engine2::TileMap> CreateMap(
     const engine2::CommandLineParser& flags,
     engine2::SpriteCache* sprite_cache) {
-  engine2::Vec<int64_t, 2> tile_size;
-  auto parsed_size = ParseSize(flags.GetFlag("tile_size"));
-  if (parsed_size.first) {
-    tile_size = parsed_size.second;
-  } else {
-    std::cerr << "Expected tile_size flag to look like this: --tile_size=W,H\n";
+  std::string map_info_file = flags.GetFlag("map_info");
+  auto map_info = tilemapeditor::ReadMapInfoFromFile(map_info_file);
+  if (!map_info) {
+    std::cerr << "Couldn't read map info from " << map_info_file << '\n';
     return nullptr;
   }
 
-  int layers;
-  try {
-    layers = std::stoi(flags.GetFlag("layers"));
-  } catch (const std::invalid_argument& e) {
-    std::cerr << "Expected layers flag to be an integer.\n";
-    return nullptr;
-  }
-
-  engine2::Vec<int64_t, 2> grid_size;
-  parsed_size = ParseSize(flags.GetFlag("grid_size"));
-  if (parsed_size.first) {
-    grid_size = parsed_size.second;
-  } else {
-    std::cerr << "Expected grid_size flag to look like this: --grid_size=W,H\n";
-    return nullptr;
-  }
-
-  engine2::Vec<int64_t, 2> position_in_world{};
-  parsed_size = ParseSize(flags.GetFlag("position_in_world"));
-  if (parsed_size.first) {
-    position_in_world = parsed_size.second;
-  }
-
-  auto map = std::make_unique<TileMap>(tile_size, grid_size, layers,
-                                       position_in_world, sprite_cache);
-  if (!map)
-    return nullptr;
-  map->AddTile({nullptr});
-
-  return map;
+  return map_info->CreateTileMap(sprite_cache);
 }
 
 std::unique_ptr<TileMap> LoadMap(const engine2::CommandLineParser& flags,
@@ -143,12 +112,7 @@ void Run(const engine2::CommandLineParser& flags) {
   Mode mode;
   if (flags.GetPositional(0) == "create") {
     mode = Mode::kCreate;
-    if (!flags.CheckFlags({
-            "sprite_sheet",
-            "tile_size",
-            "layers",
-            "grid_size",
-        })) {
+    if (!flags.CheckFlags({"map_info"})) {
       return PrintUsage();
     }
   } else if (flags.GetPositional(0) == "edit") {
