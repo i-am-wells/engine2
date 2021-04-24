@@ -22,6 +22,7 @@ source_set("engine2") {
     "init.h",
     "logic_context.cc",
     "logic_context.h",
+    "luadata_util.h",
     "graphics2d.h",
     "memory/weak_pointer.h",
     "object.h",

@@ -1,5 +1,6 @@
 #include <optional>
 
+#include "engine2/luadata_util.h"
 #include "engine2/sprite_cache.h"
 #include "luadata/object.h"
 #include "luadata/root_object.h"
@@ -9,14 +10,6 @@ namespace {
 
 using luadata::Object;
 using luadata::RootObject;
-
-Vec<int64_t, 2> ReadVec2(const Object& obj) {
-  return {obj.GetInt("x"), obj.GetInt("y")};
-}
-
-Rect<int64_t, 2> ReadRect(const Object& obj) {
-  return {obj.GetInt("x"), obj.GetInt("y"), obj.GetInt("w"), obj.GetInt("h")};
-}
 
 std::string GetSpriteSheetFileName(const std::string& path) {
   return path.substr(0, path.find(':'));
@@ -110,7 +103,8 @@ Sprite* SpriteCache::LoadInternal(const std::string& path) {
         return nullptr;
 
       sprite->AddFrame(
-          {ReadRect(*source_rect), ReadVec2(*dest_offset),
+          {LuaDataUtil::GetRect2(*frame, "source_rect", {0, 0, 0, 0}),
+           LuaDataUtil::GetVec2(*frame, "dest_offset", {0, 0}),
            Time::Delta::FromMicroseconds(frame->GetInt("duration_ms") * 1000)});
     }
   }
