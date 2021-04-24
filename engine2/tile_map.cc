@@ -119,9 +119,24 @@ std::unique_ptr<TileMap> TileMap::Read(std::istream& stream,
   uint32_t layer_count, tile_vector_size;
   if (!ReadVec2Int64(stream, tile_size) || !ReadVec2Int64(stream, grid_size) ||
       !ReadVec2Int64(stream, position_in_world) ||
-      !ReadInt32(stream, layer_count) || !ReadInt32(stream, tile_vector_size)) {
+      !ReadInt32(stream, layer_count)) {
     return nullptr;
   }
+
+  uint32_t tag_count;
+  if (!ReadInt32(stream, tag_count))
+    return nullptr;
+  std::vector<std::string> tags;
+  tags.reserve(tag_count);
+  for (int i = 0; i < tag_count; ++i) {
+    std::string tag;
+    if (!ReadString(stream, tag))
+      return nullptr;
+    tags.push_back(std::move(tag));
+  }
+
+  if (!ReadInt32(stream, tile_vector_size))
+    return nullptr;
 
   auto map = std::make_unique<TileMap>(tile_size, grid_size, layer_count,
                                        position_in_world, sprite_cache);
@@ -142,8 +157,13 @@ std::unique_ptr<TileMap> TileMap::Read(std::istream& stream,
         return nullptr;
     }
 
-    map->AddTile(
-        {sprite, Time::Delta::FromMicroseconds(animation_offset_ms * 1000)});
+    uint64_t tile_tags;
+    if (!ReadInt64(stream, tile_tags))
+      return nullptr;
+
+    map->AddTile({sprite,
+                  Time::Delta::FromMicroseconds(animation_offset_ms * 1000),
+                  tile_tags});
   }
 
   TileMap::GridPoint p;
@@ -166,9 +186,19 @@ bool TileMap::Write(std::ostream& stream) const {
   if (!WriteVec2Int64(stream, tile_size_) ||
       !WriteVec2Int64(stream, grid_size_) ||
       !WriteVec2Int64(stream, world_rect_.pos) ||
-      !WriteInt32(stream, layer_count_) || !WriteInt32(stream, tiles_.size())) {
+      !WriteInt32(stream, layer_count_)) {
     return false;
   }
+
+  if (!WriteInt32(stream, tags_.size()))
+    return false;
+  for (const std::string& tag : tags_) {
+    if (!WriteString(stream, tag))
+      return false;
+  }
+
+  if (!WriteInt32(stream, tiles_.size()))
+    return false;
 
   for (const Tile& tile : tiles_) {
     // If sprite is null, record an empty string.
@@ -183,6 +213,9 @@ bool TileMap::Write(std::ostream& stream) const {
         !WriteInt32(stream, tile.animation_offset.ToMicroseconds() / 1000)) {
       return false;
     }
+
+    if (!WriteInt64(stream, tile.tags.to_ullong()))
+      return false;
   }
 
   TileMap::GridPoint p;
@@ -278,6 +311,8 @@ void TileMap::Draw(Graphics2D* graphics,
               ((point - corner0) * tile_size_ - offset) * scale;
 
           tile->sprite->Draw(graphics, tile_draw_rect);
+          if (observer_)
+            observer_->OnDrawTile(tile, tile_draw_rect);
         }
       }
     }
@@ -365,6 +400,26 @@ uint16_t TileMap::GetTileCount() const {
 uint64_t TileMap::GridIndex(const GridPoint& grid_point, int layer) const {
   return layer_count_ * (grid_size_.x() * grid_point.y() + grid_point.x()) +
          layer;
+}
+
+uint32_t TileMap::GetTagId(const std::string& tag) const {
+  uint32_t id = 0;
+  for (const std::string& t : tags_) {
+    if (t == tag)
+      return id;
+    ++id;
+  }
+  return kTagNotFound;
+}
+
+bool TileMap::Tile::HasTag(int tag_id) const {
+  bool val = tags[tag_id];
+  return tag_id >= 0 && tag_id < tags.size() && val;
+}
+
+void TileMap::Tile::SetTag(int tag_id, bool value) {
+  if (tag_id >= 0 && tag_id < tags.size())
+    tags.set(tag_id, value);
 }
 
 }  // namespace engine2

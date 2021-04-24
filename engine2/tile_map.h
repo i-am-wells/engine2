@@ -1,6 +1,7 @@
 #ifndef ENGINE2_TILE_MAP_H_
 #define ENGINE2_TILE_MAP_H_
 
+#include <bitset>
 #include <list>
 #include <memory>
 #include <vector>
@@ -39,6 +40,11 @@ class TileMap {
   struct Tile {
     Sprite* sprite;
     Time::Delta animation_offset{};
+
+    std::bitset<64> tags;
+
+    bool HasTag(int tag_id) const;
+    void SetTag(int tag_id, bool value);
   };
 
   // We create a special type for points on the grid to make it harder to
@@ -64,14 +70,23 @@ class TileMap {
   // If index is out of bounds, resizes tile vector and fills in empty tiles.
   void SetTile(uint16_t index, const Tile& tile);
 
-  double GetScale() const { return scale_; }
-  void SetScale(double scale) { scale_ = scale; }
-
   Vec<int64_t, 2> GetTileSize() const { return tile_size_; }
   Vec<int64_t, 2> GetGridSize() const { return grid_size_; }
   int GetLayerCount() const { return layer_count_; }
   Rect<int64_t, 2> GetWorldRect() const { return world_rect_; }
   void SetWorldRect(const engine2::Rect<>& rect) { world_rect_ = rect; }
+
+  static constexpr uint32_t kTagNotFound = -1;
+  uint32_t GetTagId(const std::string& tag) const;
+  bool HasTag(const GridPoint& point, int layer, int tag_id);
+
+  std::vector<std::string>* tags() { return &tags_; }
+
+  class Observer {
+   public:
+    virtual void OnDrawTile(Tile* tile, const Rect<int, 2>& screen_rect) = 0;
+  };
+  void SetObserver(Observer* observer) { observer_ = observer; }
 
  private:
   bool PositionInMap(const GridPoint& grid_position) const;
@@ -83,15 +98,12 @@ class TileMap {
   Vec<int64_t, 2> grid_size_;
   Rect<int64_t, 2> world_rect_;
   int layer_count_;
-
-  // used for drawing
-  double scale_ = 1.;
-
   // Storage for tiles.
   std::vector<Tile> tiles_;
-
   // Stores indices of tiles.
   std::unique_ptr<uint16_t[]> grid_;
+  std::vector<std::string> tags_;
+  Observer* observer_ = nullptr;
 };
 
 }  // namespace engine2
