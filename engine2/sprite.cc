@@ -19,6 +19,9 @@ Sprite::Sprite(Texture* texture, int frame_count) : texture_(texture) {
   frames_.reserve(frame_count);
 }
 
+Sprite::Sprite(Texture* texture, std::vector<AnimationFrame> frames)
+    : texture_(texture), frames_(std::move(frames)) {}
+
 void Sprite::Draw(Graphics2D* graphics, const Rect<int64_t, 2>& dest) {
   AnimationFrame& frame = CurrentFrame();
   graphics->DrawTexture(
@@ -66,6 +69,10 @@ void Sprite::AddFrame(const AnimationFrame& frame) {
 
 void Sprite::AdvanceFrame() {
   current_frame_ = (current_frame_ + 1) % frames_.size();
+}
+
+void Sprite::SetFrames(std::vector<AnimationFrame> frames) {
+  frames_ = std::move(frames);
 }
 
 }  // namespace engine2

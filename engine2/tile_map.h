@@ -19,6 +19,8 @@ class TileMap {
 
   static std::unique_ptr<TileMap> FromString(const std::string& data,
                                              SpriteCache* sprite_cache);
+  static std::unique_ptr<TileMap> FromFile(const std::string& path,
+                                           SpriteCache* sprite_cache);
 
   static std::unique_ptr<TileMap> Read(std::istream& stream,
                                        SpriteCache* sprite_cache);

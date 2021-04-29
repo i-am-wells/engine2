@@ -15,30 +15,25 @@ class RectObject : public Object<N> {
       : rect_(rect), physics_(mass_kg) {}
 
   const Rect<double, N>& GetRect() const override { return rect_; }
-  Rect<double, N> GetRectAfterTime(const Time::Delta& delta) const override;
+
+  Rect<double, N> GetRectAfterTime(const Time::Delta& delta) const override {
+    Rect<double, N> rect_copy = rect_;
+    rect_copy.pos += physics_.velocity * delta.ToSeconds();
+    return rect_copy;
+  }
+
   const Vec<double, N>& GetVelocity() const override {
     return physics_.velocity;
   }
 
-  void Update(const Time::Delta& delta) override;
+  void Update(const Time::Delta& delta) override {
+    rect_ = GetRectAfterTime(delta);
+  }
 
  protected:
   Rect<double, N> rect_;
   PhysicsObject<N> physics_;
 };
-
-template <int N>
-Rect<double, N> RectObject<N>::GetRectAfterTime(
-    const Time::Delta& delta) const {
-  Rect<double, N> rect_copy = rect_;
-  rect_copy.pos += physics_.velocity * delta.ToSeconds();
-  return rect_copy;
-}
-
-template <int N>
-void RectObject<N>::Update(const Time::Delta& delta) {
-  rect_ = GetRectAfterTime(delta);
-}
 
 }  // namespace engine2
 

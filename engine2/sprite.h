@@ -11,6 +11,12 @@ namespace engine2 {
 
 class Sprite {
  public:
+  struct AnimationFrame {
+    Rect<int64_t, 2> source_rect;
+    Point<int64_t, 2> dest_offset;
+    Time::Delta duration;
+  };
+
   // Create a Sprite with a single frame. Convenient for non-animated sprites.
   Sprite(Texture* texture,
          const Rect<int64_t, 2>& source_rect,
@@ -20,6 +26,9 @@ class Sprite {
   // Create a Sprite with space for frame_count frames reserved.
   Sprite(Texture* texture, int frame_count = 1);
 
+  // Create and set animation frames.
+  Sprite(Texture* texture, std::vector<AnimationFrame> frames);
+
   virtual void Draw(Graphics2D* graphics, const Rect<int64_t, 2>& dest);
   virtual void Draw(Graphics2D* graphics, const Point<int64_t, 2>& dest);
   virtual void Draw(Graphics2D* graphics,
@@ -28,17 +37,13 @@ class Sprite {
 
   void Update(const Time& time);
 
-  struct AnimationFrame {
-    Rect<int64_t, 2> source_rect;
-    Point<int64_t, 2> dest_offset;
-    Time::Delta duration;
-  };
-
   void AddFrame(const AnimationFrame& frame);
 
   int FrameCount() const { return frames_.size(); }
   AnimationFrame& Frame(int index) { return frames_[index]; }
   AnimationFrame& CurrentFrame() { return frames_[current_frame_]; }
+
+  void SetFrames(std::vector<AnimationFrame> frames);
 
   Texture* texture() { return texture_; }
 

@@ -3,9 +3,8 @@
 
 #include <vector>
 
-#include "engine2/graphics2d.h"
-#include "engine2/offset_graphics2d.h"
 #include "engine2/rect.h"
+#include "engine2/rect_object.h"
 
 namespace engine2 {
 
@@ -17,28 +16,23 @@ class Camera2D {
   // |screen_rect|={0, 0, 800, 600} would cause the camera to draw to the entire
   // screen and passing |screen_rect|={400, 300, 400, 300} would cause the
   // camera to draw to the bottom right corner of the screen.
-  Camera2D(Rect<> world_rect,
-           Rect<> screen_rect,
-           Graphics2D* graphics = nullptr);
-  void SetGraphics(Graphics2D* graphics);
+  Camera2D(Rect<> world_rect, Rect<> screen_rect);
 
   class Visible {
    public:
-    virtual Rect<> GetRect() = 0;
-    virtual void OnCameraDraw(Camera2D* camera) = 0;
-
+    virtual void Draw() = 0;
     virtual bool operator<(Visible& other);
   };
 
-  Rect<> GetWindowRect() const { return screen_rect_; }
+  void SetWorldRect(const Rect<>& rect) { world_rect_ = rect; }
+  void SetWindowRect(const Rect<>& rect) { screen_rect_ = rect; }
+
+  const Rect<>& GetWindowRect() const { return screen_rect_; }
   void SetWorldPosition(const Point<int64_t, 2>& position);
   void Move(const Vec<int64_t, 2>& distance);
 
-  // Remain centered on |object|.
-  void Follow(Visible* object);
-
-  Graphics2D* InViewCoords() { return &view_graphics_; }
-  Graphics2D* InWorldCoords() { return &world_graphics_; }
+  // Remain centered on `object`.
+  void Follow(RectObject<2>* object);
 
   // To be called on the draw thread
   void Draw();
@@ -49,11 +43,9 @@ class Camera2D {
   void OnTouch(Visible* object);
 
  private:
-  Visible* follow_object_ = nullptr;
+  RectObject<2>* follow_object_ = nullptr;
   Rect<> world_rect_;
   Rect<> screen_rect_;
-  OffsetGraphics2D view_graphics_;
-  OffsetGraphics2D world_graphics_;
   std::vector<Visible*> objects_;
 };
 

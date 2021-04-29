@@ -1,0 +1,17 @@
+import("//build/sdl2.gni")
+import("//build/lua.gni")
+
+asan_flags = []
+
+executable("piratedemo") {
+  sources = [
+    "game.cc",
+    "game.h",
+    "main.cc",
+  ]
+  deps = [
+    "//engine2:engine2",
+  ]
+  cflags = sdl2_cflags + asan_flags
+  ldflags = sdl2_ldflags + lua_ldflags + asan_flags
+}

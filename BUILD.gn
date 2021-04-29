@@ -3,16 +3,9 @@ import("//build/lua.gni")
 
 group("all") {
   deps = [
-    ":piratedemo",
-    "//tools/tilemapeditor:tilemapeditor",
+    "//piratedemo",
+    "//tools/tilemapeditor",
   ]
-}
-
-executable("piratedemo") {
-  sources = ["piratedemo/main.cc"]
-  deps = ["//engine2:engine2", "//engine2/ui:ui"]
-  cflags = sdl2_cflags
-  ldflags = sdl2_ldflags + lua_ldflags
 }
 
 executable("test") {

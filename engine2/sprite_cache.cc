@@ -1,5 +1,6 @@
 #include <optional>
 
+#include "engine2/data.h"
 #include "engine2/luadata_util.h"
 #include "engine2/sprite_cache.h"
 #include "luadata/object.h"
@@ -13,6 +14,11 @@ using luadata::RootObject;
 
 std::string GetSpriteSheetFileName(const std::string& path) {
   return path.substr(0, path.find(':'));
+}
+
+std::string MakeSpriteKey(const std::string& image_path,
+                          const std::string& sprite_name) {
+  return image_path + ":" + sprite_name;
 }
 
 }  // namespace
@@ -45,6 +51,19 @@ std::optional<std::string> SpriteCache::LookupName(Sprite* sprite) const {
       return named_sprite.first;
   }
   return std::nullopt;
+}
+
+bool SpriteCache::LoadSpriteSheet(SpriteSheetInfo info) {
+  std::string image_path(info.image_path.data(), info.image_path.size());
+  Texture* texture = texture_cache_->Get(image_path);
+  if (!texture)
+    return false;
+
+  for (SpriteInfo& sprite : info.sprites) {
+    std::string sprite_name(sprite.name.data(), sprite.name.size());
+    map_.emplace(MakeSpriteKey(image_path, sprite_name),
+                 Sprite(texture, std::move(sprite.frames)));
+  }
 }
 
 Sprite* SpriteCache::LoadInternal(const std::string& path) {

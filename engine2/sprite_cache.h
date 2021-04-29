@@ -8,7 +8,10 @@
 #include "engine2/sprite.h"
 #include "engine2/texture_cache.h"
 
+// TODO: Separate into cache and loader
+
 namespace engine2 {
+class SpriteSheetInfo;
 
 // Sprites are loaded from sprite sheets stored in Lua objects. A sprite sheet
 // defines one or more sprites:
@@ -70,6 +73,10 @@ class SpriteCache {
   // Given a pointer to a sprite, return the path it's stored under, or nullopt
   // if it can't be found.
   std::optional<std::string> LookupName(Sprite* sprite) const;
+
+  // Load sprites defined in a SpriteSheetInfo. Returns false if the image can't
+  // be read; true otherwise.
+  bool LoadSpriteSheet(SpriteSheetInfo info);
 
   std::map<std::string, Sprite>::iterator begin() { return map_.begin(); }
   std::map<std::string, Sprite>::iterator end() { return map_.end(); }
