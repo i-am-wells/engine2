@@ -8,6 +8,8 @@
 #include "engine2/sprite_cache.h"
 #include "engine2/texture.h"
 #include "engine2/ui/container_view.h"
+#include "engine2/ui/text_view.h"
+#include "tools/tilemapeditor/rectangle_selection.h"
 #include "tools/tilemapeditor/two_finger_touch.h"
 
 namespace tilemapeditor {
@@ -25,6 +27,7 @@ class TilePicker : public engine2::ui::ContainerView {
   void OnMouseButtonDown(const SDL_MouseButtonEvent& event) override;
   void OnMouseButtonUp(const SDL_MouseButtonEvent& event) override;
   void OnMouseMotion(const SDL_MouseMotionEvent& event) override;
+  void OnMouseWheel(const SDL_MouseWheelEvent& event) override;
 
   void OnFingerDown(const SDL_TouchFingerEvent& event);
   void OnFingerUp(const SDL_TouchFingerEvent& event);
@@ -68,6 +71,9 @@ class TilePicker : public engine2::ui::ContainerView {
   // Tile coords.
   RectangleSelection selection_;
   bool selecting_ = false;
+
+  bool mouse_drag_ = false;
+  engine2::Point<int, 2> mouse_drag_screen_pos_{};
 
   class TwoFingerHandler : public TwoFingerTouch::Handler {
    public:

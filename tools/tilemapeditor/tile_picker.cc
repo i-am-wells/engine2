@@ -1,3 +1,4 @@
+#include <SDL2/SDL_mouse.h>
 #include <iostream>
 
 #include "tools/tilemapeditor/editor.h"
@@ -115,13 +116,25 @@ Point<> TilePicker::ScreenToGrid(const Point<>& screen_point) const {
 }
 
 void TilePicker::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
-  selection_.Start(ScreenToGrid({event.x, event.y}));
+  Point<int, 2> point{event.x, event.y};
+  if (event.button == SDL_BUTTON_RIGHT) {
+    mouse_drag_ = true;
+    mouse_drag_screen_pos_ = point;
+    return;
+  }
+
+  selection_.Start(ScreenToGrid(point));
   selecting_ = true;
 
   UpdateSelectedSprites();
 }
 
 void TilePicker::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {
+  if (event.button == SDL_BUTTON_RIGHT) {
+    mouse_drag_ = false;
+    return;
+  }
+
   if (selecting_) {
     selection_.Update(ScreenToGrid({event.x, event.y}));
     UpdateSelectedSprites();
@@ -130,10 +143,32 @@ void TilePicker::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {
 }
 
 void TilePicker::OnMouseMotion(const SDL_MouseMotionEvent& event) {
+  Point<int, 2> point{event.x, event.y};
+  if (mouse_drag_) {
+    Vec<double, 2> drag_amount = point - mouse_drag_screen_pos_;
+    two_finger_handler_.OnDrag(drag_amount /
+                               editor_->graphics()->GetSize().size);
+    mouse_drag_screen_pos_ = point;
+    return;
+  }
+
   if (selecting_) {
-    selection_.Update(ScreenToGrid({event.x, event.y}));
+    selection_.Update(ScreenToGrid(point));
     UpdateSelectedSprites();
   }
+}
+
+void TilePicker::OnMouseWheel(const SDL_MouseWheelEvent& event) {
+  double zoom_amount = 0;
+  if (event.y > 0)
+    zoom_amount = 0.8;
+  else if (event.y < 0)
+    zoom_amount = 1.25;
+
+  Point<int, 2> point;
+  SDL_GetMouseState(&point.x(), &point.y());
+  two_finger_handler_.OnPinch(point / editor_->graphics()->GetSize().size,
+                              zoom_amount);
 }
 
 void TilePicker::UpdateSelectedSprites() {

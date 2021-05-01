@@ -5,6 +5,7 @@
 #include "engine2/font.h"
 #include "engine2/frame_loop.h"
 #include "engine2/graphics2d.h"
+#include "engine2/offset_graphics2d.h"
 #include "engine2/sprite_cache.h"
 #include "engine2/tile_map.h"
 #include "engine2/timing.h"
@@ -142,6 +143,10 @@ class Editor : public engine2::FrameLoop, public engine2::EventHandler {
   engine2::Point<> move_cursor_offset_tiles_{};
   engine2::Point<> move_cursor_offset_{};
   engine2::Rect<> move_map_original_rect_{};
+
+  bool map_mouse_drag_ = false;
+  engine2::Point<int, 2> map_mouse_drag_screen_start_{};
+  engine2::Point<> map_mouse_drag_world_point_{};
 
   engine2::ui::TextView status_bar_;
 

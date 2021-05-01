@@ -1,3 +1,4 @@
+#include <SDL2/SDL_mouse.h>
 #include <algorithm>
 #include <cmath>
 #include <deque>
@@ -10,7 +11,6 @@
 
 using engine2::Font;
 using engine2::Graphics2D;
-using engine2::kOpaque;
 using engine2::Point;
 using engine2::Rect;
 using engine2::RgbaColor;
@@ -27,8 +27,6 @@ using engine2::kGray;
 using engine2::kGreen;
 using engine2::kRed;
 using engine2::kWhite;
-
-using engine2::ui::ImageView;
 
 namespace tilemapeditor {
 namespace {
@@ -83,11 +81,11 @@ Editor::Editor(Window* window,
       tool_buttons_(this, icons_image) {}
 
 void Editor::Init() {
-  window_in_world_.pos = {0, 0};
-  window_in_world_.size = graphics_->GetSize().size;
-
   // Set map scale so it fills the window.
   Rect<> map_rect = map_->GetWorldRect();
+  window_in_world_.pos = map_rect.pos;
+  window_in_world_.size = graphics_->GetSize().size;
+
   if (map_rect.w() > 0 && map_rect.h() > 0) {
     double map_aspect_ratio = double(map_rect.w()) / map_rect.h();
     double window_aspect_ratio =
@@ -220,6 +218,13 @@ void Editor::OnMouseButtonDown(const SDL_MouseButtonEvent& event) {
   if (tool_buttons_.Contains(point))
     return tool_buttons_.OnMouseButtonDown(event);
 
+  if (event.button == SDL_BUTTON_RIGHT) {
+    map_mouse_drag_ = true;
+    map_mouse_drag_screen_start_ = point;
+    map_mouse_drag_world_point_ = ScreenToWorld(point);
+    return;
+  }
+
   if (event.which != SDL_TOUCH_MOUSEID) {
     SetCursorGridPosition(point);
     switch (tool_mode_) {
@@ -253,6 +258,11 @@ void Editor::OnMouseButtonUp(const SDL_MouseButtonEvent& event) {
   Point<> point{event.x, event.y};
   tile_picker_.OnMouseButtonUp(event);
 
+  if (event.button == SDL_BUTTON_RIGHT) {
+    map_mouse_drag_ = false;
+    return;
+  }
+
   mouse_down_ = false;
 
   switch (tool_mode_) {
@@ -274,6 +284,13 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
   //}
   Point<> point{event.x, event.y};
   tile_picker_.OnMouseMotion(event);
+
+  if (map_mouse_drag_) {
+    window_in_world_.pos -= point - map_mouse_drag_screen_start_;
+    map_mouse_drag_screen_start_ = point;
+    map_mouse_drag_world_point_ = ScreenToWorld(point);
+    return;
+  }
 
   SetCursorGridPosition(point);
   if (mouse_down_) {
@@ -300,7 +317,19 @@ void Editor::OnMouseMotion(const SDL_MouseMotionEvent& event) {
 }
 
 void Editor::OnMouseWheel(const SDL_MouseWheelEvent& event) {
-  // TODO try to pass to UI; if it isn't on any UI, pass to map
+  Point<int, 2> point;
+  SDL_GetMouseState(&point.x(), &point.y());
+
+  if (tile_picker_.Contains(point))
+    return tile_picker_.OnMouseWheel(event);
+
+  double zoom_amount = 0;
+  if (event.y < 0)
+    zoom_amount = 1.25;
+  else if (event.y > 0)
+    zoom_amount = 0.75;
+
+  two_finger_handler_.OnPinch(point / graphics_->GetSize().size, zoom_amount);
 }
 
 void Editor::OnFingerDown(const SDL_TouchFingerEvent& event) {
