@@ -34,6 +34,15 @@ void ContainerView::OnMouseMotion(const SDL_MouseMotionEvent& event) {
     child2->OnMouseMotion(event);
 }
 
+void ContainerView::OnMouseWheel(const SDL_MouseWheelEvent& event) {
+  Point<int, 2> mouse;
+  SDL_GetMouseState(&mouse.x(), &mouse.y());
+
+  View* child = FindChild(mouse);
+  if (child)
+    child->OnMouseWheel(event);
+}
+
 bool ContainerView::Contains(const Point<int, 2>& point) const {
   return GetRect().Contains(point);
 }

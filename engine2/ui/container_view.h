@@ -16,6 +16,7 @@ class ContainerView : public HierarchyView {
   void OnMouseButtonDown(const SDL_MouseButtonEvent& event) override;
   void OnMouseButtonUp(const SDL_MouseButtonEvent& event) override;
   void OnMouseMotion(const SDL_MouseMotionEvent& event) override;
+  void OnMouseWheel(const SDL_MouseWheelEvent& event) override;
 
   bool Contains(const engine2::Point<int, 2>& point) const;
 

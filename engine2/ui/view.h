@@ -59,6 +59,7 @@ class View {
   virtual void OnMouseButtonDown(const SDL_MouseButtonEvent& event) {}
   virtual void OnMouseButtonUp(const SDL_MouseButtonEvent& event) {}
   virtual void OnMouseMotion(const SDL_MouseMotionEvent& event) {}
+  virtual void OnMouseWheel(const SDL_MouseWheelEvent& event) {}
 };
 
 }  // namespace ui
