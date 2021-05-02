@@ -9,7 +9,6 @@
 namespace engine2 {
 namespace {
 
-using luadata::Object;
 using luadata::RootObject;
 
 std::string GetSpriteSheetFileName(const std::string& path) {
@@ -18,6 +17,8 @@ std::string GetSpriteSheetFileName(const std::string& path) {
 
 std::string MakeSpriteKey(const std::string& image_path,
                           const std::string& sprite_name) {
+  if (sprite_name.empty())
+    return image_path;
   return image_path + ":" + sprite_name;
 }
 
@@ -64,6 +65,13 @@ bool SpriteCache::LoadSpriteSheet(SpriteSheetInfo info) {
     map_.emplace(MakeSpriteKey(image_path, sprite_name),
                  Sprite(texture, std::move(sprite.frames)));
   }
+  return true;
+}
+
+bool SpriteCache::LoadSpriteSheet(
+    const std::string& sprite_sheet_luadata_file) {
+  LoadInternal(sprite_sheet_luadata_file);
+  return true;
 }
 
 Sprite* SpriteCache::LoadInternal(const std::string& path) {
@@ -77,7 +85,8 @@ Sprite* SpriteCache::LoadInternal(const std::string& path) {
   if (!load_result.data)
     return nullptr;
 
-  Texture* texture = texture_cache_->Get(load_result.data->GetString("image"));
+  std::string image_path = load_result.data->GetString("image");
+  Texture* texture = texture_cache_->Get(image_path);
   if (!texture)
     return nullptr;
 
@@ -103,9 +112,7 @@ Sprite* SpriteCache::LoadInternal(const std::string& path) {
     if (frame_count < 1)
       continue;
 
-    std::string new_sprite_name = file_path;
-    if (!name.empty())
-      new_sprite_name += ':' + name;
+    std::string new_sprite_name = MakeSpriteKey(image_path, name);
 
     Sprite* sprite = Create(new_sprite_name, texture, frame_count);
     if (name == sprite_wanted_name)

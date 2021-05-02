@@ -77,6 +77,7 @@ class SpriteCache {
   // Load sprites defined in a SpriteSheetInfo. Returns false if the image can't
   // be read; true otherwise.
   bool LoadSpriteSheet(SpriteSheetInfo info);
+  bool LoadSpriteSheet(const std::string& sprite_sheet_luadata_file);
 
   std::map<std::string, Sprite>::iterator begin() { return map_.begin(); }
   std::map<std::string, Sprite>::iterator end() { return map_.end(); }
