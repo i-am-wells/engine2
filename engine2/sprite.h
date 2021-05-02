@@ -17,6 +17,8 @@ class Sprite {
     Time::Delta duration;
   };
 
+  Sprite() = default;
+
   // Create a Sprite with a single frame. Convenient for non-animated sprites.
   Sprite(Texture* texture,
          const Rect<int64_t, 2>& source_rect,

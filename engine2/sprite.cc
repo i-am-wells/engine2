@@ -20,7 +20,10 @@ Sprite::Sprite(Texture* texture, int frame_count) : texture_(texture) {
 }
 
 Sprite::Sprite(Texture* texture, std::vector<AnimationFrame> frames)
-    : texture_(texture), frames_(std::move(frames)) {}
+    : texture_(texture), frames_(std::move(frames)) {
+  for (const auto& frame : frames_)
+    cycle_duration_ += frame.duration;
+}
 
 void Sprite::Draw(Graphics2D* graphics, const Rect<int64_t, 2>& dest) {
   AnimationFrame& frame = CurrentFrame();
