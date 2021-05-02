@@ -27,8 +27,9 @@ int Run() {
       engine2::BasicGraphics2D::Create(*window, SDL_RENDERER_ACCELERATED);
   if (!graphics)
     return PrintSDLError("Couldn't create renderer");
+  graphics->SetLogicalSize(400, 300);
 
-  Game game(window.get(), graphics.get());
+  piratedemo::Game game(window.get(), graphics.get());
   if (!game.Load())
     return 1;
   game.Run();

@@ -65,9 +65,11 @@ end
 
 return {
   layers = 1,
-  grid_size = {x=50, y=50},
+  grid_size = {x=20, y=20},
   tile_size = common.tile_size,
-  world_position = {x=0, y=0},
+  world_position = {x=-160, y=-160},
   tags = wall_tag,
   tiles = tiles,
+
+  sprite_info = common.sprite_info,
 }

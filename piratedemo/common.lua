@@ -7,7 +7,7 @@ common = {
     return string.format('ship%s_%s', x, y)
   end,
   sprite_full_name = function(x, y)
-    return string.format('%s:%s', common.sprite_info, common.sprite_name(x, y))
+    return string.format('%s:%s', common.sprite_image, common.sprite_name(x, y))
   end,
 }
 return common

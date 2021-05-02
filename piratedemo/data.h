@@ -5,10 +5,7 @@
 
 namespace piratedemo {
 
-enum class PlayerWalkDirection { kSouth, kNorth, kEast, kWest };
-
 engine2::SpriteSheetInfo MakeShipSpriteSheet();
-engine2::SpriteSheetInfo MakePlayerSpriteSheet();
 
 }  // namespace piratedemo
 

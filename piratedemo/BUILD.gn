@@ -5,9 +5,18 @@ asan_flags = []
 
 executable("piratedemo") {
   sources = [
+    "data.cc",
+    "data.h",
     "game.cc",
     "game.h",
     "main.cc",
+    "player.cc",
+    "player.h",
+    "thing.cc",
+    "thing.h",
+    "types.h",
+    "wall.cc",
+    "wall.h",
   ]
   deps = [
     "//engine2:engine2",
