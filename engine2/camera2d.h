@@ -8,6 +8,7 @@
 
 namespace engine2 {
 
+template <class V>
 class Camera2D {
  public:
   // |world_rect| represents the position and size of the camera's view into the
@@ -16,37 +17,53 @@ class Camera2D {
   // |screen_rect|={0, 0, 800, 600} would cause the camera to draw to the entire
   // screen and passing |screen_rect|={400, 300, 400, 300} would cause the
   // camera to draw to the bottom right corner of the screen.
-  Camera2D(Rect<> world_rect, Rect<> screen_rect);
+  Camera2D(Rect<> world_rect, Rect<> screen_rect)
+      : world_rect_(std::move(world_rect)),
+        screen_rect_(std::move(screen_rect)) {}
 
   class Visible {
    public:
     virtual void Draw() = 0;
-    virtual bool operator<(Visible& other);
   };
 
   void SetWorldRect(const Rect<>& rect) { world_rect_ = rect; }
   void SetWindowRect(const Rect<>& rect) { screen_rect_ = rect; }
 
   const Rect<>& GetWindowRect() const { return screen_rect_; }
-  void SetWorldPosition(const Point<int64_t, 2>& position);
-  void Move(const Vec<int64_t, 2>& distance);
+  void SetWorldPosition(const Point<int64_t, 2>& position) {
+    world_rect_.pos = position;
+  }
+  void Move(const Vec<int64_t, 2>& distance) { world_rect_.pos += distance; }
 
   // Remain centered on `object`.
-  void Follow(RectObject<2>* object);
+  void Follow(RectObject<2>* object) { follow_object_ = object; }
 
-  // To be called on the draw thread
-  void Draw();
+  void Draw() {
+    std::sort(objects_.begin(), objects_.end(),
+              [](V* a, V* b) { return *a < *b; });
+    for (Visible* object : objects_) {
+      object->Draw();
+    }
+    objects_.clear();
+  }
 
   // Needed for RectSearchTree.
-  Rect<> GetRect();
-  void OnOverlap(Visible* object);
-  void OnTouch(Visible* object);
+  Rect<> GetRect() {
+    if (follow_object_) {
+      auto follow_rect = follow_object_->GetRect();
+      world_rect_.pos =
+          follow_rect.pos - (screen_rect_.size - follow_rect.size) / 2l;
+    }
+    return world_rect_;
+  }
+  void OnOverlap(V* object) { objects_.push_back(object); }
+  void OnTouch(V* object) {}
 
  private:
   RectObject<2>* follow_object_ = nullptr;
   Rect<> world_rect_;
   Rect<> screen_rect_;
-  std::vector<Visible*> objects_;
+  std::vector<V*> objects_;
 };
 
 }  // namespace engine2

@@ -37,7 +37,6 @@ class TileMap {
             const Rect<>& world_rect,
             const Rect<>& window_rect,
             int layer = kAllLayers);
-  void Draw(Camera2D* camera, int layer = kAllLayers);
 
   struct Tile {
     Sprite* sprite;
@@ -80,8 +79,8 @@ class TileMap {
 
   static constexpr uint32_t kTagNotFound = -1;
   uint32_t GetTagId(const std::string& tag) const;
-  bool HasTag(const GridPoint& point, int layer, int tag_id);
 
+  void SetTags(std::vector<std::string> tags) { tags_ = std::move(tags); }
   std::vector<std::string>* tags() { return &tags_; }
 
   class Observer {

@@ -5,7 +5,6 @@ source_set("engine2") {
     "callback_queue.cc",
     "callback_queue.h",
     "callback_with_id.h",
-    "camera2d.cc",
     "camera2d.h",
     "command_line_parser.cc",
     "command_line_parser.h",
