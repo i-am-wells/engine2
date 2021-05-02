@@ -1,7 +1,7 @@
 #ifndef ENGINE2_DATA_H_
 #define ENGINE2_DATA_H_
 
-#include <string_view>
+#include <string>
 #include <vector>
 
 #include "engine2/rect.h"
@@ -23,16 +23,16 @@ struct MapInfo {
   Vec<int64_t, 2> world_position;
   Vec<int, 2> tile_size;
   std::vector<TileInfo> tiles;
-  std::vector<std::string_view> tags;
+  std::vector<std::string> tags;
 };
 
 struct SpriteInfo {
-  std::string_view name;
+  std::string name;
   std::vector<Sprite::AnimationFrame> frames;
 };
 
 struct SpriteSheetInfo {
-  std::string_view image_path;
+  std::string image_path;
   std::vector<SpriteInfo> sprites;
 };
 
