@@ -140,6 +140,7 @@ std::unique_ptr<TileMap> TileMap::Read(std::istream& stream,
 
   auto map = std::make_unique<TileMap>(tile_size, grid_size, layer_count,
                                        position_in_world, sprite_cache);
+  map->SetTags(std::move(tags));
 
   for (int i = 0; i < tile_vector_size; ++i) {
     std::string sprite_path;
@@ -317,11 +318,6 @@ void TileMap::Draw(Graphics2D* graphics,
       }
     }
   }
-}
-
-void TileMap::Draw(Camera2D* camera, int layer) {
-  Draw(camera->InWorldCoords(), camera->GetRect(), camera->GetWindowRect(),
-       layer);
 }
 
 bool TileMap::PositionInMap(const GridPoint& grid_position) const {
