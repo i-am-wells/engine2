@@ -1,6 +1,7 @@
 #ifndef ENGINE2_VEC_H_
 #define ENGINE2_VEC_H_
 
+#include <algorithm>
 #include <initializer_list>
 
 namespace engine2 {
@@ -28,6 +29,8 @@ struct Vec {
   }
 
   static Vec Ones() { return Fill(1); }
+
+  bool IsZero() const { return *this == Vec<Scalar, N>{}; }
 
   template <typename OtherScalar>
   Vec<OtherScalar, N> ConvertTo() const {
