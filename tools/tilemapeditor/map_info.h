@@ -24,6 +24,8 @@ struct MapInfo {
   std::vector<TileInfo> tiles;
   std::vector<std::string> tags;
 
+  std::string sprite_info_file;
+
   std::unique_ptr<engine2::TileMap> CreateTileMap(
       engine2::SpriteCache* sprite_cache) const;
 };

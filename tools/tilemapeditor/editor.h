@@ -17,7 +17,7 @@
 
 #include "tools/tilemapeditor/action_stack.h"
 #include "tools/tilemapeditor/rectangle_selection.h"
-#include "tools/tilemapeditor/sidebar_view.h"
+#include "tools/tilemapeditor/tile_picker.h"
 #include "tools/tilemapeditor/two_finger_touch.h"
 
 namespace tilemapeditor {

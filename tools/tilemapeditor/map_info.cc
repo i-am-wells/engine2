@@ -41,14 +41,17 @@ TileInfo GetTile(const Object& object, int index) {
 
 std::unique_ptr<TileMap> MapInfo::CreateTileMap(
     SpriteCache* sprite_cache) const {
+  sprite_cache->LoadSpriteSheet(sprite_info_file);
   auto map = std::make_unique<TileMap>(tile_size, grid_size, layers,
                                        world_position, sprite_cache);
   map->AddTile({nullptr});
 
   std::map<std::string, int> tag_to_id;
   int id = 0;
-  for (auto& tag : tags)
+  for (auto& tag : tags) {
     tag_to_id[tag] = id++;
+    map->tags()->push_back(tag);
+  }
 
   for (const TileInfo& tile : tiles) {
     std::bitset<64> tile_tags;
@@ -76,6 +79,7 @@ std::unique_ptr<MapInfo> ReadMapInfoFromFile(const std::string& file_path) {
   info->grid_size = LuaDataUtil::GetVec2(*root, "grid_size");
   info->tile_size = LuaDataUtil::GetVec2(*root, "tile_size", {16, 16});
   info->world_position = LuaDataUtil::GetVec2(*root, "world_position");
+  info->sprite_info_file = root->GetString("sprite_info");
 
   auto tags = root->GetObject("tags");
   if (tags) {
