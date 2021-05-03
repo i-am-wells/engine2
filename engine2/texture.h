@@ -31,7 +31,7 @@ class Texture {
 
   bool SetColorMod(RgbaColor color);
   bool SetAlphaMod(uint8_t alpha);
-  Rect<> GetSize();
+  Rect<> GetSize() const;
 
  private:
   friend class BasicGraphics2D;
