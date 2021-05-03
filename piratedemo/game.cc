@@ -1,6 +1,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "engine2/performance/perf_span.h"
+#include "engine2/performance/scoped_stopwatch.h"
 #include "engine2/rgba_color.h"
 #include "engine2/tile_map.h"
 #include "piratedemo/data.h"
@@ -30,7 +32,7 @@ Vec<double, 2> VelocityForDirection(Direction direction) {
 
 }  // namespace
 
-Game::Game(Window* window, Graphics2D* graphics)
+Game::Game(Window* window, Graphics2D* graphics, Font* font)
     : FrameLoop(/*event_handler=*/this),
       window_(window),
       graphics_(graphics),
@@ -46,6 +48,13 @@ Game::Game(Window* window, Graphics2D* graphics)
   camera_.SetWindowRect(graphics->GetLogicalSize());
 
   space_.Add(&player_);
+
+#ifdef PERF
+  frame_stats_overlay_ = std::make_unique<FrameStatsOverlay>(
+      graphics, font,
+      std::vector<PerfSpan::Id>{PerfSpan::Id::kFrame,
+                                PerfSpan::Id::kFrameIdle});
+#endif
 }
 
 bool Game::Load() {
@@ -97,6 +106,8 @@ bool Game::Load() {
 }
 
 void Game::EveryFrame() {
+  TIME_THIS_SCOPE_AS(PerfSpan::Id::kFrame);
+
   graphics_->SetDrawColor(kWhite)->Clear();
 
   map_->Draw(graphics_, camera_.GetRect(), camera_.GetWindowRect());
@@ -112,10 +123,24 @@ void Game::EveryFrame() {
   }
   camera_.Draw();
 
+#ifdef PERF
+  frame_stats_overlay_->Draw();
+  Time perf_now = Time::Now();
+  if (perf_now > last_perf_flush_ + perf_flush_period_) {
+    gPerfRecorder.Flush();
+    last_perf_flush_ = perf_now;
+  }
+#endif
+
   graphics_->Present();
 
   space_.AdvanceTime(Time::Now() - last_update_time_);
   last_update_time_ = Time::Now();
+
+  {
+    TIME_THIS_SCOPE_AS(PerfSpan::Id::kFrameIdle);
+    idler_.Wait();
+  }
 }
 
 void Game::OnKeyDown(const SDL_KeyboardEvent& event) {

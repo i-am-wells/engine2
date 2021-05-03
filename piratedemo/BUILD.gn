@@ -1,5 +1,6 @@
 import("//build/sdl2.gni")
 import("//build/lua.gni")
+import("//engine2/performance/flags.gni")
 
 asan_flags = []
 
@@ -21,6 +22,15 @@ executable("piratedemo") {
   deps = [
     "//engine2:engine2",
   ]
+
+  if (enable_perf_tools) {
+    deps += [
+      "//engine2/performance:frame_stats_overlay",
+      "//engine2/performance:perf_recorder",
+      "//engine2/performance:scoped_stopwatch",
+    ]
+  }
+
   cflags = sdl2_cflags + asan_flags
   ldflags = sdl2_ldflags + lua_ldflags + asan_flags
 }

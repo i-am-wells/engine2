@@ -29,7 +29,11 @@ int Run() {
     return PrintSDLError("Couldn't create renderer");
   graphics->SetLogicalSize(400, 300);
 
-  piratedemo::Game game(window.get(), graphics.get());
+  auto font = engine2::Font::Load("piratedemo/ter-u12b.otb", 12);
+  if (!font)
+    return PrintSDLError("Couldn't load font");
+
+  piratedemo::Game game(window.get(), graphics.get(), font.get());
   if (!game.Load())
     return 1;
   game.Run();
@@ -41,11 +45,12 @@ int Run() {
 
 int main(int argc, char** argv) {
   if (!(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == 0) ||
-      !(IMG_Init(IMG_INIT_PNG) == IMG_INIT_PNG)) {
+      !(IMG_Init(IMG_INIT_PNG) == IMG_INIT_PNG) || !(TTF_Init() == 0)) {
     return PrintSDLError("failed to init SDL");
   }
   int ret = Run();
 
+  TTF_Quit();
   IMG_Quit();
   SDL_Quit();
   return ret;
