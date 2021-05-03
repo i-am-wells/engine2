@@ -3,6 +3,7 @@
 # found in the chromium.license file.
 
 import("//build/debug_or_release.gni")
+import("//engine2/performance/flags.gni")
 
 _cflags = [
       "-I" + rebase_path("//", root_build_dir),
@@ -20,6 +21,12 @@ if (is_debug) {
 } else {
   _cflags += [
     "-O3",
+  ]
+}
+
+if (enable_perf_tools) {
+  _cflags += [
+    "-DPERF",
   ]
 }
 

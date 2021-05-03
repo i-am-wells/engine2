@@ -1,0 +1,29 @@
+source_set("perf_recorder") {
+  sources = [
+    "perf_recorder.cc",
+    "perf_recorder.h",
+    "perf_span.cc",
+    "perf_span.h",
+  ]
+}
+
+source_set("frame_stats_overlay") {
+  sources = [
+    "frame_stats_overlay.cc",
+    "frame_stats_overlay.h",
+  ]
+  deps = [
+    ":perf_recorder",
+    "//engine2",
+  ]
+}
+
+source_set("scoped_stopwatch") {
+  sources = [
+    "scoped_stopwatch.cc",
+    "scoped_stopwatch.h",
+  ]
+  deps = [
+    ":perf_recorder",
+  ]
+}
